@@ -1,6 +1,5 @@
-import Link from 'next/link'
-import { adminClient } from '@/lib/cms/auth'
 import { CmsMessageList } from '@/components/cms/messages'
+import { query } from '@/lib/db/pool'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Messages' }
@@ -16,13 +15,18 @@ interface MessageRow {
 }
 
 export default async function MessagesPage() {
-  const supabase = adminClient()
-  const { data } = await supabase
-    .from('contact_messages')
-    .select('id, name, email, phone, subject, created_at, status')
-    .order('created_at', { ascending: false })
+  let messages: MessageRow[] = []
+  try {
+    const res = await query(
+      `SELECT id, name, email, phone, subject, created_at, status
+       FROM contact_messages
+       ORDER BY created_at DESC`
+    )
+    messages = res.rows as MessageRow[]
+  } catch (err) {
+    console.error('Error fetching messages:', err)
+  }
 
-  const messages = (data || []) as MessageRow[]
   const unread = messages.filter((m) => m.status === 'unread').length
 
   return (

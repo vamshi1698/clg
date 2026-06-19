@@ -6,7 +6,6 @@ import { Search, FileText, Award, TrendingUp, AlertCircle, Download, Printer, X 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { supabase } from '@/lib/supabase/client'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -63,44 +62,21 @@ export function ResultsPage() {
 
     startTransition(async () => {
       try {
-        // Get student info
-        const { data: studentData, error: studentError } = await supabase
-          .from('students')
-          .select(`
-            id,
-            name,
-            register_number,
-            course:courses(name),
-            department:departments(name)
-          `)
-          .eq('register_number', registerNumber.trim())
-          .eq('date_of_birth', dateOfBirth)
-          .eq('is_active', true)
-          .single()
-
-        if (studentError || !studentData) {
-          setError('No student found with the provided details. Please check your Register Number and Date of Birth.')
+        const res = await fetch('/api/results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            registerNumber: registerNumber.trim(),
+            dateOfBirth,
+          }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok || !data.student) {
+          setError(data.error || 'No student found with the provided details. Please check your Register Number and Date of Birth.')
           return
         }
 
-        // Get results
-        const { data: resultsData } = await supabase
-          .from('results')
-          .select('*')
-          .eq('student_id', studentData.id)
-          .eq('is_active', true)
-          .order('semester', { ascending: true })
-
-        // Get summary
-        const { data: summaryData } = await supabase
-          .from('result_summaries')
-          .select('*')
-          .eq('student_id', studentData.id)
-          .eq('is_active', true)
-          .order('semester', { ascending: true })
-
-        // Transform data
-        const results = (resultsData || []).map(r => ({
+        const results = (data.results || []).map((r: any) => ({
           semester: r.semester,
           academic_year: r.academic_year,
           subject_code: r.subject_code,
@@ -114,7 +90,7 @@ export function ResultsPage() {
           result_status: r.result_status,
         }))
 
-        const summary = (summaryData || []).map(s => ({
+        const summary = (data.summaries || []).map((s: any) => ({
           semester: s.semester,
           academic_year: s.academic_year,
           sgpa: s.sgpa,
@@ -122,27 +98,13 @@ export function ResultsPage() {
           result_status: s.result_status,
         }))
 
-        // Group results by semester
-        const resultsBySemester = results.reduce((acc, r) => {
-          const key = `${r.semester}-${r.academic_year}`
-          if (!acc[key]) {
-            acc[key] = {
-              semester: r.semester,
-              academic_year: r.academic_year,
-              subjects: []
-            }
-          }
-          acc[key].subjects.push(r)
-          return acc
-        }, {} as Record<string, any>)
-
         setResult({
           student: {
-            id: studentData.id,
-            name: studentData.name,
-            register_number: studentData.register_number,
-            course_name: (studentData.course as any)?.name || undefined,
-            department_name: (studentData.department as any)?.name || undefined,
+            id: data.student.id,
+            name: data.student.name,
+            register_number: data.student.register_number,
+            course_name: data.student.course_name || undefined,
+            department_name: data.student.department_name || undefined,
           },
           results,
           summary: {
@@ -153,7 +115,7 @@ export function ResultsPage() {
             result_status: null,
           },
         })
-      } catch (err) {
+      } catch {
         setError('An error occurred while fetching results. Please try again.')
       }
     })

@@ -23,7 +23,7 @@ export default async function CmsEditPage({ params }: PageProps) {
   let rowId: string | undefined
 
   if (!isNew) {
-    const row = await fetchRows(config, params.id)
+    const row = await fetchRows(config, params.id) as any
     if (!row) notFound()
     initial = row
     rowId = params.id

@@ -1,4 +1,5 @@
-import { supabaseServer } from '../supabase/server'
+import 'server-only'
+import { query, queryOne } from '@/lib/db/pool'
 import type {
   SiteSettings,
   Statistics,
@@ -19,384 +20,348 @@ import type {
   ResultSummary,
 } from '@/types/database'
 
-// Get site settings
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const { data, error } = await supabaseServer
-    .from('site_settings')
-    .select('*')
-    .eq('id', 1)
-    .single()
-
-  if (error) {
-    console.error('Error fetching site settings:', error)
+  try {
+    return await queryOne<SiteSettings>(
+      `SELECT * FROM site_settings WHERE id = 1 LIMIT 1`
+    )
+  } catch (err) {
+    console.error('Error fetching site settings:', err)
     return null
   }
-  return data
 }
 
-// Get statistics
 export async function getStatistics(): Promise<Statistics | null> {
-  const { data, error } = await supabaseServer
-    .from('statistics')
-    .select('*')
-    .eq('id', 1)
-    .single()
-
-  if (error) {
-    console.error('Error fetching statistics:', error)
+  try {
+    return await queryOne<Statistics>(
+      `SELECT * FROM statistics WHERE id = 1 LIMIT 1`
+    )
+  } catch (err) {
+    console.error('Error fetching statistics:', err)
     return null
   }
-  return data
 }
 
-// Get all departments
 export async function getDepartments(): Promise<Department[]> {
-  const { data, error } = await supabaseServer
-    .from('departments')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching departments:', error)
+  try {
+    const res = await query<Department>(
+      `SELECT * FROM departments WHERE is_active = true ORDER BY sort_order ASC`
+    )
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching departments:', err)
     return []
   }
-  return data || []
 }
 
-// Get single department by code
 export async function getDepartmentByCode(code: string): Promise<Department | null> {
-  const { data, error } = await supabaseServer
-    .from('departments')
-    .select('*')
-    .eq('code', code)
-    .eq('is_active', true)
-    .single()
-
-  if (error) {
-    console.error('Error fetching department:', error)
+  try {
+    return await queryOne<Department>(
+      `SELECT * FROM departments WHERE code = $1 AND is_active = true LIMIT 1`,
+      [code]
+    )
+  } catch (err) {
+    console.error('Error fetching department:', err)
     return null
   }
-  return data
 }
 
-// Get all courses with department info
-export async function getCourses(options?: { level?: string; departmentId?: string }): Promise<Course[]> {
-  let query = supabaseServer
-    .from('courses')
-    .select('*, departments(*)')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (options?.level) {
-    query = query.eq('level', options.level)
-  }
-  if (options?.departmentId) {
-    query = query.eq('department_id', options.departmentId)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching courses:', error)
+export async function getCourses(
+  options?: { level?: string; departmentId?: string }
+): Promise<Course[]> {
+  try {
+    let sql = `SELECT c.*, row_to_json(d) AS departments
+               FROM courses c
+               LEFT JOIN departments d ON d.id = c.department_id
+               WHERE c.is_active = true`
+    const params: unknown[] = []
+    if (options?.level) {
+      params.push(options.level)
+      sql += ` AND c.level = $${params.length}`
+    }
+    if (options?.departmentId) {
+      params.push(options.departmentId)
+      sql += ` AND c.department_id = $${params.length}`
+    }
+    sql += ` ORDER BY c.sort_order ASC`
+    const res = await query<Course>(sql, params)
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching courses:', err)
     return []
   }
-  return data || []
 }
 
-// Get course by code
 export async function getCourseByCode(code: string): Promise<Course | null> {
-  const { data, error } = await supabaseServer
-    .from('courses')
-    .select('*, departments(*)')
-    .eq('code', code)
-    .eq('is_active', true)
-    .single()
-
-  if (error) {
-    console.error('Error fetching course:', error)
+  try {
+    return await queryOne<Course>(
+      `SELECT c.*, row_to_json(d) AS departments
+       FROM courses c
+       LEFT JOIN departments d ON d.id = c.department_id
+       WHERE c.code = $1 AND c.is_active = true
+       LIMIT 1`,
+      [code]
+    )
+  } catch (err) {
+    console.error('Error fetching course:', err)
     return null
   }
-  return data
 }
 
-// Get faculty with optional filters
-export async function getFaculty(options?: { departmentId?: string }): Promise<Faculty[]> {
-  let query = supabaseServer
-    .from('faculty')
-    .select('*, departments(*)')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (options?.departmentId) {
-    query = query.eq('department_id', options.departmentId)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching faculty:', error)
+export async function getFaculty(
+  options?: { departmentId?: string }
+): Promise<Faculty[]> {
+  try {
+    let sql = `SELECT f.*, row_to_json(d) AS departments
+               FROM faculty f
+               LEFT JOIN departments d ON d.id = f.department_id
+               WHERE f.is_active = true`
+    const params: unknown[] = []
+    if (options?.departmentId) {
+      params.push(options.departmentId)
+      sql += ` AND f.department_id = $${params.length}`
+    }
+    sql += ` ORDER BY f.sort_order ASC`
+    const res = await query<Faculty>(sql, params)
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching faculty:', err)
     return []
   }
-  return data || []
 }
 
-// Get news with optional filters
-export async function getNews(options?: { limit?: number; category?: string; featured?: boolean }): Promise<News[]> {
-  let query = supabaseServer
-    .from('news')
-    .select('*')
-    .eq('is_active', true)
-    .order('published_at', { ascending: false })
-
-  if (options?.limit) {
-    query = query.limit(options.limit)
-  }
-  if (options?.category) {
-    query = query.eq('category', options.category)
-  }
-  if (options?.featured !== undefined) {
-    query = query.eq('is_featured', options.featured)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching news:', error)
+export async function getNews(
+  options?: { limit?: number; category?: string; featured?: boolean }
+): Promise<News[]> {
+  try {
+    let sql = `SELECT * FROM news WHERE is_active = true`
+    const params: unknown[] = []
+    if (options?.category) {
+      params.push(options.category)
+      sql += ` AND category = $${params.length}`
+    }
+    if (options?.featured !== undefined) {
+      params.push(options.featured)
+      sql += ` AND is_featured = $${params.length}`
+    }
+    sql += ` ORDER BY published_at DESC`
+    if (options?.limit) {
+      params.push(options.limit)
+      sql += ` LIMIT $${params.length}`
+    }
+    const res = await query<News>(sql, params)
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching news:', err)
     return []
   }
-  return data || []
 }
 
-// Get news by slug
 export async function getNewsBySlug(slug: string): Promise<News | null> {
-  const { data, error } = await supabaseServer
-    .from('news')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
-
-  if (error) {
-    console.error('Error fetching news:', error)
+  try {
+    return await queryOne<News>(
+      `SELECT * FROM news WHERE slug = $1 AND is_active = true LIMIT 1`,
+      [slug]
+    )
+  } catch (err) {
+    console.error('Error fetching news:', err)
     return null
   }
-  return data
 }
 
-// Get events with optional filters
-export async function getEvents(options?: { limit?: number; upcoming?: boolean }): Promise<Event[]> {
-  let query = supabaseServer
-    .from('events')
-    .select('*')
-    .eq('is_active', true)
-    .order('event_date', { ascending: true })
-
-  if (options?.limit) {
-    query = query.limit(options.limit)
-  }
-  if (options?.upcoming !== undefined) {
-    query = query.eq('is_upcoming', options.upcoming)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching events:', error)
+export async function getEvents(
+  options?: { limit?: number; upcoming?: boolean }
+): Promise<Event[]> {
+  try {
+    let sql = `SELECT * FROM events WHERE is_active = true`
+    const params: unknown[] = []
+    if (options?.upcoming !== undefined) {
+      params.push(options.upcoming)
+      sql += ` AND is_upcoming = $${params.length}`
+    }
+    sql += ` ORDER BY event_date ASC`
+    if (options?.limit) {
+      params.push(options.limit)
+      sql += ` LIMIT $${params.length}`
+    }
+    const res = await query<Event>(sql, params)
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching events:', err)
     return []
   }
-  return data || []
 }
 
-// Get event by slug
 export async function getEventBySlug(slug: string): Promise<Event | null> {
-  const { data, error } = await supabaseServer
-    .from('events')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
-
-  if (error) {
-    console.error('Error fetching event:', error)
+  try {
+    return await queryOne<Event>(
+      `SELECT * FROM events WHERE slug = $1 AND is_active = true LIMIT 1`,
+      [slug]
+    )
+  } catch (err) {
+    console.error('Error fetching event:', err)
     return null
   }
-  return data
 }
 
-// Get gallery items
-export async function getGallery(options?: { category?: string; limit?: number }): Promise<GalleryItem[]> {
-  let query = supabaseServer
-    .from('gallery')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (options?.category) {
-    query = query.eq('category', options.category)
-  }
-  if (options?.limit) {
-    query = query.limit(options.limit)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching gallery:', error)
+export async function getGallery(
+  options?: { category?: string; limit?: number }
+): Promise<GalleryItem[]> {
+  try {
+    let sql = `SELECT * FROM gallery WHERE is_active = true`
+    const params: unknown[] = []
+    if (options?.category) {
+      params.push(options.category)
+      sql += ` AND category = $${params.length}`
+    }
+    sql += ` ORDER BY sort_order ASC`
+    if (options?.limit) {
+      params.push(options.limit)
+      sql += ` LIMIT $${params.length}`
+    }
+    const res = await query<GalleryItem>(sql, params)
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching gallery:', err)
     return []
   }
-  return data || []
 }
 
-// Get recruiters
-export async function getRecruiters(options?: { featured?: boolean }): Promise<Recruiter[]> {
-  let query = supabaseServer
-    .from('recruiters')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (options?.featured !== undefined) {
-    query = query.eq('is_featured', options.featured)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching recruiters:', error)
+export async function getRecruiters(
+  options?: { featured?: boolean }
+): Promise<Recruiter[]> {
+  try {
+    let sql = `SELECT * FROM recruiters WHERE is_active = true`
+    const params: unknown[] = []
+    if (options?.featured !== undefined) {
+      params.push(options.featured)
+      sql += ` AND is_featured = $${params.length}`
+    }
+    sql += ` ORDER BY sort_order ASC`
+    const res = await query<Recruiter>(sql, params)
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching recruiters:', err)
     return []
   }
-  return data || []
 }
 
-// Get testimonials
-export async function getTestimonials(options?: { featured?: boolean }): Promise<Testimonial[]> {
-  let query = supabaseServer
-    .from('testimonials')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (options?.featured !== undefined) {
-    query = query.eq('is_featured', options.featured)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error('Error fetching testimonials:', error)
+export async function getTestimonials(
+  options?: { featured?: boolean }
+): Promise<Testimonial[]> {
+  try {
+    let sql = `SELECT * FROM testimonials WHERE is_active = true`
+    const params: unknown[] = []
+    if (options?.featured !== undefined) {
+      params.push(options.featured)
+      sql += ` AND is_featured = $${params.length}`
+    }
+    sql += ` ORDER BY sort_order ASC`
+    const res = await query<Testimonial>(sql, params)
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching testimonials:', err)
     return []
   }
-  return data || []
 }
 
-// Get achievements
 export async function getAchievements(): Promise<Achievement[]> {
-  const { data, error } = await supabaseServer
-    .from('achievements')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching achievements:', error)
+  try {
+    const res = await query<Achievement>(
+      `SELECT * FROM achievements WHERE is_active = true ORDER BY sort_order ASC`
+    )
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching achievements:', err)
     return []
   }
-  return data || []
 }
 
-// Get milestones
 export async function getMilestones(): Promise<Milestone[]> {
-  const { data, error } = await supabaseServer
-    .from('milestones')
-    .select('*')
-    .eq('is_active', true)
-    .order('year', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching milestones:', error)
+  try {
+    const res = await query<Milestone>(
+      `SELECT * FROM milestones WHERE is_active = true ORDER BY year ASC`
+    )
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching milestones:', err)
     return []
   }
-  return data || []
 }
 
-// Get accreditations
 export async function getAccreditations(): Promise<Accreditation[]> {
-  const { data, error } = await supabaseServer
-    .from('accreditations')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching accreditations:', error)
+  try {
+    const res = await query<Accreditation>(
+      `SELECT * FROM accreditations WHERE is_active = true ORDER BY sort_order ASC`
+    )
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching accreditations:', err)
     return []
   }
-  return data || []
 }
 
-// Get leadership
 export async function getLeadership(): Promise<Leadership[]> {
-  const { data, error } = await supabaseServer
-    .from('leadership')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching leadership:', error)
+  try {
+    const res = await query<Leadership>(
+      `SELECT * FROM leadership WHERE is_active = true ORDER BY sort_order ASC`
+    )
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching leadership:', err)
     return []
   }
-  return data || []
 }
 
-// Get student by register number and DOB (for results lookup)
 export async function getStudentByCredentials(
   registerNumber: string,
   dateOfBirth: string
-): Promise<Student | null> {
-  const { data, error } = await supabaseServer
-    .from('students')
-    .select('*')
-    .eq('register_number', registerNumber)
-    .eq('date_of_birth', dateOfBirth)
-    .eq('is_active', true)
-    .single()
-
-  if (error) {
+): Promise<(Student & { course_name?: string; department_name?: string }) | null> {
+  try {
+    return await queryOne(
+      `SELECT s.*, c.name AS course_name, d.name AS department_name
+       FROM students s
+       LEFT JOIN courses c ON c.id = s.course_id
+       LEFT JOIN departments d ON d.id = s.department_id
+       WHERE s.register_number = $1
+         AND s.date_of_birth = $2::date
+         AND s.is_active = true
+       LIMIT 1`,
+      [registerNumber, dateOfBirth]
+    )
+  } catch {
     return null
   }
-  return data
 }
 
-// Get results for a student
 export async function getStudentResults(studentId: string): Promise<Result[]> {
-  const { data, error } = await supabaseServer
-    .from('results')
-    .select('*')
-    .eq('student_id', studentId)
-    .eq('is_active', true)
-    .order('semester', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching results:', error)
+  try {
+    const res = await query<Result>(
+      `SELECT * FROM results
+       WHERE student_id = $1 AND is_active = true
+       ORDER BY semester ASC`,
+      [studentId]
+    )
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching results:', err)
     return []
   }
-  return data || []
 }
 
-// Get result summaries for a student
-export async function getStudentResultSummaries(studentId: string): Promise<ResultSummary[]> {
-  const { data, error } = await supabaseServer
-    .from('result_summaries')
-    .select('*')
-    .eq('student_id', studentId)
-    .eq('is_active', true)
-    .order('semester', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching result summaries:', error)
+export async function getStudentResultSummaries(
+  studentId: string
+): Promise<ResultSummary[]> {
+  try {
+    const res = await query<ResultSummary>(
+      `SELECT * FROM result_summaries
+       WHERE student_id = $1 AND is_active = true
+       ORDER BY semester ASC`,
+      [studentId]
+    )
+    return res.rows
+  } catch (err) {
+    console.error('Error fetching result summaries:', err)
     return []
   }
-  return data || []
 }
