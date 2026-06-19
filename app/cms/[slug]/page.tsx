@@ -1,0 +1,47 @@
+import { notFound } from 'next/navigation'
+import { getTableConfig, type TableConfig } from '@/lib/cms/tables'
+import { fetchRows } from '@/lib/cms/fetch'
+import { CmsListView } from '@/components/cms/list-view'
+import { CmsForm } from '@/components/cms/form'
+import { resolveReferenceOptions, fetchSingleton } from '@/lib/cms/fetch'
+
+export const dynamic = 'force-dynamic'
+
+interface PageProps {
+  params: { slug: string }
+}
+
+export async function generateMetadata({ params }: PageProps) {
+  const config = getTableConfig(params.slug)
+  if (!config) return { title: 'Not Found' }
+  return { title: config.label }
+}
+
+export default async function CmsSlugPage({ params }: PageProps) {
+  const config = getTableConfig(params.slug)
+  if (!config) notFound()
+
+  if (config.singleton) {
+    return <SingletonPage config={config} />
+  }
+
+  return <ListPage config={config} />
+}
+
+async function ListPage({ config }: { config: TableConfig }) {
+  const rows = await fetchRows(config)
+  return <CmsListView config={config} rows={rows as any[]} />
+}
+
+async function SingletonPage({ config }: { config: TableConfig }) {
+  const existing = await fetchSingleton(config)
+  const references = await resolveReferenceOptions(config)
+  return (
+    <CmsForm
+      config={config}
+      references={references}
+      initial={existing || {}}
+      singletonId={existing?.id ?? 1}
+    />
+  )
+}

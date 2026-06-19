@@ -1,0 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700;900&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Academic theme - light mode */
+    --background: 0 0% 100%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Deep Academic Blue */
+    --primary: 215 70% 19%;
+    --primary-foreground: 45 80% 58%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 215 70% 19%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* Gold accent */
+    --accent: 43 50% 58%;
+    --accent-foreground: 215 70% 19%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 215 70% 19%;
+
+    --radius: 0.5rem;
+
+    --chart-1: 215 70% 50%;
+    --chart-2: 43 50% 58%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 215 35% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 215 35% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 215 35% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 215 70% 50%;
+    --primary-foreground: 215 35% 8%;
+
+    --secondary: 215 35% 15%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 215 35% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 43 50% 58%;
+    --accent-foreground: 215 35% 8%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 35% 18%;
+    --input: 215 35% 18%;
+    --ring: 215 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+    line-height: 1.2;
+  }
+
+  /* Better text rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .container-wide {
+    @apply max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  /* Academic button styles */
+  .btn-primary {
+    @apply bg-academic-900 text-white hover:bg-academic-800 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-gold-500 text-academic-900 hover:bg-gold-600 transition-colors;
+  }
+
+  .btn-outline {
+    @apply border-2 border-academic-900 text-academic-900 hover:bg-academic-900 hover:text-white transition-colors;
+  }
+
+  /* Gold underline for headings */
+  .gold-underline {
+    @apply relative inline-block;
+  }
+
+  .gold-underline::after {
+    content: '';
+    @apply absolute -bottom-2 left-0 w-20 h-1 bg-gold-500;
+  }
+
+  .gold-underline-center::after {
+    @apply left-1/2 -translate-x-1/2;
+  }
+
+  /* Academic style link */
+  .link-academic {
+    @apply relative text-academic-900 hover:text-gold-600 transition-colors;
+  }
+
+  .link-academic::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-0.5 bg-gold-500 transition-all;
+  }
+
+  .link-academic:hover::after {
+    @apply w-full;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
+
+  /* Focus ring for accessibility */
+  .focus-ring {
+    @apply outline-none ring-2 ring-academic-500 ring-offset-2;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
