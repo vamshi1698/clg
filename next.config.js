@@ -4,7 +4,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
-    serverActions: false,
+    serverActions: true,
   },
   images: { unoptimized: true },
 };
