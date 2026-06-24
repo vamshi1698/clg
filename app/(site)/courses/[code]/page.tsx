@@ -10,8 +10,8 @@ export async function generateStaticParams() {
   }))
 }
 
-export async function generateMetadata({ params }: { params: { code: string } }): Promise<Metadata> {
-  const course = await getCourseByCode(params.code.toUpperCase())
+export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+  const course = await getCourseByCode((await params).code.toUpperCase())
   if (!course) {
     return { title: 'Program Not Found' }
   }
@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: { params: { code: string } })
   }
 }
 
-export default async function CoursePage({ params }: { params: { code: string } }) {
-  const course = await getCourseByCode(params.code.toUpperCase())
+export default async function CoursePage({ params }: { params: Promise<{ code: string }> }) {
+  const course = await getCourseByCode((await params).code.toUpperCase())
 
   if (!course) {
     notFound()

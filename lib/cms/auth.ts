@@ -54,7 +54,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
 export async function createSession(user: CmsSession) {
   const payload = JSON.stringify(user)
   const token = signToken(Buffer.from(payload).toString('base64'))
-  const store = cookies()
+  const store = await cookies()
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -64,13 +64,13 @@ export async function createSession(user: CmsSession) {
   })
 }
 
-export function destroySession() {
-  const store = cookies()
+export async function destroySession() {
+  const store = await cookies()
   store.delete(SESSION_COOKIE)
 }
 
-export function getSession(): CmsSession | null {
-  const store = cookies()
+export async function getSession(): Promise<CmsSession | null> {
+  const store = await cookies()
   const token = store.get(SESSION_COOKIE)?.value
   if (!token) return null
   const payload = verifyToken(token)

@@ -8,7 +8,7 @@ export const metadata = {
 }
 
 export default async function CmsLayout({ children }: { children: React.ReactNode }) {
-  const session = getSession()
+  const session = await getSession()
   if (!session) redirect('/cms/login')
   return <CmsShell session={session}>{children}</CmsShell>
 }

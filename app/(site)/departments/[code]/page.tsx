@@ -10,8 +10,8 @@ export async function generateStaticParams() {
   }))
 }
 
-export async function generateMetadata({ params }: { params: { code: string } }): Promise<Metadata> {
-  const department = await getDepartmentByCode(params.code.toUpperCase())
+export async function generateMetadata({ params }: { params: Promise<{ code: string }> }): Promise<Metadata> {
+  const department = await getDepartmentByCode((await params).code.toUpperCase())
   if (!department) {
     return { title: 'Department Not Found' }
   }
@@ -21,9 +21,9 @@ export async function generateMetadata({ params }: { params: { code: string } })
   }
 }
 
-export default async function DepartmentPage({ params }: { params: { code: string } }) {
+export default async function DepartmentPage({ params }: { params: Promise<{ code: string }> }) {
   const [department, faculty, courses] = await Promise.all([
-    getDepartmentByCode(params.code.toUpperCase()),
+    getDepartmentByCode((await params).code.toUpperCase()),
     getFaculty({ departmentId: undefined }),
     getCourses(),
   ])

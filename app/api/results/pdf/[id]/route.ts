@@ -5,9 +5,12 @@ import { postgresClient } from '@/lib/postgres/client'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id } = params
+    const { id } = await params
     if (!id) {
       return new Response('Missing PDF ID', { status: 400 })
     }

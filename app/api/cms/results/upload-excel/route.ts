@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import XLSX from 'xlsx'
+import * as XLSX from 'xlsx'
 import crypto from 'crypto'
 import { postgresClient } from '@/lib/postgres/client'
 
@@ -250,7 +250,7 @@ export async function POST(req: Request) {
         for (const subject of sData.subjects) {
           const totalMarks = (subject.internal || 0) + (subject.external || 0)
           const maxMarks = subject.max || 100
-          
+
           // Determine status
           let status = subject.status
           if (!status) {
@@ -299,7 +299,7 @@ export async function POST(req: Request) {
         // Calculate SGPA and CGPA
         const calculatedSgpa = totalCredits > 0 ? Number((gradePointsSum / totalCredits).toFixed(2)) : 0
         const sgpa = sData.sgpa !== undefined ? sData.sgpa : calculatedSgpa
-        
+
         // Let's compute CGPA. We fetch all previous summaries to average them.
         const { data: previousSummaries } = await postgresClient
           .from('result_summaries')
@@ -309,12 +309,12 @@ export async function POST(req: Request) {
         const prevSgpaList: number[] = (previousSummaries || [])
           .map((s: any) => s.sgpa)
           .filter((val: any) => val !== null && val !== undefined)
-        
+
         prevSgpaList.push(sgpa)
         const computedCgpa = prevSgpaList.length > 0
           ? Number((prevSgpaList.reduce((acc, curr) => acc + curr, 0) / prevSgpaList.length).toFixed(2))
           : sgpa
-        
+
         const cgpa = sData.cgpa !== undefined ? sData.cgpa : computedCgpa
 
         // Insert result summary
@@ -359,7 +359,7 @@ export async function POST(req: Request) {
             }))
           }
         }
-        
+
         const { createExcelResultNewsAnnouncement } = await import('@/lib/actions/results-actions')
         for (const examStr of Array.from(uniqueExams)) {
           const exam = JSON.parse(examStr)

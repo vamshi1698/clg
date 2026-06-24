@@ -1,20 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
-export function CmsLoginPage() {
+export function CmsLoginPage({ from }: { from: string }) {
   const router = useRouter()
-  const params = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const from = params.get('from') || '/cms'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
