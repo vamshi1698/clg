@@ -1,8 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Clock } from 'lucide-react'
+import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Clock, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Statistics, News, Event, Course, Testimonial, Recruiter, Achievement, GalleryItem } from '@/types/database'
@@ -766,3 +767,254 @@ export function CTASection() {
     </section>
   )
 }
+
+// Unified News and Events Section
+interface NewsAndEventsSectionProps {
+  news: News[]
+  events: Event[]
+  statistics: Statistics | null
+}
+
+export function NewsAndEventsSection({ news, events, statistics }: NewsAndEventsSectionProps) {
+  const [activeTab, setActiveTab] = useState<'all' | 'results' | 'circulars' | 'general'>('all')
+
+  const displayEvents = events.slice(0, 3)
+
+  const defaultEventImages = [
+    'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&auto=format&fit=crop&q=80', // Ongoing/Academic (Adjust tie suit)
+    'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&auto=format&fit=crop&q=80', // Upcoming/Technical (Classroom laptop work)
+    'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&auto=format&fit=crop&q=80', // Upcoming/Cultural (Concert lights)
+  ]
+
+  const getNoticeInfo = (item: News) => {
+    const category = item.category
+    if (category === 'examination') {
+      return {
+        badge: 'EXAM RESULT',
+        badgeClass: 'bg-rose-50 text-rose-600 border border-rose-100',
+        tab: 'results'
+      }
+    }
+    if (category === 'academic' || category === 'admission') {
+      return {
+        badge: 'OFFICIAL CIRCULAR',
+        badgeClass: 'bg-blue-50 text-blue-600 border border-blue-100',
+        tab: 'circulars'
+      }
+    }
+    return {
+      badge: 'GENERAL',
+      badgeClass: 'bg-slate-50 text-slate-600 border border-slate-100',
+      tab: 'general'
+    }
+  }
+
+  const filteredNotices = news.filter(item => {
+    if (activeTab === 'all') return true
+    const { tab } = getNoticeInfo(item)
+    return tab === activeTab
+  }).slice(0, 3)
+
+  return (
+    <section className="py-16 md:py-20 bg-slate-50/50 border-y border-slate-100">
+      <div className="container-wide">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+          
+          {/* Left Column: Events Timeline */}
+          <div className="lg:col-span-7">
+            <span className="text-[10px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase">
+              CAMPUS HIGHLIGHTS
+            </span>
+            <h2 className="font-display text-2xl sm:text-3.5xl font-extrabold text-academic-900 mt-1">
+              Upcoming & Ongoing Events
+            </h2>
+            <div className="w-10 h-[3px] bg-blue-600 mt-2.5 rounded-full" />
+
+            <div className="relative pl-8 sm:pl-10 mt-8 space-y-6">
+              {/* Vertical line timeline */}
+              <div className="absolute left-[7px] sm:left-[9px] top-2 bottom-2 w-[1px] bg-slate-200" />
+              
+              {displayEvents.map((event, index) => {
+                const isOngoing = index === 0
+                const imageSrc = event.image_url || defaultEventImages[index % defaultEventImages.length]
+                
+                return (
+                  <div key={event.id} className="relative">
+                    {/* Timeline Dot */}
+                    <div className="absolute -left-[29px] sm:-left-[31px] top-7 z-10 flex items-center justify-center">
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 bg-white shadow-sm flex items-center justify-center ${
+                        isOngoing ? 'border-orange-500' : 'border-blue-500'
+                      }`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${
+                          isOngoing ? 'bg-orange-500' : 'bg-blue-500'
+                        }`} />
+                      </div>
+                    </div>
+
+                    {/* Event Card */}
+                    <div className="flex flex-col sm:flex-row bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      {/* Image block */}
+                      <div className="relative w-full sm:w-44 h-40 sm:h-auto flex-shrink-0 bg-slate-100">
+                        <img
+                          src={imageSrc}
+                          alt={event.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <span className={`absolute top-3 left-3 px-2 py-0.5 text-[9px] font-bold text-white rounded-md tracking-wider uppercase shadow-sm ${
+                          isOngoing ? 'bg-orange-500' : 'bg-blue-500'
+                        }`}>
+                          {isOngoing ? 'ONGOING' : 'UPCOMING'}
+                        </span>
+                      </div>
+
+                      {/* Content block */}
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-slate-500 text-[11px] mb-2 font-medium">
+                            <Clock className="w-3.5 h-3.5 text-blue-500" />
+                            <span>
+                              {new Date(event.event_date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                              })}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="font-bold text-blue-600 uppercase text-[10px] tracking-wider">
+                              {(event.category || 'academic').toUpperCase()}
+                            </span>
+                          </div>
+                          <h3 className="font-bold text-base sm:text-lg text-slate-900 leading-snug mb-2 hover:text-blue-600 transition-colors">
+                            <Link href={`/events/${event.slug}`}>{event.title}</Link>
+                          </h3>
+                          <p className="text-slate-500 text-xs sm:text-sm line-clamp-2 leading-relaxed">
+                            {event.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+              {displayEvents.length === 0 && (
+                <p className="text-slate-500 text-sm">No upcoming events scheduled.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Notice Board & Stats */}
+          <div className="lg:col-span-5 flex flex-col justify-between h-full">
+            <div>
+              <span className="text-[10px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase">
+                NOTICE BOARD
+              </span>
+              <h2 className="font-display text-2xl sm:text-3.5xl font-extrabold text-academic-900 mt-1">
+                Announcements & Results
+              </h2>
+              <div className="w-10 h-[3px] bg-blue-600 mt-2.5 rounded-full" />
+
+              {/* Filter Tabs */}
+              <div className="flex flex-wrap gap-2 mt-8">
+                {(['all', 'results', 'circulars', 'general'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
+                      activeTab === tab
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                        : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'
+                    }`}
+                  >
+                    {tab === 'all' && 'All Notices'}
+                    {tab === 'results' && 'Results'}
+                    {tab === 'circulars' && 'Circulars'}
+                    {tab === 'general' && 'General'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Notices List */}
+              <div className="mt-6 space-y-4">
+                {filteredNotices.map((item) => {
+                  const { badge, badgeClass } = getNoticeInfo(item)
+                  return (
+                    <div key={item.id} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                      <div className="flex-1 pr-4">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded-md tracking-wider uppercase ${badgeClass}`}>
+                            {badge}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-semibold">
+                            {item.published_at ? new Date(item.published_at).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            }) : 'Recent'}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug hover:text-blue-600 transition-colors line-clamp-2">
+                          <Link href={`/news/${item.slug}`}>{item.title}</Link>
+                        </h4>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <Link 
+                          href={`/news/${item.slug}`}
+                          className="flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-xl transition-all shadow-sm"
+                          title="Download document"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+                {filteredNotices.length === 0 && (
+                  <div className="text-center py-8 text-slate-400 text-xs border border-dashed border-slate-200 rounded-2xl bg-white/50">
+                    No notices found in this category.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Live Statistics Card */}
+            <div className="mt-8 p-6 bg-gradient-to-r from-[#03152c] to-[#0A2540] rounded-3xl shadow-lg text-white relative overflow-hidden">
+              <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4">
+                <svg width="180" height="180" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="40" stroke="white" strokeWidth="2" strokeDasharray="4 4" />
+                  <path d="M50 10 L50 90 M10 50 L90 50" stroke="white" strokeWidth="1" />
+                  <polygon points="50,30 55,45 70,50 55,55 50,70 45,55 30,50 45,45" fill="white" />
+                </svg>
+              </div>
+
+              <div className="relative z-10">
+                <span className="text-[10px] sm:text-xs font-bold text-blue-400 tracking-wider uppercase mb-3 block">
+                  LIVE STATISTICS
+                </span>
+                <div className="flex items-center gap-12 mt-2">
+                  <div>
+                    <div className="text-3xl sm:text-4xl font-extrabold font-sans text-white mb-0.5 tracking-tight">
+                      A++
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                      NAAC RATING
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-3xl sm:text-4xl font-extrabold font-sans text-white mb-0.5 tracking-tight">
+                      15+
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase">
+                      STUDENT CLUBS
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  )
+}
+

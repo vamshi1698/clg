@@ -27,6 +27,7 @@ import {
   X,
   LogOut,
   ExternalLink,
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TABLE_CONFIGS } from '@/lib/cms/tables'
@@ -51,6 +52,7 @@ const iconMap: Record<string, any> = {
   FileText,
   TrendingUp,
   Mail,
+  Upload,
 }
 
 const NAV_SECTIONS = [
@@ -77,9 +79,12 @@ const NAV_SECTIONS = [
   },
   {
     title: 'Examinations',
-    items: TABLE_CONFIGS.filter((t) =>
-      ['students', 'results', 'result-summaries'].includes(t.slug)
-    ).map((t) => ({ slug: t.slug, label: t.label, icon: t.icon })),
+    items: [
+      ...TABLE_CONFIGS.filter((t) =>
+        ['students', 'results', 'result-summaries'].includes(t.slug)
+      ).map((t) => ({ slug: t.slug, label: t.label, icon: t.icon })),
+      { slug: 'results-upload', label: 'Upload Results', icon: 'Upload' },
+    ],
   },
 ]
 

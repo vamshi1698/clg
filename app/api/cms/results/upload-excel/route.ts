@@ -1,0 +1,359 @@
+import { NextResponse } from 'next/server'
+import XLSX from 'xlsx'
+import crypto from 'crypto'
+import { postgresClient } from '@/lib/postgres/client'
+
+export const dynamic = 'force-dynamic'
+
+function getGradePoints(grade: string | null): number {
+  if (!grade) return 0
+  switch (grade.toUpperCase().trim()) {
+    case 'O': return 10
+    case 'A+': return 9
+    case 'A': return 8
+    case 'B+': return 7
+    case 'B': return 6
+    case 'C': return 5
+    case 'P': return 4
+    default: return 0
+  }
+}
+
+function parseExcelDate(val: any): string {
+  if (val instanceof Date) {
+    return val.toISOString().split('T')[0]
+  }
+  if (typeof val === 'number') {
+    // Excel date serial number conversion
+    const date = new Date(Math.round((val - 25569) * 86400 * 1000))
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0]
+    }
+  }
+  if (typeof val === 'string') {
+    const cleaned = val.trim()
+    const match = cleaned.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
+    if (match) {
+      return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
+    }
+    const d = new Date(cleaned)
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0]
+    }
+  }
+  return ''
+}
+
+function findHeader(headers: string[], options: string[]): string | undefined {
+  return headers.find((h) => {
+    const cleaned = h.toLowerCase().replace(/[^a-z0-9]/g, '')
+    return options.some((opt) => {
+      const optCleaned = opt.toLowerCase().replace(/[^a-z0-9]/g, '')
+      return cleaned === optCleaned
+    })
+  })
+}
+
+export async function POST(req: Request) {
+  try {
+    const formData = await req.formData()
+    const file = formData.get('file') as File | null
+
+    if (!file) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
+    }
+
+    const arrayBuffer = await file.arrayBuffer()
+    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true })
+    const sheetName = workbook.SheetNames[0]
+    const worksheet = workbook.Sheets[sheetName]
+    const rows = XLSX.utils.sheet_to_json(worksheet)
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Excel sheet is empty' }, { status: 400 })
+    }
+
+    // Get list of headers from the first row keys
+    const headers = Object.keys(rows[0] as object)
+
+    // Match column headers
+    const regNoField = findHeader(headers, ['register_number', 'reg_no', 'register number', 'reg no', 'registration number'])
+    const nameField = findHeader(headers, ['name', 'student_name', 'student name'])
+    const dobField = findHeader(headers, ['date_of_birth', 'dob', 'date of birth'])
+    const courseCodeField = findHeader(headers, ['course_code', 'course', 'course code'])
+    const deptCodeField = findHeader(headers, ['department_code', 'department', 'department code', 'dept_code'])
+    const academicYearField = findHeader(headers, ['academic_year', 'academic year', 'year'])
+    const semesterField = findHeader(headers, ['semester', 'sem', 'semester number'])
+    const examTypeField = findHeader(headers, ['examination_type', 'exam_type', 'exam type'])
+    const subCodeField = findHeader(headers, ['subject_code', 'subject code', 'sub_code', 'course_code_subject'])
+    const subNameField = findHeader(headers, ['subject_name', 'subject name', 'sub_name', 'subject'])
+    const internalField = findHeader(headers, ['internal_marks', 'internal', 'internals', 'internal marks'])
+    const externalField = findHeader(headers, ['external_marks', 'external', 'externals', 'external marks'])
+    const maxField = findHeader(headers, ['max_marks', 'max', 'max marks', 'maximum marks'])
+    const gradeField = findHeader(headers, ['grade'])
+    const creditsField = findHeader(headers, ['credits', 'credit'])
+    const statusField = findHeader(headers, ['result_status', 'status', 'result status'])
+    const sgpaField = findHeader(headers, ['sgpa'])
+    const cgpaField = findHeader(headers, ['cgpa'])
+
+    // Validate presence of critical columns
+    if (!regNoField) {
+      return NextResponse.json({ error: 'Could not find "Register Number" column in Excel.' }, { status: 400 })
+    }
+    if (!subCodeField || !subNameField) {
+      return NextResponse.json({ error: 'Could not find "Subject Code" or "Subject Name" column in Excel.' }, { status: 400 })
+    }
+    if (!semesterField || !academicYearField) {
+      return NextResponse.json({ error: 'Could not find "Semester" or "Academic Year" column in Excel.' }, { status: 400 })
+    }
+
+    // Load departments & courses to resolve codes to IDs
+    const { data: depts } = await postgresClient.from('departments').select('id, code')
+    const { data: courses } = await postgresClient.from('courses').select('id, code')
+
+    const deptCodeMap = new Map((depts || []).map((d: any) => [d.code.toLowerCase(), d.id]))
+    const courseCodeMap = new Map((courses || []).map((c: any) => [c.code.toLowerCase(), c.id]))
+
+    // Group rows by student (Register Number)
+    const studentGroups = new Map<string, any>()
+
+    for (const r of rows) {
+      const row = r as any
+      const regNo = String(row[regNoField] || '').trim()
+      if (!regNo) continue
+
+      const name = nameField ? String(row[nameField] || '').trim() : ''
+      const dob = dobField ? parseExcelDate(row[dobField]) : ''
+      const courseCode = courseCodeField ? String(row[courseCodeField] || '').trim() : ''
+      const deptCode = deptCodeField ? String(row[deptCodeField] || '').trim() : ''
+      const academicYear = academicYearField ? String(row[academicYearField] || '').trim() : ''
+      const semVal = semesterField ? parseInt(row[semesterField], 10) : NaN
+      const examType = examTypeField ? String(row[examTypeField] || 'Semester End Examination').trim() : 'Semester End Examination'
+
+      const subCode = String(row[subCodeField] || '').trim()
+      const subName = String(row[subNameField] || '').trim()
+      if (!subCode || !subName || isNaN(semVal)) continue
+
+      const internal = internalField && row[internalField] !== undefined && row[internalField] !== '' ? Number(row[internalField]) : null
+      const external = externalField && row[externalField] !== undefined && row[externalField] !== '' ? Number(row[externalField]) : null
+      const max = maxField && row[maxField] !== undefined && row[maxField] !== '' ? Number(row[maxField]) : 100
+      const grade = gradeField && row[gradeField] !== undefined ? String(row[gradeField]).trim() : null
+      const credits = creditsField && row[creditsField] !== undefined && row[creditsField] !== '' ? Number(row[creditsField]) : null
+      const status = statusField && row[statusField] !== undefined ? String(row[statusField]).trim().toUpperCase() : null
+      const sgpa = sgpaField && row[sgpaField] !== undefined && row[sgpaField] !== '' ? Number(row[sgpaField]) : undefined
+      const cgpa = cgpaField && row[cgpaField] !== undefined && row[cgpaField] !== '' ? Number(row[cgpaField]) : undefined
+
+      if (!studentGroups.has(regNo)) {
+        studentGroups.set(regNo, {
+          regNo,
+          name,
+          dob,
+          courseCode,
+          deptCode,
+          academicYear,
+          semester: semVal,
+          examType,
+          sgpa,
+          cgpa,
+          subjects: []
+        })
+      }
+
+      const group = studentGroups.get(regNo)
+      // Capture details from rows that have name/dob if earlier ones didn't
+      if (name && !group.name) group.name = name
+      if (dob && !group.dob) group.dob = dob
+      if (courseCode && !group.courseCode) group.courseCode = courseCode
+      if (deptCode && !group.deptCode) group.deptCode = deptCode
+
+      group.subjects.push({
+        subCode,
+        subName,
+        internal,
+        external,
+        max,
+        grade,
+        credits,
+        status
+      })
+    }
+
+    let studentsImported = 0
+    let marksImported = 0
+    const errors: string[] = []
+
+    const studentEntries = Array.from(studentGroups.entries())
+    for (let i = 0; i < studentEntries.length; i++) {
+      const [regNo, sData] = studentEntries[i]
+      try {
+        // Find existing student
+        const { data: existingStudent } = await postgresClient
+          .from('students')
+          .select('*')
+          .eq('register_number', regNo)
+          .single()
+
+        const courseId = sData.courseCode ? courseCodeMap.get(sData.courseCode.toLowerCase()) : null
+        const deptId = sData.deptCode ? deptCodeMap.get(sData.deptCode.toLowerCase()) : null
+
+        let studentId = ''
+
+        if (existingStudent) {
+          studentId = (existingStudent as any).id
+          // Update student info if details are provided in excel
+          const updates: Record<string, any> = {
+            updated_at: new Date().toISOString()
+          }
+          if (sData.name) updates.name = sData.name
+          if (sData.dob) updates.date_of_birth = sData.dob
+          if (courseId) updates.course_id = courseId
+          if (deptId) updates.department_id = deptId
+          if (sData.academicYear) updates.academic_year = sData.academicYear
+          if (sData.semester) updates.semester = sData.semester
+
+          await postgresClient.update('students', studentId, updates)
+        } else {
+          studentId = crypto.randomUUID()
+          const birthDate = sData.dob || '2000-01-01'
+          const stdName = sData.name || `Student ${regNo}`
+
+          const { error: insErr } = await postgresClient.insert('students', {
+            id: studentId,
+            register_number: regNo,
+            name: stdName,
+            date_of_birth: birthDate,
+            course_id: courseId || null,
+            department_id: deptId || null,
+            academic_year: sData.academicYear || null,
+            semester: sData.semester || null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+
+          if (insErr) {
+            errors.push(`Reg No ${regNo}: Failed to create student: ${insErr.message}`)
+            continue
+          }
+        }
+
+        // Clean existing results & summaries for student + semester
+        await postgresClient.query('DELETE FROM results WHERE student_id = $1 AND semester = $2', [studentId, sData.semester])
+        await postgresClient.query('DELETE FROM result_summaries WHERE student_id = $1 AND semester = $2', [studentId, sData.semester])
+
+        let totalCredits = 0
+        let earnedCredits = 0
+        let gradePointsSum = 0
+        let hasFail = false
+
+        // Insert results
+        for (const subject of sData.subjects) {
+          const totalMarks = (subject.internal || 0) + (subject.external || 0)
+          const maxMarks = subject.max || 100
+          
+          // Determine status
+          let status = subject.status
+          if (!status) {
+            status = totalMarks >= maxMarks * 0.4 ? 'PASS' : 'FAIL'
+          }
+
+          const c = subject.credits || 0
+          totalCredits += c
+          if (status === 'PASS') {
+            earnedCredits += c
+          } else {
+            hasFail = true
+          }
+
+          const points = getGradePoints(subject.grade)
+          gradePointsSum += points * c
+
+          const resultId = crypto.randomUUID()
+          const { error: resErr } = await postgresClient.insert('results', {
+            id: resultId,
+            student_id: studentId,
+            semester: sData.semester,
+            academic_year: sData.academicYear,
+            examination_type: sData.examType,
+            subject_code: subject.subCode,
+            subject_name: subject.subName,
+            internal_marks: subject.internal,
+            external_marks: subject.external,
+            total_marks: totalMarks,
+            max_marks: maxMarks,
+            grade: subject.grade,
+            credits: subject.credits,
+            result_status: status,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+
+          if (resErr) {
+            errors.push(`Reg No ${regNo}, Subject ${subject.subCode}: Failed to insert mark: ${resErr.message}`)
+          } else {
+            marksImported++
+          }
+        }
+
+        // Calculate SGPA and CGPA
+        const calculatedSgpa = totalCredits > 0 ? Number((gradePointsSum / totalCredits).toFixed(2)) : 0
+        const sgpa = sData.sgpa !== undefined ? sData.sgpa : calculatedSgpa
+        
+        // Let's compute CGPA. We fetch all previous summaries to average them.
+        const { data: previousSummaries } = await postgresClient
+          .from('result_summaries')
+          .select('sgpa')
+          .eq('student_id', studentId)
+
+        const prevSgpaList: number[] = (previousSummaries || [])
+          .map((s: any) => s.sgpa)
+          .filter((val: any) => val !== null && val !== undefined)
+        
+        prevSgpaList.push(sgpa)
+        const computedCgpa = prevSgpaList.length > 0
+          ? Number((prevSgpaList.reduce((acc, curr) => acc + curr, 0) / prevSgpaList.length).toFixed(2))
+          : sgpa
+        
+        const cgpa = sData.cgpa !== undefined ? sData.cgpa : computedCgpa
+
+        // Insert result summary
+        const summaryId = crypto.randomUUID()
+        const { error: sumErr } = await postgresClient.insert('result_summaries', {
+          id: summaryId,
+          student_id: studentId,
+          semester: sData.semester,
+          academic_year: sData.academicYear,
+          examination_type: sData.examType,
+          sgpa,
+          cgpa,
+          total_credits: totalCredits,
+          earned_credits: earnedCredits,
+          result_status: hasFail ? 'FAIL' : 'PASS',
+          published_at: new Date().toISOString(),
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+        if (sumErr) {
+          errors.push(`Reg No ${regNo}: Failed to write result summary: ${sumErr.message}`)
+        }
+
+        studentsImported++
+      } catch (studentErr: any) {
+        errors.push(`Reg No ${regNo}: Unexpected error: ${studentErr.message}`)
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      studentsImported,
+      marksImported,
+      errors: errors.length > 0 ? errors : null
+    })
+  } catch (error: any) {
+    console.error('Excel Import Error:', error)
+    return NextResponse.json({ error: error.message || 'An error occurred during Excel import.' }, { status: 500 })
+  }
+}

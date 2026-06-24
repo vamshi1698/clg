@@ -1,171 +1,265 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Clock, Users, IndianRupee } from 'lucide-react'
+import { Clock, Users, IndianRupee, BookOpen, Search, Info, Award, GraduationCap } from 'lucide-react'
 import type { Course, Department } from '@/types/database'
-
-const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
-}
-
-const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.05 } }
-}
 
 interface CoursesPageProps {
   courses: Course[]
   departments: Department[]
 }
 
+const fadeIn = {
+  initial: { opacity: 0, y: 15 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.4 }
+}
+
+const staggerContainer = {
+  animate: { transition: { staggerChildren: 0.05 } }
+}
+
 export function CoursesPage({ courses, departments }: CoursesPageProps) {
   const [selectedLevel, setSelectedLevel] = useState<string>('all')
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
+  // Map courses to include full department object to resolve filtering issues
+  const coursesWithDept = useMemo(() => {
+    return courses.map(course => {
+      const dept = departments.find(d => d.id === course.department_id)
+      return {
+        ...course,
+        department: dept
+      }
+    })
+  }, [courses, departments])
+
+  // Filter courses based on selections
   const filteredCourses = useMemo(() => {
-    return courses.filter(course => {
+    return coursesWithDept.filter(course => {
+      // 1. Level Filter
       if (selectedLevel !== 'all' && course.level !== selectedLevel) return false
+      
+      // 2. Department Filter (Code match)
       if (selectedDepartment !== 'all' && course.department?.code !== selectedDepartment) return false
+      
+      // 3. Search query
+      if (searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase()
+        const matchName = course.name.toLowerCase().includes(query)
+        const matchCode = course.code.toLowerCase().includes(query)
+        const matchOverview = course.overview?.toLowerCase().includes(query) || false
+        if (!matchName && !matchCode && !matchOverview) return false
+      }
+
       return true
     })
-  }, [courses, selectedLevel, selectedDepartment])
+  }, [coursesWithDept, selectedLevel, selectedDepartment, searchQuery])
 
-  const levels = ['all', 'ug', 'pg', 'phd', 'diploma', 'certificate']
+  const levels = ['all', 'ug', 'pg', 'diploma']
 
   return (
-    <div className="bg-white">
+    <div className="bg-slate-50/30 min-h-screen">
+      
       {/* Hero Section */}
-      <section className="relative bg-academic-900 py-20 lg:py-28">
+      <section className="relative bg-academic-900 py-16 lg:py-20 text-white overflow-hidden border-b border-slate-800">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl" />
         </div>
         <div className="relative container-wide text-center">
           <motion.div initial="initial" animate="animate" variants={staggerContainer}>
-            <motion.h1 variants={fadeIn} className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-              Academic Programs
-            </motion.h1>
-            <motion.p variants={fadeIn} className="text-gray-400 text-lg max-w-3xl mx-auto">
-              Discover the right program for your academic and career goals. We offer undergraduate, postgraduate, and diploma courses.
-            </motion.p>
+            <motion.span 
+              variants={fadeIn}
+              className="inline-flex items-center gap-2 px-4 py-1.5 bg-gold-500/20 border border-gold-500/35 rounded-full text-gold-500 text-xs font-semibold mb-5 tracking-wide"
+            >
+              <GraduationCap className="h-4.5 w-4.5" />
+              Academic Offerings
+            </motion.span>
+            <h1 className="font-display text-4xl md:text-5xl font-extrabold text-white mb-4">
+              Our Academic Programs
+            </h1>
+            <p className="text-gray-300 text-base md:text-lg max-w-2xl mx-auto">
+              Explore undergraduate, postgraduate, and professional diploma programs designed to launch your global career.
+            </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Filters */}
-      <section className="py-8 bg-gray-50 border-b sticky top-[72px] md:top-[120px] z-40">
+      {/* Sticky Filters bar */}
+      <section className="py-6 bg-white border-b sticky top-[72px] md:top-[120px] z-40 shadow-sm">
         <div className="container-wide">
-          <div className="flex flex-wrap gap-4 items-center justify-between">
-            <div className="flex flex-wrap gap-2">
-              <span className="text-sm text-gray-500 mr-2">Level:</span>
+          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+            
+            {/* Level selection buttons */}
+            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2">Level:</span>
               {levels.map(level => (
                 <button
                   key={level}
                   onClick={() => setSelectedLevel(level)}
-                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all border ${
                     selectedLevel === level
-                      ? 'bg-academic-900 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'
                   }`}
                 >
-                  {level === 'all' ? 'All' : level.toUpperCase()}
+                  {level === 'all' ? 'All Programs' : level.toUpperCase()}
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Department:</span>
+            {/* Right side: search & department select */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto shrink-0">
+              
+              {/* Search */}
+              <div className="relative w-full sm:w-60">
+                <Search className="absolute left-3 top-2.5 h-4.5 w-4.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search programs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-slate-800 text-xs bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              {/* Department select */}
               <select
                 value={selectedDepartment}
                 onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="px-4 py-2 text-sm bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                className="w-full sm:w-56 px-3 py-2 text-slate-800 text-xs bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer font-semibold"
               >
                 <option value="all">All Departments</option>
                 {departments.map(dept => (
                   <option key={dept.id} value={dept.code}>{dept.name}</option>
                 ))}
               </select>
+
             </div>
+
           </div>
         </div>
       </section>
 
-      {/* Courses Grid */}
-      <section className="section-padding">
+      {/* Programs grid */}
+      <section className="py-12">
         <div className="container-wide">
-          <div className="text-sm text-gray-500 mb-6">
-            Showing {filteredCourses.length} program{filteredCourses.length !== 1 ? 's' : ''}
+          
+          <div className="text-xs text-slate-400 font-bold tracking-wider uppercase mb-8">
+            Showing {filteredCourses.length} Program{filteredCourses.length !== 1 ? 's' : ''}
           </div>
 
-          {filteredCourses.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-gray-500">No programs found matching your criteria.</p>
-            </div>
-          ) : (
-            <motion.div
-              initial="initial"
-              whileInView="animate"
-              viewport={{ once: true }}
-              variants={staggerContainer}
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {filteredCourses.map((course) => (
-                <motion.div key={course.id} variants={fadeIn}>
-                  <Link href={`/courses/${course.code.toLowerCase()}`}>
-                    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-lg hover:border-gold-300 transition-all h-full group">
-                      <div className="h-40 bg-gradient-to-br from-academic-900 to-academic-800 relative">
-                        {course.image_url && (
-                          <img src={course.image_url} alt={course.name} className="w-full h-full object-cover opacity-60" />
-                        )}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="px-4 py-2 bg-gold-500 text-academic-900 text-xs font-bold rounded uppercase">
-                            {course.level}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <h3 className="font-display text-xl font-semibold text-academic-900 mb-2 group-hover:text-gold-600 transition-colors">
-                          {course.name}
-                        </h3>
-                        {course.department && (
-                          <p className="text-sm text-gold-600 mb-3">{course.department.name}</p>
-                        )}
-                        <p className="text-gray-600 text-sm line-clamp-2 mb-4">
-                          {course.overview || 'A comprehensive program designed to prepare students for successful careers.'}
-                        </p>
-
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {course.duration}
-                          </div>
-                          {course.seats && (
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              {course.seats} seats
+          <AnimatePresence mode="wait">
+            {filteredCourses.length > 0 ? (
+              <motion.div
+                key="grid"
+                initial="initial"
+                animate="animate"
+                variants={staggerContainer}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              >
+                {filteredCourses.map((course) => {
+                  const hasImage = !!course.image_url
+                  
+                  return (
+                    <motion.div key={course.id} variants={fadeIn} className="group">
+                      <Link href={`/courses/${course.code.toLowerCase()}`} className="block h-full">
+                        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:border-gold-300/40 transition-all duration-300 h-full flex flex-col justify-between">
+                          
+                          {/* Top Part: Cover photo */}
+                          <div>
+                            <div className="h-44 bg-gradient-to-br from-academic-900 to-academic-800 relative overflow-hidden flex items-center justify-center">
+                              {hasImage ? (
+                                <img 
+                                  src={course.image_url!} 
+                                  alt={course.name} 
+                                  className="w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105" 
+                                />
+                              ) : (
+                                <div className="absolute inset-0 bg-[#0F2D52] flex items-center justify-center opacity-90 transition-transform duration-500 group-hover:scale-105">
+                                  <span className="text-white/10 font-display font-extrabold text-9xl">
+                                    {course.code.toUpperCase()}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              <span className="absolute top-4 left-4 px-3 py-1 bg-amber-500 text-slate-950 text-[10px] font-extrabold rounded-md uppercase tracking-wider shadow-sm z-10">
+                                {course.level.toUpperCase()}
+                              </span>
                             </div>
-                          )}
-                        </div>
 
-                        {course.annual_fee && (
-                          <div className="mt-4 pt-4 border-t">
-                            <div className="flex items-center gap-2 text-academic-900 font-semibold">
-                              <IndianRupee className="h-4 w-4" />
-                              {course.annual_fee.toLocaleString()}/year
+                            {/* Center Part: Content */}
+                            <div className="p-6 space-y-2">
+                              {course.department && (
+                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">
+                                  Dept. of {course.department.name}
+                                </span>
+                              )}
+                              <h3 className="font-display font-extrabold text-slate-900 text-lg leading-snug group-hover:text-blue-600 transition-colors">
+                                {course.name}
+                              </h3>
+                              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed line-clamp-2 pt-1">
+                                {course.overview || 'A comprehensive program designed to prepare students for successful careers.'}
+                              </p>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
+
+                          {/* Bottom Part: Specifications & Price */}
+                          <div className="px-6 pb-6 pt-3 border-t border-slate-50 space-y-4">
+                            
+                            <div className="flex items-center gap-5 text-slate-400 text-xs">
+                              <div className="flex items-center gap-1.5 font-semibold">
+                                <Clock className="w-4 h-4 text-blue-500" />
+                                <span>{course.duration}</span>
+                              </div>
+                              {course.seats && (
+                                <div className="flex items-center gap-1.5 font-semibold">
+                                  <Users className="w-4 h-4 text-blue-500" />
+                                  <span>{course.seats} Seats</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {course.annual_fee && (
+                              <div className="flex items-center justify-between pt-1">
+                                <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Annual Fee</span>
+                                <span className="font-extrabold text-academic-900 flex items-center text-sm sm:text-base">
+                                  <IndianRupee className="w-3.5 h-3.5 shrink-0" />
+                                  ₹{Number(course.annual_fee).toLocaleString('en-IN')}/year
+                                </span>
+                              </div>
+                            )}
+
+                          </div>
+
+                        </div>
+                      </Link>
+                    </motion.div>
+                  )
+                })}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-16 bg-white border border-slate-100 rounded-3xl"
+              >
+                <Info className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <h4 className="font-bold text-slate-800 text-sm mb-1">No Academic Programs Found</h4>
+                <p className="text-slate-400 text-xs">
+                  No courses match your query or filter criteria.
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
         </div>
       </section>
+
     </div>
   )
 }

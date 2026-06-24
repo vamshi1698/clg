@@ -6,7 +6,7 @@ import { Mail, Phone, MapPin, Clock, Send, CheckCircle, AlertCircle } from 'luci
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { supabase } from '@/lib/supabase/client'
+import { submitContactMessage } from '@/lib/actions/public-actions'
 import type { SiteSettings, Department } from '@/types/database'
 
 const fadeIn = {
@@ -41,33 +41,21 @@ export function ContactPage({ settings, departments }: ContactPageProps) {
     setStatus('loading')
 
     startTransition(async () => {
-      try {
-        const { error } = await supabase
-          .from('contact_messages')
-          .insert([{
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone || null,
-            subject: formData.subject || null,
-            message: formData.message,
-          }])
-
-        if (error) {
-          throw error
-        }
-
-        setStatus('success')
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          subject: '',
-          message: '',
-          department: ''
-        })
-      } catch {
+      const res = await submitContactMessage(formData)
+      if (res.error) {
         setStatus('error')
+        return
       }
+
+      setStatus('success')
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: '',
+        department: ''
+      })
     })
   }
 

@@ -5,21 +5,34 @@ import { revalidatePath } from 'next/cache'
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
+  console.log('[CMS Login Flow] Received POST request to /api/cms/auth')
   const body = await req.json().catch(() => ({}))
   const email = String(body.email || '').trim().toLowerCase()
   const password = String(body.password || '')
 
+  console.log(`[CMS Login Flow] Attempting login for email: ${email}`)
+
   if (!email || !password) {
+    console.log('[CMS Login Flow] Error: Email or password missing')
     return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
   }
 
+  console.log('[CMS Login Flow] Authenticating credentials against database...')
   const session = await authenticate(email, password)
   if (!session) {
+    console.log('[CMS Login Flow] Authentication FAILED for email:', email)
     return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
   }
 
+  console.log('[CMS Login Flow] Authentication SUCCESSFUL. Session user details:', session)
+
+  console.log('[CMS Login Flow] Creating session cookie...')
   await createSession(session)
+  
+  console.log('[CMS Login Flow] Revalidating path layout...')
   revalidatePath('/', 'layout')
+  
+  console.log('[CMS Login Flow] Login process complete, returning success response')
   return NextResponse.json({ ok: true, session })
 }
 

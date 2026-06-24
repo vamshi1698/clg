@@ -1,7 +1,5 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Header } from '@/components/navigation/main-nav'
-import { Footer } from '@/components/navigation/footer'
 
 export const metadata: Metadata = {
   title: {
@@ -72,9 +70,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className="min-h-screen flex flex-col antialiased">
-        <Header />
-        <main className="flex-1 pt-[72px] md:pt-[120px]">{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   )

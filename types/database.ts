@@ -343,3 +343,15 @@ export interface ContactMessage {
   created_at: string
   updated_at: string
 }
+
+export interface ResultsPdf {
+  id: string
+  title: string
+  academic_year: string
+  semester: number
+  pdf_filename: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+

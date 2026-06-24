@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 import { User, Award, BookOpen, Eye, Target, Beaker, Lightbulb } from 'lucide-react'
 import type { Department, Faculty, Course } from '@/types/database'
 
@@ -310,23 +311,34 @@ export function DepartmentDetailPage({ department, faculty, courses }: Departmen
               >
                 {courses.map((course) => (
                   <motion.div key={course.id} variants={fadeIn}>
-                    <div className="bg-white p-6 rounded-xl border border-gray-100">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="px-3 py-1 bg-academic-100 text-academic-900 text-xs font-semibold rounded uppercase">
-                          {course.level}
-                        </span>
-                        <span className="text-gray-500 text-sm">{course.duration}</span>
+                    <Link href={`/courses/${course.code.toLowerCase()}`} className="block group h-full">
+                      <div className="bg-white p-6 rounded-xl border border-gray-100 hover:shadow-lg hover:border-gold-300 transition-all h-full flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="px-3 py-1 bg-academic-100 text-academic-900 text-xs font-semibold rounded uppercase">
+                              {course.level}
+                            </span>
+                            <span className="text-gray-500 text-sm">{course.duration}</span>
+                          </div>
+                          <h3 className="font-display text-lg font-semibold text-academic-900 mb-2 group-hover:text-gold-600 transition-colors">
+                            {course.name}
+                          </h3>
+                          {course.overview && (
+                            <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.overview}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-50">
+                          {course.seats ? (
+                            <p className="text-xs text-gray-400">Intake: {course.seats} seats</p>
+                          ) : (
+                            <div />
+                          )}
+                          <span className="inline-flex items-center gap-1 text-gold-600 text-xs font-semibold">
+                            View Details →
+                          </span>
+                        </div>
                       </div>
-                      <h3 className="font-display text-lg font-semibold text-academic-900 mb-2">
-                        {course.name}
-                      </h3>
-                      {course.overview && (
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.overview}</p>
-                      )}
-                      {course.seats && (
-                        <p className="text-xs text-gray-400">Intake: {course.seats} seats</p>
-                      )}
-                    </div>
+                    </Link>
                   </motion.div>
                 ))}
               </motion.div>

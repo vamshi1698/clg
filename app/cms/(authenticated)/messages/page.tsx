@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { adminClient } from '@/lib/cms/auth'
+import { postgresClient } from '@/lib/postgres/client'
 import { CmsMessageList } from '@/components/cms/messages'
 
 export const dynamic = 'force-dynamic'
@@ -16,13 +16,12 @@ interface MessageRow {
 }
 
 export default async function MessagesPage() {
-  const supabase = adminClient()
-  const { data } = await supabase
+  const { data } = await postgresClient
     .from('contact_messages')
     .select('id, name, email, phone, subject, created_at, status')
     .order('created_at', { ascending: false })
 
-  const messages = (data || []) as MessageRow[]
+  const messages = ((data || []) as MessageRow[])
   const unread = messages.filter((m) => m.status === 'unread').length
 
   return (
@@ -37,3 +36,4 @@ export default async function MessagesPage() {
     </div>
   )
 }
+

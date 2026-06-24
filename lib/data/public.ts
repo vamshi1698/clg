@@ -1,4 +1,4 @@
-import { supabaseServer } from '../supabase/server'
+import { postgresClient } from '../postgres/client'
 import type {
   SiteSettings,
   Statistics,
@@ -21,7 +21,7 @@ import type {
 
 // Get site settings
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('site_settings')
     .select('*')
     .eq('id', 1)
@@ -36,7 +36,7 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
 
 // Get statistics
 export async function getStatistics(): Promise<Statistics | null> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('statistics')
     .select('*')
     .eq('id', 1)
@@ -51,7 +51,7 @@ export async function getStatistics(): Promise<Statistics | null> {
 
 // Get all departments
 export async function getDepartments(): Promise<Department[]> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('departments')
     .select('*')
     .eq('is_active', true)
@@ -66,7 +66,7 @@ export async function getDepartments(): Promise<Department[]> {
 
 // Get single department by code
 export async function getDepartmentByCode(code: string): Promise<Department | null> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('departments')
     .select('*')
     .eq('code', code)
@@ -82,9 +82,9 @@ export async function getDepartmentByCode(code: string): Promise<Department | nu
 
 // Get all courses with department info
 export async function getCourses(options?: { level?: string; departmentId?: string }): Promise<Course[]> {
-  let query = supabaseServer
+  let query = postgresClient
     .from('courses')
-    .select('*, departments(*)')
+    .select('*')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
 
@@ -106,9 +106,9 @@ export async function getCourses(options?: { level?: string; departmentId?: stri
 
 // Get course by code
 export async function getCourseByCode(code: string): Promise<Course | null> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('courses')
-    .select('*, departments(*)')
+    .select('*')
     .eq('code', code)
     .eq('is_active', true)
     .single()
@@ -122,9 +122,9 @@ export async function getCourseByCode(code: string): Promise<Course | null> {
 
 // Get faculty with optional filters
 export async function getFaculty(options?: { departmentId?: string }): Promise<Faculty[]> {
-  let query = supabaseServer
+  let query = postgresClient
     .from('faculty')
-    .select('*, departments(*)')
+    .select('*')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
 
@@ -143,7 +143,7 @@ export async function getFaculty(options?: { departmentId?: string }): Promise<F
 
 // Get news with optional filters
 export async function getNews(options?: { limit?: number; category?: string; featured?: boolean }): Promise<News[]> {
-  let query = supabaseServer
+  let query = postgresClient
     .from('news')
     .select('*')
     .eq('is_active', true)
@@ -170,7 +170,7 @@ export async function getNews(options?: { limit?: number; category?: string; fea
 
 // Get news by slug
 export async function getNewsBySlug(slug: string): Promise<News | null> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('news')
     .select('*')
     .eq('slug', slug)
@@ -186,7 +186,7 @@ export async function getNewsBySlug(slug: string): Promise<News | null> {
 
 // Get events with optional filters
 export async function getEvents(options?: { limit?: number; upcoming?: boolean }): Promise<Event[]> {
-  let query = supabaseServer
+  let query = postgresClient
     .from('events')
     .select('*')
     .eq('is_active', true)
@@ -210,7 +210,7 @@ export async function getEvents(options?: { limit?: number; upcoming?: boolean }
 
 // Get event by slug
 export async function getEventBySlug(slug: string): Promise<Event | null> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('events')
     .select('*')
     .eq('slug', slug)
@@ -226,8 +226,8 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
 
 // Get gallery items
 export async function getGallery(options?: { category?: string; limit?: number }): Promise<GalleryItem[]> {
-  let query = supabaseServer
-    .from('gallery')
+  let query = postgresClient
+    .from('gallery_items')
     .select('*')
     .eq('is_active', true)
     .order('sort_order', { ascending: true })
@@ -250,7 +250,7 @@ export async function getGallery(options?: { category?: string; limit?: number }
 
 // Get recruiters
 export async function getRecruiters(options?: { featured?: boolean }): Promise<Recruiter[]> {
-  let query = supabaseServer
+  let query = postgresClient
     .from('recruiters')
     .select('*')
     .eq('is_active', true)
@@ -271,7 +271,7 @@ export async function getRecruiters(options?: { featured?: boolean }): Promise<R
 
 // Get testimonials
 export async function getTestimonials(options?: { featured?: boolean }): Promise<Testimonial[]> {
-  let query = supabaseServer
+  let query = postgresClient
     .from('testimonials')
     .select('*')
     .eq('is_active', true)
@@ -292,7 +292,7 @@ export async function getTestimonials(options?: { featured?: boolean }): Promise
 
 // Get achievements
 export async function getAchievements(): Promise<Achievement[]> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('achievements')
     .select('*')
     .eq('is_active', true)
@@ -307,7 +307,7 @@ export async function getAchievements(): Promise<Achievement[]> {
 
 // Get milestones
 export async function getMilestones(): Promise<Milestone[]> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('milestones')
     .select('*')
     .eq('is_active', true)
@@ -322,7 +322,7 @@ export async function getMilestones(): Promise<Milestone[]> {
 
 // Get accreditations
 export async function getAccreditations(): Promise<Accreditation[]> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('accreditations')
     .select('*')
     .eq('is_active', true)
@@ -337,7 +337,7 @@ export async function getAccreditations(): Promise<Accreditation[]> {
 
 // Get leadership
 export async function getLeadership(): Promise<Leadership[]> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('leadership')
     .select('*')
     .eq('is_active', true)
@@ -355,7 +355,7 @@ export async function getStudentByCredentials(
   registerNumber: string,
   dateOfBirth: string
 ): Promise<Student | null> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('students')
     .select('*')
     .eq('register_number', registerNumber)
@@ -371,7 +371,7 @@ export async function getStudentByCredentials(
 
 // Get results for a student
 export async function getStudentResults(studentId: string): Promise<Result[]> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('results')
     .select('*')
     .eq('student_id', studentId)
@@ -387,7 +387,7 @@ export async function getStudentResults(studentId: string): Promise<Result[]> {
 
 // Get result summaries for a student
 export async function getStudentResultSummaries(studentId: string): Promise<ResultSummary[]> {
-  const { data, error } = await supabaseServer
+  const { data, error } = await postgresClient
     .from('result_summaries')
     .select('*')
     .eq('student_id', studentId)

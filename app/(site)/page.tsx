@@ -14,8 +14,7 @@ import {
   StatsSection,
   PrincipalMessage,
   ProgramsSection,
-  NewsSection,
-  EventsSection,
+  NewsAndEventsSection,
   GalleryPreview,
   RecruitersSection,
   TestimonialsSection,
@@ -28,7 +27,7 @@ export default async function HomePage() {
     getSiteSettings(),
     getStatistics(),
     getCourses(),
-    getNews({ featured: true, limit: 5 }),
+    getNews({ limit: 10 }),
     getEvents({ upcoming: true, limit: 5 }),
     getGallery({ limit: 10 }),
     getRecruiters(),
@@ -51,8 +50,7 @@ export default async function HomePage() {
       />
       <ProgramsSection courses={courses} />
       <AchievementsSection achievements={achievements} />
-      <NewsSection news={news} />
-      <EventsSection events={events} />
+      <NewsAndEventsSection news={news} events={events} statistics={statistics} />
       {gallery.length > 0 && <GalleryPreview items={gallery} />}
       {recruiters.length > 0 && <RecruitersSection recruiters={recruiters} />}
       {testimonials.length > 0 && <TestimonialsSection testimonials={testimonials} />}

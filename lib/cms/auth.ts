@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
+import { postgresClient } from '../postgres/client'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -37,12 +38,17 @@ export function adminClient() {
 // Naive hash compatible with seeded users (bcrypt if available, else sha256).
 // We store users with sha256 hashes for portability in this environment.
 export async function hashPassword(password: string): Promise<string> {
-  return crypto.createHash('sha256').update(password).digest('hex')
+  const hash = crypto.createHash('sha256').update(password).digest('hex')
+  console.log('[CMS Auth] Generated SHA-256 password hash')
+  return hash
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  console.log('[CMS Auth] Computing hash of entered password...')
   const h = await hashPassword(password)
-  return h === stored
+  const isMatch = h === stored
+  console.log(`[CMS Auth] Hash match result: ${isMatch} (Entered: ${h.slice(0, 8)}..., Stored: ${stored.slice(0, 8)}...)`)
+  return isMatch
 }
 
 export async function createSession(user: CmsSession) {
@@ -78,17 +84,31 @@ export function getSession(): CmsSession | null {
 }
 
 export async function authenticate(email: string, password: string): Promise<CmsSession | null> {
-  const supabase = adminClient()
-  const { data } = await supabase
+  console.log(`[CMS Auth] Querying admin_users table in local Postgres for: ${email}`)
+  const { data, error } = await postgresClient
     .from('admin_users')
     .select('id, email, password_hash, role, name')
     .eq('email', email.toLowerCase().trim())
     .single()
 
-  if (!data) return null
-  const ok = await verifyPassword(password, data.password_hash)
-  if (!ok) return null
+  if (error) {
+    console.error('[CMS Auth] Database query error:', error)
+    return null
+  }
 
+  if (!data) {
+    console.log('[CMS Auth] User record not found in local database for email:', email)
+    return null
+  }
+
+  console.log('[CMS Auth] User record found. Verifying password...')
+  const ok = await verifyPassword(password, data.password_hash)
+  if (!ok) {
+    console.log('[CMS Auth] Password verification failed')
+    return null
+  }
+
+  console.log('[CMS Auth] Password verified successfully')
   return {
     uid: data.id,
     email: data.email,

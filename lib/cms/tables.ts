@@ -1,4 +1,4 @@
-export type FieldType =
+﻿export type FieldType =
   | 'text'
   | 'textarea'
   | 'richtext'
@@ -20,35 +20,22 @@ export interface FieldConfig {
   placeholder?: string
   help?: string
   full?: boolean
-  serverOnly?: boolean // value computed server-side (e.g., email)
+  serverOnly?: boolean
 }
 
 export interface TableConfig {
-  /** Postgres table name */
   table: string
-  /** URL slug under /cms */
   slug: string
-  /** Display label */
   label: string
-  /** Singular label */
   singular: string
-  /** Icon name from lucide-react */
   icon: string
-  /** Primary display column */
   titleField: string
-  /** Secondary column for list */
   subtitleField?: string
-  /** Columns shown in list table */
   listFields: string[]
-  /** Fields for the form */
   fields: FieldConfig[]
-  /** Whether table has sort_order + is_active */
   sortable?: boolean
-  /** Optional relation config: list query selects (e.g., departments(*)) */
   select?: string
-  /** Order column */
   orderColumn?: string
-  /** If this table is a single-row config table */
   singleton?: boolean
 }
 
@@ -163,13 +150,7 @@ export const TABLE_CONFIGS: TableConfig[] = [
     fields: [
       { name: 'name', label: 'Name', type: 'text', required: true, full: true },
       { name: 'code', label: 'Code', type: 'text', required: true },
-      {
-        name: 'department_id',
-        label: 'Department',
-        type: 'select',
-        full: true,
-        options: [],
-      },
+      { name: 'department_id', label: 'Department', type: 'select', full: true, options: [] },
       {
         name: 'level',
         label: 'Level',
@@ -273,7 +254,7 @@ export const TABLE_CONFIGS: TableConfig[] = [
     slug: 'events',
     label: 'Events',
     singular: 'Event',
-    icon: 'Calendar',
+    icon: 'CalendarCheck',
     titleField: 'title',
     subtitleField: 'event_date',
     listFields: ['title', 'category', 'event_date', 'is_upcoming', 'is_active'],
@@ -387,27 +368,6 @@ export const TABLE_CONFIGS: TableConfig[] = [
       { name: 'website_url', label: 'Website URL', type: 'url', full: true },
       { name: 'logo_url', label: 'Logo URL', type: 'image', full: true },
       { name: 'is_featured', label: 'Featured', type: 'boolean' },
-      sortOrderField,
-      activeField,
-    ],
-  },
-  {
-    table: 'milestones',
-    slug: 'milestones',
-    label: 'Milestones',
-    singular: 'Milestone',
-    icon: 'History',
-    titleField: 'title',
-    subtitleField: 'year',
-    listFields: ['year', 'title', 'is_active'],
-    orderColumn: 'year',
-    sortable: true,
-    select: '*',
-    fields: [
-      { name: 'year', label: 'Year', type: 'number', required: true },
-      { name: 'title', label: 'Title', type: 'text', required: true, full: true },
-      { name: 'description', label: 'Description', type: 'textarea', full: true },
-      { name: 'icon', label: 'Icon (lucide name)', type: 'text' },
       sortOrderField,
       activeField,
     ],
@@ -557,6 +517,23 @@ export const TABLE_CONFIGS: TableConfig[] = [
       activeField,
     ],
   },
+  {
+    table: 'important_dates',
+    slug: 'important-dates',
+    label: 'Important Dates',
+    singular: 'Important Date',
+    icon: 'CalendarDays',
+    titleField: 'event',
+    listFields: ['event', 'date', 'is_active'],
+    orderColumn: 'date',
+    sortable: false,
+    select: '*',
+    fields: [
+      { name: 'event', label: 'Event Name', type: 'text', required: true, full: true },
+      { name: 'date', label: 'Date', type: 'date', required: true },
+      activeField,
+    ],
+  },
 ]
 
 export function getTableConfig(slug: string): TableConfig | undefined {
@@ -564,7 +541,6 @@ export function getTableConfig(slug: string): TableConfig | undefined {
 }
 
 export function getReferenceOptions(config: TableConfig) {
-  // Find select fields whose options are empty (relational lookups)
   const relational: Record<string, { table: string; label: string; value: string }> = {}
   for (const f of config.fields) {
     if (f.type === 'select' && (!f.options || f.options.length === 0)) {
@@ -574,8 +550,6 @@ export function getReferenceOptions(config: TableConfig) {
         relational[f.name] = { table: 'courses', label: 'name', value: 'id' }
       } else if (f.name === 'student_id') {
         relational[f.name] = { table: 'students', label: 'name', value: 'id' }
-      } else if (f.name === 'department_id') {
-        relational[f.name] = { table: 'departments', label: 'name', value: 'id' }
       }
     }
   }

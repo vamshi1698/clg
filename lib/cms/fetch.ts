@@ -1,4 +1,4 @@
-import { adminClient } from './auth'
+import { postgresClient } from '@/lib/postgres/client'
 import type { TableConfig, FieldConfig } from './tables'
 
 export interface ReferenceData {
@@ -15,7 +15,7 @@ export async function resolveReferenceOptions(config: TableConfig): Promise<Refe
     const ref = referenceFor(field)
     if (!ref) continue
 
-    const supabase = adminClient()
+    const supabase = postgresClient
     let query = supabase.from(ref.table).select(`${ref.value}, ${ref.label}`)
     if (ref.table === 'students') {
       query = query.select(`${ref.value}, ${ref.label}, register_number`)
@@ -29,7 +29,7 @@ export async function resolveReferenceOptions(config: TableConfig): Promise<Refe
       result[field.name] = []
       continue
     }
-    result[field.name] = data.map((row: any) => ({
+    result[field.name] = (data as any[]).map((row: any) => ({
       value: row[ref.value],
       label: ref.table === 'students'
         ? `${row[ref.label]} (${row.register_number})`
@@ -55,7 +55,7 @@ function referenceFor(field: FieldConfig) {
 }
 
 export async function fetchRows(config: TableConfig, id?: string): Promise<any[] | any | null> {
-  const supabase = adminClient()
+  const supabase = postgresClient
   const select = config.select || '*'
   const orderBy = config.orderColumn || 'created_at'
   const ascending = config.orderColumn === 'sort_order' || config.orderColumn === 'year'
@@ -79,12 +79,13 @@ export async function fetchRows(config: TableConfig, id?: string): Promise<any[]
 }
 
 export async function fetchSingleton(config: TableConfig): Promise<any | null> {
-  const supabase = adminClient()
+  const supabase = postgresClient
   const { data, error } = await supabase
     .from(config.table)
     .select('*')
     .limit(1)
     .order('id', { ascending: true })
-  if (error || !data || data.length === 0) return null
-  return data[0]
+  if (error || !data || (data as any[]).length === 0) return null
+  return (data as any[])[0]
 }
+
