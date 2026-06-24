@@ -2,6 +2,7 @@
 
 import { unlink } from 'fs/promises'
 import path from 'path'
+import crypto from 'crypto'
 import { postgresClient } from '@/lib/postgres/client'
 import { revalidatePath } from 'next/cache'
 
@@ -70,12 +71,15 @@ export async function createResultNewsAnnouncement(pdfRecord: any) {
   const newsPayload = {
     title,
     slug,
+    id: crypto.randomUUID(),
     excerpt: `Official result PDF titled "${pdfRecord.title}" is now available.`,
     content: '', // can be extended later
     category: 'examination',
     is_featured: false,
     is_active: true,
     published_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
     author: null,
   }
   const { error } = await postgresClient.insert('news', newsPayload)
@@ -85,4 +89,30 @@ export async function createResultNewsAnnouncement(pdfRecord: any) {
   // Revalidate paths so news appears immediately
   revalidatePath('/news')
   revalidatePath('/')
+}
+
+export async function createExcelResultNewsAnnouncement({ academicYear, semester, examType }: { academicYear: string, semester: number, examType: string }) {
+  const title = `Results Declared: Semester ${semester} ${examType} (${academicYear})`
+  const slug = `results-declared-sem-${semester}-${academicYear.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`
+  const newsPayload = {
+    title,
+    slug,
+    id: crypto.randomUUID(),
+    excerpt: `Detailed marks and grades for Semester ${semester} ${examType} (${academicYear}) have been published and are now available for viewing.`,
+    content: '',
+    category: 'examination',
+    is_featured: true,
+    is_active: true,
+    published_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    author: null,
+  }
+  const { error } = await postgresClient.insert('news', newsPayload)
+  if (error) {
+    console.error('Failed to create news announcement for excel results:', error)
+  }
+  revalidatePath('/news')
+  revalidatePath('/')
+  revalidatePath('/results')
 }

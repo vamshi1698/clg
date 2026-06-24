@@ -346,6 +346,30 @@ export async function POST(req: Request) {
       }
     }
 
+    if (marksImported > 0) {
+      try {
+        const uniqueExams = new Set<string>()
+        for (const sData of Array.from(studentGroups.values())) {
+          if (sData.academicYear && sData.semester) {
+            const examType = sData.examType || 'Semester End Examination'
+            uniqueExams.add(JSON.stringify({
+              academicYear: sData.academicYear,
+              semester: sData.semester,
+              examType
+            }))
+          }
+        }
+        
+        const { createExcelResultNewsAnnouncement } = await import('@/lib/actions/results-actions')
+        for (const examStr of Array.from(uniqueExams)) {
+          const exam = JSON.parse(examStr)
+          await createExcelResultNewsAnnouncement(exam)
+        }
+      } catch (newsErr) {
+        console.error('Failed to create excel news announcements:', newsErr)
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       studentsImported,

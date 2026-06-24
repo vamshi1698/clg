@@ -224,7 +224,7 @@ function FieldRenderer({ field, value, references, onChange }: FieldRendererProp
       )
 
     case 'select': {
-      const options = field.options || references || []
+      const options = (field.options && field.options.length > 0) ? field.options : (references || [])
       return (
         <div className={wrapperClass}>
           {label}
