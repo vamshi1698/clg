@@ -12,13 +12,17 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const config = getTableConfig(params.slug)
+  const { slug } = await params
+
+  const config = getTableConfig(slug)
   if (!config) return { title: 'Not Found' }
   return { title: config.label }
 }
 
 export default async function CmsSlugPage({ params }: PageProps) {
-  const config = getTableConfig(params.slug)
+  const { slug } = await params
+
+  const config = getTableConfig(slug)
   if (!config) notFound()
 
   if (config.singleton) {
