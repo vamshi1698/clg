@@ -11,6 +11,10 @@ const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null
 
 type QueryResult = Record<string, any>
 
+function escapeIdentifier(str: string): string {
+  return str.replace(/"/g, '""')
+}
+
 class PostgresQuery {
   private tableName: string
   private selectColumns: string[] = ['*']
@@ -65,9 +69,9 @@ class PostgresQuery {
   private buildQuery(): { sql: string; values: any[] } {
     // Handle wildcard * properly (don't quote it)
     const columnList = this.selectColumns
-      .map((c) => (c === '*' ? '*' : `"${c}"`))
+      .map((c) => (c === '*' ? '*' : `"${escapeIdentifier(c)}"`))
       .join(', ')
-    let sql = `SELECT ${columnList} FROM "${this.tableName}"`
+    let sql = `SELECT ${columnList} FROM "${escapeIdentifier(this.tableName)}"`
     const values: any[] = []
     let paramIndex = 1
 
@@ -75,14 +79,14 @@ class PostgresQuery {
     if (this.filters.length > 0) {
       const whereClauses = this.filters.map((f) => {
         values.push(f.value)
-        return `"${f.column}" ${f.operator} $${paramIndex++}`
+        return `"${escapeIdentifier(f.column)}" ${f.operator} $${paramIndex++}`
       })
       sql += ` WHERE ${whereClauses.join(' AND ')}`
     }
 
     // Add ORDER BY
     if (this.orderByColumn) {
-      sql += ` ORDER BY "${this.orderByColumn}" ${this.orderAscending ? 'ASC' : 'DESC'}`
+      sql += ` ORDER BY "${escapeIdentifier(this.orderByColumn)}" ${this.orderAscending ? 'ASC' : 'DESC'}`
     }
 
     // Add LIMIT
@@ -147,7 +151,7 @@ export class PostgresClient {
 
       const columns = Object.keys(values)
       const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ')
-      const sql = `INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders}) RETURNING *;`
+      const sql = `INSERT INTO "${escapeIdentifier(table)}" (${columns.map((c) => `"${escapeIdentifier(c)}"`).join(', ')}) VALUES (${placeholders}) RETURNING *;`
       const result = await pool.query(sql, Object.values(values))
       return { data: result.rows[0], error: null }
     } catch (error: any) {
@@ -162,8 +166,8 @@ export class PostgresClient {
       }
 
       const columns = Object.keys(values)
-      const setClauses = columns.map((col, i) => `"${col}" = $${i + 1}`).join(', ')
-      const sql = `UPDATE "${table}" SET ${setClauses} WHERE id = $${columns.length + 1} RETURNING *;`
+      const setClauses = columns.map((col, i) => `"${escapeIdentifier(col)}" = $${i + 1}`).join(', ')
+      const sql = `UPDATE "${escapeIdentifier(table)}" SET ${setClauses} WHERE id = $${columns.length + 1} RETURNING *;`
       const result = await pool.query(sql, [...Object.values(values), id])
       return { data: result.rows[0], error: null }
     } catch (error: any) {
@@ -177,7 +181,7 @@ export class PostgresClient {
         return { error: { message: 'Missing DATABASE_URL environment variable', code: 'NO_DATABASE_URL' } }
       }
 
-      const sql = `DELETE FROM "${table}" WHERE id = $1;`
+      const sql = `DELETE FROM "${escapeIdentifier(table)}" WHERE id = $1;`
       await pool.query(sql, [id])
       return { error: null }
     } catch (error: any) {

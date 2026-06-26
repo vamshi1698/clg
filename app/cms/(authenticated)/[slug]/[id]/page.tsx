@@ -10,23 +10,27 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const config = getTableConfig(params.slug)
-  return { title: config ? `${params.id === 'new' ? `New ${config.singular}` : `Edit ${config.singular}`}` : 'Not Found' }
+  const { slug, id } = await params
+
+  const config = getTableConfig(slug)
+  return { title: config ? `${id === 'new' ? `New ${config.singular}` : `Edit ${config.singular}`}` : 'Not Found' }
 }
 
 export default async function CmsEditPage({ params }: PageProps) {
-  const config = getTableConfig(params.slug)
+  const { slug, id } = await params
+
+  const config = getTableConfig(slug)
   if (!config || config.singleton) notFound()
 
-  const isNew = params.id === 'new'
+  const isNew = id === 'new'
   let initial: Record<string, unknown> | undefined
   let rowId: string | undefined
 
   if (!isNew) {
-    const row = await fetchRows(config, params.id)
+    const row = await fetchRows(config, id)
     if (!row) notFound()
     initial = row
-    rowId = params.id
+    rowId = id
   }
 
   const references = await resolveReferenceOptions(config)
