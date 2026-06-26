@@ -31,14 +31,18 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   return (
-    <footer className="bg-academic-900 text-white">
+    <footer className="relative overflow-hidden bg-academic-950 text-white">
+      <div className="absolute inset-0 opacity-15">
+        <div className="absolute top-0 right-0 h-80 w-80 rounded-full bg-gold-500 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-80 w-80 rounded-full bg-academic-500 blur-3xl" />
+      </div>
       {/* Main footer */}
-      <div className="container-wide section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+      <div className="relative container-wide section-padding">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           {/* College Info */}
           <div className="space-y-6">
             <Link href="/" className="inline-flex items-center gap-3">
-              <div className="w-12 h-12 bg-gold-500 rounded-lg flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold-500 shadow-lg shadow-gold-500/20">
                 <span className="text-academic-900 font-display font-bold text-xl">N</span>
               </div>
               <div>
@@ -55,7 +59,7 @@ export function Footer() {
                 <a
                   key={social.name}
                   href={social.href}
-                  className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-gold-500 hover:text-academic-900 transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/8 transition-colors hover:bg-gold-500 hover:text-academic-900"
                   aria-label={social.name}
                 >
                   <social.icon className="h-5 w-5" />
@@ -66,7 +70,7 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-display text-lg font-semibold mb-6 text-gold-500">Quick Links</h3>
+            <h3 className="font-display mb-6 text-lg font-semibold text-gold-500">Quick Links</h3>
             <ul className="space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.name}>
@@ -83,7 +87,7 @@ export function Footer() {
 
           {/* Resources */}
           <div>
-            <h3 className="font-display text-lg font-semibold mb-6 text-gold-500">Resources</h3>
+            <h3 className="font-display mb-6 text-lg font-semibold text-gold-500">Resources</h3>
             <ul className="space-y-3">
               {resourceLinks.map((link) => (
                 <li key={link.name}>
@@ -100,7 +104,7 @@ export function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h3 className="font-display text-lg font-semibold mb-6 text-gold-500">Contact Us</h3>
+            <h3 className="font-display mb-6 text-lg font-semibold text-gold-500">Contact Us</h3>
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="h-5 w-5 text-gold-500 flex-shrink-0 mt-0.5" />
@@ -138,9 +142,9 @@ export function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="border-t border-white/10">
-        <div className="container-wide py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-400 text-sm text-center md:text-left">
+      <div className="relative border-t border-white/10">
+        <div className="container-wide flex flex-col items-center justify-between gap-4 py-6 md:flex-row">
+          <p className="text-center text-sm text-white/55 md:text-left">
             © {currentYear} National College Jayanagar. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm">

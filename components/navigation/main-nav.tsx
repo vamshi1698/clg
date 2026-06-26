@@ -1,31 +1,35 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Phone, Mail, MapPin, Search, ChevronDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Menu, X, Search, ChevronDown, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import logoImage from '../brand/channels4_profile.jpg'
 
-const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'About', href: '/about', hasDropdown: true, items: [
-    { name: 'History', href: '/about#history' },
-    { name: 'Vision & Mission', href: '/about#vision-mission' },
-    { name: 'Leadership', href: '/about#leadership' },
-    { name: 'Accreditation', href: '/about#accreditation' },
+const globalNavigation = [
+  { name: 'Students', href: '/students' },
+  { name: 'Faculty/Staff', href: '/faculty-staff' },
+  { name: 'Alumni', href: '/alumni' },
+  { name: 'Parents', href: '/parents' },
+  { name: 'Visitors', href: '/visitors' },
+]
+
+const mainNavigation = [
+  { name: 'Admissions', href: '/admissions', hasDropdown: true, items: [
+    { name: 'Undergraduate', href: '/admissions/undergraduate' },
+    { name: 'Graduate', href: '/admissions/graduate' },
+    { name: 'Financial Aid', href: '/admissions/financial-aid' },
   ]},
-  { name: 'Departments', href: '/departments' },
-  { name: 'Courses', href: '/courses', hasDropdown: true, items: [
-    { name: 'UG Programs', href: '/courses?level=ug' },
-    { name: 'PG Programs', href: '/courses?level=pg' },
-    { name: 'Diploma Programs', href: '/courses?level=diploma' },
+  { name: 'Academics', href: '/academics', hasDropdown: true, items: [
+    { name: 'Departments', href: '/departments' },
+    { name: 'Undergraduate Programs', href: '/academics/undergraduate' },
+    { name: 'Graduate Programs', href: '/academics/graduate' },
   ]},
-  { name: 'Faculty', href: '/faculty' },
-  { name: 'News & Events', href: '/news' },
-  { name: 'Gallery', href: '/gallery' },
-  { name: 'Results', href: '/results' },
-  { name: 'Contact', href: '/contact' },
+  { name: 'Research', href: '/research' },
+  { name: 'Campus Life', href: '/campus-life' },
+  { name: 'About', href: '/about' },
 ]
 
 export function Header() {
@@ -36,7 +40,7 @@ export function Header() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
+      setIsScrolled(window.scrollY > 10)
     }
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
@@ -45,52 +49,47 @@ export function Header() {
   return (
     <header className={cn(
       'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-      isScrolled ? 'bg-white shadow-md' : 'bg-white/95 backdrop-blur-sm'
+      isScrolled ? 'bg-white shadow-md' : 'bg-white border-b border-slate-200'
     )}>
-      {/* Top bar */}
-      <div className="bg-academic-900 text-white py-2 hidden md:block">
-        <div className="container-wide flex items-center justify-between text-sm">
-          <div className="flex items-center gap-6">
-            <a href="tel:+918026631234" className="flex items-center gap-2 hover:text-gold-500 transition-colors">
-              <Phone className="h-3.5 w-3.5" />
-              +91-80-26631234
-            </a>
-            <a href="mailto:info@nationalcollege.edu.in" className="flex items-center gap-2 hover:text-gold-500 transition-colors">
-              <Mail className="h-3.5 w-3.5" />
-              info@nationalcollege.edu.in
-            </a>
-            <span className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5" />
-              Jayanagar, Bangalore
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/cms" className="hover:text-gold-500 transition-colors">
-              CMS Login
-            </Link>
+      {/* Top Global Bar */}
+      <div className="hidden bg-academic-900 text-white md:block">
+        <div className="container-wide flex items-center justify-end gap-6 py-2 text-xs font-semibold tracking-wide">
+          <nav className="flex items-center gap-6">
+            {globalNavigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className="hover:text-gold-300 transition-colors"
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
+          <div className="flex items-center gap-2 border-l border-white/20 pl-6 cursor-pointer hover:text-gold-300 transition-colors">
+            <Search className="h-4 w-4" />
+            <span>Search</span>
           </div>
         </div>
       </div>
 
       {/* Main navigation */}
       <div className="container-wide">
-        <div className="flex items-center justify-between py-4">
+        <div className="flex items-center justify-between gap-4 py-4 md:py-6">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-academic-900 rounded-lg flex items-center justify-center">
-              <span className="text-gold-500 font-display font-bold text-xl">N</span>
+          <Link href="/" className="flex items-center gap-4 group">
+            <div className="relative h-16 w-16 overflow-hidden rounded-full shadow-sm ring-1 ring-slate-100 group-hover:shadow-md transition-shadow">
+              <Image src={logoImage} alt="National College logo" fill className="object-cover" priority />
             </div>
             <div>
-              <h1 className="font-display text-lg font-bold text-academic-900 leading-tight">
-                National College
+              <h1 className="font-display text-2xl font-bold uppercase tracking-widest text-academic-900 leading-none group-hover:text-gold-600 transition-colors">
+                The National College
               </h1>
-              <p className="text-xs text-muted-foreground">Jayanagar, Bangalore</p>
             </div>
           </Link>
 
           {/* Desktop navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navigation.map((item) => (
+          <nav className="hidden items-center gap-6 lg:flex">
+            {mainNavigation.map((item) => (
               <div
                 key={item.name}
                 className="relative"
@@ -100,40 +99,35 @@ export function Header() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'px-4 py-2 text-sm font-medium transition-colors flex items-center gap-1 rounded-lg',
+                    'flex items-center gap-1 py-2 text-[0.95rem] font-medium transition-colors',
                     pathname === item.href || pathname.startsWith(item.href + '/')
                       ? 'text-gold-600'
-                      : 'text-academic-900 hover:text-gold-600 hover:bg-academic-50'
+                      : 'text-slate-800 hover:text-academic-700'
                   )}
                 >
                   {item.name}
-                  {item.hasDropdown && <ChevronDown className="h-4 w-4" />}
+                  {item.hasDropdown && <ChevronDown className="h-4 w-4 opacity-50" />}
                 </Link>
 
                 {/* Dropdown */}
                 {item.hasDropdown && activeDropdown === item.name && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 fade-in">
-                    {item.items?.map((subItem) => (
-                      <Link
-                        key={subItem.name}
-                        href={subItem.href}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-academic-50 hover:text-academic-900"
-                      >
-                        {subItem.name}
-                      </Link>
-                    ))}
+                  <div className="absolute top-full left-0 pt-2 w-56 z-50 fade-in">
+                    <div className="bg-white rounded-md shadow-xl border border-slate-100 py-2 overflow-hidden">
+                      {item.items?.map((subItem) => (
+                         <Link
+                          key={subItem.name}
+                          href={subItem.href}
+                          className="block px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 hover:text-academic-900 hover:pl-5 transition-all"
+                        >
+                          {subItem.name}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             ))}
           </nav>
-
-          {/* Search and CTA */}
-          <div className="hidden lg:flex items-center gap-4">
-            <Link href="/admissions" className="btn-primary px-5 py-2.5 rounded-lg text-sm font-medium">
-              Apply Now
-            </Link>
-          </div>
 
           {/* Mobile menu button */}
           <button
@@ -141,36 +135,36 @@ export function Header() {
             className="lg:hidden p-2 text-academic-900"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t">
-          <div className="container-wide py-4 space-y-1">
-            {navigation.map((item) => (
-              <div key={item.name}>
+        <div className="lg:hidden border-t border-slate-200 bg-white h-screen overflow-y-auto pb-24">
+          <div className="container-wide py-4 space-y-2">
+            {mainNavigation.map((item) => (
+              <div key={item.name} className="border-b border-slate-100 pb-2">
                 <Link
                   href={item.href}
                   className={cn(
-                    'block px-4 py-3 text-base font-medium rounded-lg',
+                    'block px-2 py-3 text-lg font-display font-medium',
                     pathname === item.href
-                      ? 'text-gold-600 bg-gold-50'
-                      : 'text-academic-900 hover:bg-academic-50'
+                      ? 'text-gold-600'
+                      : 'text-academic-900'
                   )}
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {item.name}
                 </Link>
                 {item.hasDropdown && item.items && (
-                  <div className="ml-4 mt-1 space-y-1">
+                  <div className="ml-4 space-y-1 mt-1 border-l-2 border-slate-100 pl-4">
                     {item.items.map((subItem) => (
                       <Link
                         key={subItem.name}
                         href={subItem.href}
-                        className="block px-4 py-2 text-sm text-gray-600 hover:text-academic-900"
+                        className="block py-2 text-slate-600"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         {subItem.name}
@@ -180,14 +174,19 @@ export function Header() {
                 )}
               </div>
             ))}
-            <div className="pt-4 border-t mt-4">
-              <Link
-                href="/admissions"
-                className="btn-primary block text-center px-5 py-3 rounded-lg text-sm font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Apply Now
-              </Link>
+            
+            <div className="pt-6 space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 px-2">Global Links</h3>
+              {globalNavigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="block px-2 py-2 text-sm text-academic-700"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
             </div>
           </div>
         </div>
@@ -195,3 +194,4 @@ export function Header() {
     </header>
   )
 }
+

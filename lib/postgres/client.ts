@@ -7,11 +7,7 @@ import { Pool } from 'pg'
 
 const DATABASE_URL = process.env.DATABASE_URL
 
-if (!DATABASE_URL) {
-  throw new Error('Missing DATABASE_URL environment variable')
-}
-
-const pool = new Pool({ connectionString: DATABASE_URL })
+const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null
 
 type QueryResult = Record<string, any>
 
@@ -99,6 +95,16 @@ class PostgresQuery {
 
   async execute(): Promise<{ data: QueryResult[] | QueryResult | null; error: any }> {
     try {
+      if (!pool) {
+        return {
+          data: null,
+          error: {
+            message: 'Missing DATABASE_URL environment variable',
+            code: 'NO_DATABASE_URL'
+          }
+        }
+      }
+
       const { sql, values } = this.buildQuery()
       const result = await pool.query(sql, values)
 
@@ -135,6 +141,10 @@ export class PostgresClient {
 
   async insert(table: string, values: Record<string, any>) {
     try {
+      if (!pool) {
+        return { data: null, error: { message: 'Missing DATABASE_URL environment variable', code: 'NO_DATABASE_URL' } }
+      }
+
       const columns = Object.keys(values)
       const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ')
       const sql = `INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders}) RETURNING *;`
@@ -147,6 +157,10 @@ export class PostgresClient {
 
   async update(table: string, id: string, values: Record<string, any>) {
     try {
+      if (!pool) {
+        return { data: null, error: { message: 'Missing DATABASE_URL environment variable', code: 'NO_DATABASE_URL' } }
+      }
+
       const columns = Object.keys(values)
       const setClauses = columns.map((col, i) => `"${col}" = $${i + 1}`).join(', ')
       const sql = `UPDATE "${table}" SET ${setClauses} WHERE id = $${columns.length + 1} RETURNING *;`
@@ -159,6 +173,10 @@ export class PostgresClient {
 
   async delete(table: string, id: string) {
     try {
+      if (!pool) {
+        return { error: { message: 'Missing DATABASE_URL environment variable', code: 'NO_DATABASE_URL' } }
+      }
+
       const sql = `DELETE FROM "${table}" WHERE id = $1;`
       await pool.query(sql, [id])
       return { error: null }
@@ -169,6 +187,10 @@ export class PostgresClient {
 
   async query(sql: string, params?: any[]) {
     try {
+      if (!pool) {
+        return { data: null, error: { message: 'Missing DATABASE_URL environment variable', code: 'NO_DATABASE_URL' } }
+      }
+
       const result = await pool.query(sql, params)
       return { data: result.rows, error: null }
     } catch (error: any) {

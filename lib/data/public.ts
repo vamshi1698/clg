@@ -19,6 +19,17 @@ import type {
   ResultSummary,
 } from '@/types/database'
 
+function logDataError(label: string, error: any) {
+  const errorCode = error?.code ?? error?.error?.code
+  const errorMessage = error?.message ?? error?.error?.message
+
+  if (errorCode === 'NO_DATABASE_URL' || String(errorMessage).includes('Missing DATABASE_URL environment variable')) {
+    return
+  }
+
+  console.error(label, error)
+}
+
 // Get site settings
 export async function getSiteSettings(): Promise<SiteSettings | null> {
   const { data, error } = await postgresClient
@@ -28,7 +39,7 @@ export async function getSiteSettings(): Promise<SiteSettings | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching site settings:', error)
+    logDataError('Error fetching site settings:', error)
     return null
   }
   return data
@@ -43,7 +54,7 @@ export async function getStatistics(): Promise<Statistics | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching statistics:', error)
+    logDataError('Error fetching statistics:', error)
     return null
   }
   return data
@@ -58,7 +69,7 @@ export async function getDepartments(): Promise<Department[]> {
     .order('sort_order', { ascending: true })
 
   if (error) {
-    console.error('Error fetching departments:', error)
+    logDataError('Error fetching departments:', error)
     return []
   }
   return data || []
@@ -74,7 +85,7 @@ export async function getDepartmentByCode(code: string): Promise<Department | nu
     .single()
 
   if (error) {
-    console.error('Error fetching department:', error)
+    logDataError('Error fetching department:', error)
     return null
   }
   return data
@@ -98,7 +109,7 @@ export async function getCourses(options?: { level?: string; departmentId?: stri
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching courses:', error)
+    logDataError('Error fetching courses:', error)
     return []
   }
   return data || []
@@ -114,7 +125,7 @@ export async function getCourseByCode(code: string): Promise<Course | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching course:', error)
+    logDataError('Error fetching course:', error)
     return null
   }
   return data
@@ -135,7 +146,7 @@ export async function getFaculty(options?: { departmentId?: string }): Promise<F
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching faculty:', error)
+    logDataError('Error fetching faculty:', error)
     return []
   }
   return data || []
@@ -162,7 +173,7 @@ export async function getNews(options?: { limit?: number; category?: string; fea
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching news:', error)
+    logDataError('Error fetching news:', error)
     return []
   }
   return data || []
@@ -178,7 +189,7 @@ export async function getNewsBySlug(slug: string): Promise<News | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching news:', error)
+    logDataError('Error fetching news:', error)
     return null
   }
   return data
@@ -202,7 +213,7 @@ export async function getEvents(options?: { limit?: number; upcoming?: boolean }
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching events:', error)
+    logDataError('Error fetching events:', error)
     return []
   }
   return data || []
@@ -218,7 +229,7 @@ export async function getEventBySlug(slug: string): Promise<Event | null> {
     .single()
 
   if (error) {
-    console.error('Error fetching event:', error)
+    logDataError('Error fetching event:', error)
     return null
   }
   return data
@@ -242,7 +253,7 @@ export async function getGallery(options?: { category?: string; limit?: number }
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching gallery:', error)
+    logDataError('Error fetching gallery:', error)
     return []
   }
   return data || []
@@ -263,7 +274,7 @@ export async function getRecruiters(options?: { featured?: boolean }): Promise<R
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching recruiters:', error)
+    logDataError('Error fetching recruiters:', error)
     return []
   }
   return data || []
@@ -284,7 +295,7 @@ export async function getTestimonials(options?: { featured?: boolean }): Promise
   const { data, error } = await query
 
   if (error) {
-    console.error('Error fetching testimonials:', error)
+    logDataError('Error fetching testimonials:', error)
     return []
   }
   return data || []
@@ -299,7 +310,7 @@ export async function getAchievements(): Promise<Achievement[]> {
     .order('sort_order', { ascending: true })
 
   if (error) {
-    console.error('Error fetching achievements:', error)
+    logDataError('Error fetching achievements:', error)
     return []
   }
   return data || []
@@ -314,7 +325,7 @@ export async function getMilestones(): Promise<Milestone[]> {
     .order('year', { ascending: true })
 
   if (error) {
-    console.error('Error fetching milestones:', error)
+    logDataError('Error fetching milestones:', error)
     return []
   }
   return data || []
@@ -329,7 +340,7 @@ export async function getAccreditations(): Promise<Accreditation[]> {
     .order('sort_order', { ascending: true })
 
   if (error) {
-    console.error('Error fetching accreditations:', error)
+    logDataError('Error fetching accreditations:', error)
     return []
   }
   return data || []
@@ -344,7 +355,7 @@ export async function getLeadership(): Promise<Leadership[]> {
     .order('sort_order', { ascending: true })
 
   if (error) {
-    console.error('Error fetching leadership:', error)
+    logDataError('Error fetching leadership:', error)
     return []
   }
   return data || []
@@ -379,7 +390,7 @@ export async function getStudentResults(studentId: string): Promise<Result[]> {
     .order('semester', { ascending: true })
 
   if (error) {
-    console.error('Error fetching results:', error)
+    logDataError('Error fetching results:', error)
     return []
   }
   return data || []
@@ -395,7 +406,7 @@ export async function getStudentResultSummaries(studentId: string): Promise<Resu
     .order('semester', { ascending: true })
 
   if (error) {
-    console.error('Error fetching result summaries:', error)
+    logDataError('Error fetching result summaries:', error)
     return []
   }
   return data || []

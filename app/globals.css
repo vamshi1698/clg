@@ -6,74 +6,74 @@
 
 @layer base {
   :root {
-    /* Academic theme - light mode */
+    /* Logo-driven brand theme */
     --background: 0 0% 100%;
-    --foreground: 215 25% 15%;
+    --foreground: 219 42% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 219 42% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 219 42% 13%;
 
-    /* Deep Academic Blue */
-    --primary: 215 70% 19%;
-    --primary-foreground: 45 80% 58%;
+    /* Deep navy from logo */
+    --primary: 219 42% 16%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 215 70% 19%;
+    --secondary: 214 32% 95%;
+    --secondary-foreground: 219 42% 16%;
 
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 214 32% 95%;
+    --muted-foreground: 215 16% 41%;
 
-    /* Gold accent */
-    --accent: 43 50% 58%;
-    --accent-foreground: 215 70% 19%;
+    /* Saffron / clay accent derived from the logo flame */
+    --accent: 28 86% 49%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 215 70% 19%;
+    --border: 214 32% 89%;
+    --input: 214 32% 89%;
+    --ring: 219 42% 16%;
 
     --radius: 0.5rem;
 
-    --chart-1: 215 70% 50%;
-    --chart-2: 43 50% 58%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 219 42% 16%;
+    --chart-2: 28 86% 49%;
+    --chart-3: 214 32% 95%;
+    --chart-4: 214 24% 62%;
+    --chart-5: 28 72% 61%;
   }
 
   .dark {
-    --background: 215 35% 8%;
+    --background: 219 42% 9%;
     --foreground: 210 40% 98%;
 
-    --card: 215 35% 10%;
+    --card: 219 42% 11%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 215 35% 10%;
+    --popover: 219 42% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 215 70% 50%;
-    --primary-foreground: 215 35% 8%;
+    --primary: 28 86% 55%;
+    --primary-foreground: 219 42% 9%;
 
-    --secondary: 215 35% 15%;
+    --secondary: 219 42% 15%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 35% 15%;
+    --muted: 219 42% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 43 50% 58%;
-    --accent-foreground: 215 35% 8%;
+    --accent: 28 86% 55%;
+    --accent-foreground: 219 42% 9%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 215 35% 18%;
-    --input: 215 35% 18%;
-    --ring: 215 70% 50%;
+    --border: 219 42% 18%;
+    --input: 219 42% 18%;
+    --ring: 28 86% 55%;
   }
 }
 
@@ -89,6 +89,16 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image:
+      radial-gradient(circle at top left, hsl(var(--primary) / 0.08), transparent 28%),
+      radial-gradient(circle at top right, hsl(var(--accent) / 0.08), transparent 24%),
+      linear-gradient(to bottom, hsl(var(--background)), hsl(var(--background)));
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -114,15 +124,15 @@
 
   /* Academic button styles */
   .btn-primary {
-    @apply bg-academic-900 text-white hover:bg-academic-800 transition-colors;
+    @apply bg-academic-900 text-white hover:bg-academic-800 transition-colors rounded-full shadow-sm;
   }
 
   .btn-secondary {
-    @apply bg-gold-500 text-academic-900 hover:bg-gold-600 transition-colors;
+    @apply bg-gold-500 text-white hover:bg-gold-600 transition-colors rounded-full shadow-sm;
   }
 
   .btn-outline {
-    @apply border-2 border-academic-900 text-academic-900 hover:bg-academic-900 hover:text-white transition-colors;
+    @apply border-2 border-academic-900 text-academic-900 hover:bg-academic-900 hover:text-white transition-colors rounded-full;
   }
 
   /* Gold underline for headings */
@@ -155,7 +165,11 @@
 
   /* Card hover effect */
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .marquee-track {
+    animation: marquee-left 28s linear infinite;
   }
 
   /* Focus ring for accessibility */
@@ -167,5 +181,14 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  @keyframes marquee-left {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 }

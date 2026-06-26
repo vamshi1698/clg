@@ -30,69 +30,58 @@ export function HeroSection({ image_url, tagline, established_year = 1965 }: Her
   const yearsOfExcellence = currentYear - established_year
 
   return (
-    <section className="relative min-h-[600px] lg:min-h-[700px] flex items-center">
-      {/* Background Image with Overlay */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: image_url
-            ? `url(${image_url})`
-            : `url(https://images.pexels.com/photos/15698835/pexels-photo-15698835/free-photo-of-aerial-view-of-a-university-campus.jpeg)`,
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-academic-900/95 via-academic-900/85 to-academic-900/60" />
+    <section className="relative w-full min-h-[85vh] flex items-center justify-center overflow-hidden">
+      {/* Background Image / Pattern */}
+      <div className="absolute inset-0 bg-academic-950">
+        <div 
+          className="absolute inset-0 opacity-50 bg-cover bg-center"
+          style={{ backgroundImage: `url(${image_url || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'})` }} 
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-academic-950 via-academic-900/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-academic-950/80 via-academic-900/40 to-transparent" />
+      </div>
 
-      <div className="relative container-wide section-padding text-white">
+      <div className="relative container-wide w-full pt-32 pb-16">
         <motion.div
           initial="initial"
           animate="animate"
           variants={staggerContainer}
-          className="max-w-3xl"
+          className="max-w-4xl"
         >
-          <motion.div variants={fadeIn} className="mb-6">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-gold-500/20 border border-gold-500/30 rounded-full text-gold-500 text-sm font-medium">
-              <Award className="h-4 w-4" />
-              Autonomous Institution | NAAC A++ Accredited
+          <motion.div variants={fadeIn} className="mb-6 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 border-l-4 border-gold-500 pl-4 py-1 text-sm font-bold uppercase tracking-[0.2em] text-gold-300">
+              Est. {established_year}
+            </span>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-sm px-4 py-1 text-sm text-white shadow-sm">
+              <Award className="h-4 w-4 text-gold-400" /> Autonomous Institution
             </span>
           </motion.div>
 
           <motion.h1
             variants={fadeIn}
-            className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight"
+            className="font-display mb-6 text-5xl font-bold leading-[1.1] tracking-tight text-white text-balance md:text-7xl lg:text-8xl"
           >
-            Excellence in Education
-            <span className="block text-gold-500">Since {established_year}</span>
+            A campus built for <span className="text-gold-400">ambition.</span>
           </motion.h1>
 
           <motion.p
             variants={fadeIn}
-            className="text-lg md:text-xl text-gray-300 mb-8 leading-relaxed"
+            className="mb-10 max-w-2xl text-lg leading-relaxed text-slate-300 md:text-2xl font-light"
           >
-            {tagline || 'A premier autonomous institution committed to academic excellence, holistic development, and preparing students for successful careers.'}
+            {tagline || 'A premier autonomous institution committed to holistic development, academic rigor, and preparing students for the challenges of tomorrow.'}
           </motion.p>
 
           <motion.div variants={fadeIn} className="flex flex-wrap gap-4">
-            <Button asChild size="lg" className="btn-secondary text-base">
+            <Button asChild size="lg" className="bg-gold-500 text-lg h-14 px-8 text-academic-950 shadow-lg hover:bg-gold-400 transition-all">
               <Link href="/admissions">
                 Apply Now <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-academic-900">
+            <Button asChild size="lg" variant="outline" className="border-white/30 bg-white/10 backdrop-blur-md text-lg h-14 px-8 text-white hover:bg-white hover:text-academic-900 transition-all">
               <Link href="/courses">
                 Explore Courses
               </Link>
             </Button>
-          </motion.div>
-
-          <motion.div variants={fadeIn} className="mt-12 flex items-center gap-8 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-gold-500" />
-              <span>Jayanagar, Bangalore</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-gold-500" />
-              <span>{yearsOfExcellence}+ Years of Excellence</span>
-            </div>
           </motion.div>
         </motion.div>
       </div>
@@ -117,26 +106,26 @@ export function StatsSection({ statistics }: StatsSectionProps) {
   ]
 
   return (
-    <section className="bg-academic-900 py-12 -mt-1 relative z-10">
+    <section className="relative z-10 -mt-1 border-y border-slate-200 bg-white py-12">
       <div className="container-wide">
         <motion.div
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
           variants={staggerContainer}
-          className="grid grid-cols-2 md:grid-cols-5 gap-6"
+          className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-6"
         >
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
               variants={fadeIn}
-              className="text-center p-6"
+              className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm"
             >
-              <stat.icon className="h-8 w-8 mx-auto mb-3 text-gold-500" />
-              <div className="font-display text-3xl md:text-4xl font-bold text-white mb-2">
+              <stat.icon className="mx-auto mb-3 h-8 w-8 text-academic-600" />
+              <div className="font-display mb-2 text-3xl font-bold text-academic-950 md:text-4xl">
                 {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
               </div>
-              <div className="text-sm text-gray-400">{stat.label}</div>
+              <div className="text-sm text-slate-600">{stat.label}</div>
             </motion.div>
           ))}
         </motion.div>
@@ -726,10 +715,10 @@ export function AchievementsSection({ achievements }: AchievementsSectionProps) 
 // CTA Section
 export function CTASection() {
   return (
-    <section className="relative py-20 bg-gradient-to-br from-academic-900 to-academic-800 overflow-hidden">
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2" />
+    <section className="relative overflow-hidden bg-gradient-to-br from-academic-950 via-academic-900 to-academic-800 py-20">
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 right-0 h-96 w-96 -translate-y-1/2 translate-x-1/2 rounded-full bg-gold-500 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-gold-500 blur-3xl" />
       </div>
       <div className="relative container-wide text-center">
         <motion.div
@@ -740,23 +729,23 @@ export function CTASection() {
         >
           <motion.h2
             variants={fadeIn}
-            className="font-display text-3xl md:text-5xl font-bold text-white mb-6"
+            className="font-display mb-6 text-3xl font-bold text-white md:text-5xl"
           >
             Begin Your Journey With Us
           </motion.h2>
           <motion.p
             variants={fadeIn}
-            className="text-gray-300 text-lg max-w-2xl mx-auto mb-10"
+            className="mx-auto mb-10 max-w-2xl text-lg text-slate-200/80"
           >
             Join thousands of successful alumni who started their careers at National College Jayanagar.
           </motion.p>
           <motion.div variants={fadeIn} className="flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" className="btn-secondary text-base">
+            <Button asChild size="lg" className="btn-secondary text-base shadow-lg shadow-gold-500/20">
               <Link href="/admissions">
                 Apply for Admission <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-academic-900">
+            <Button asChild size="lg" variant="outline" className="border-white/30 bg-white/5 text-white backdrop-blur-md hover:bg-white hover:text-academic-900">
               <Link href="/contact">
                 Contact Us
               </Link>
