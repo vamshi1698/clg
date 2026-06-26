@@ -4,6 +4,6 @@ import { destroySession } from '@/lib/cms/auth'
 export const runtime = 'nodejs'
 
 export async function POST() {
-  destroySession()
+  await destroySession()
   return NextResponse.json({ ok: true })
 }

@@ -10,6 +10,37 @@ interface Row {
   [key: string]: any
 }
 
+function formatDateForList(v: unknown, isDateTime: boolean): string {
+  if (v === null || v === undefined) return '—'
+
+  // If it's a string matching YYYY-MM-DD
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const [year, month, day] = v.split('-').map(Number)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${day} ${months[month - 1]} ${year}`
+  }
+
+  const d = new Date(String(v))
+  if (isNaN(d.getTime())) return '—'
+
+  if (isDateTime) {
+    return d.toLocaleString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  // Date-only
+  const year = d.getFullYear()
+  const month = d.getMonth()
+  const day = d.getDate()
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${day} ${months[month]} ${year}`
+}
+
 export function CmsListView({
   config,
   rows,
@@ -50,24 +81,8 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
         </span>
       )
     }
-    if (field.endsWith('_at') || field.endsWith('_date') || field === 'date_of_birth') {
-      const d = new Date(String(v))
-      if (!isNaN(d.getTime())) {
-        if (field.endsWith('_at')) {
-          return d.toLocaleString('en-IN', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        }
-        return d.toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-        })
-      }
+    if (field.endsWith('_at') || field.endsWith('_date') || field === 'date_of_birth' || field === 'date') {
+      return formatDateForList(v, field.endsWith('_at'))
     }
     // Nested relation fields (e.g., departments.name)
     if (typeof v === 'object') {
@@ -141,7 +156,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                   {config.titleField.replace(/_/g, ' ')}
                 </th>
                 {config.listFields
-                  .filter((f) => f !== config.titleField && f !== 'id')
+                  .filter((f) => f !== config.titleField && f !== subtitleField && f !== 'id')
                   .map((f) => (
                     <th key={f} className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">
                       {f.replace(/_/g, ' ')}

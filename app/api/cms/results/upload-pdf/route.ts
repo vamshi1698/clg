@@ -23,8 +23,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid semester value' }, { status: 400 })
     }
 
-    // Read upload directory from environment variables, fallback if not set
-    const uploadDir = process.env.RESULTS_UPLOAD_DIR || 'c:/Users/vamsi/clg-uploads/results'
+    // Read upload directory from environment variables
+    const uploadDir = process.env.RESULTS_UPLOAD_DIR
+    if (!uploadDir) {
+      return NextResponse.json({ error: 'RESULTS_UPLOAD_DIR is not configured in environment variables' }, { status: 500 })
+    }
 
     // Ensure the external upload folder exists
     await mkdir(uploadDir, { recursive: true })

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Clock, Download } from 'lucide-react'
+import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Clock, Download, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Statistics, News, Event, Course, Testimonial, Recruiter, Achievement, GalleryItem } from '@/types/database'
@@ -821,13 +821,24 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
           
           {/* Left Column: Events Timeline */}
           <div className="lg:col-span-7">
-            <span className="text-[10px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase">
-              CAMPUS HIGHLIGHTS
-            </span>
-            <h2 className="font-display text-2xl sm:text-3.5xl font-extrabold text-academic-900 mt-1">
-              Upcoming & Ongoing Events
-            </h2>
-            <div className="w-10 h-[3px] bg-blue-600 mt-2.5 rounded-full" />
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <span className="text-[10px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase">
+                  CAMPUS HIGHLIGHTS
+                </span>
+                <h2 className="font-display text-2xl sm:text-3.5xl font-extrabold text-academic-900 mt-1">
+                  Upcoming & Ongoing Events
+                </h2>
+                <div className="w-10 h-[3px] bg-blue-600 mt-2.5 rounded-full" />
+              </div>
+              <Link
+                href="/events"
+                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-semibold transition-colors group mb-1 whitespace-nowrap"
+              >
+                <span>View all</span>
+                <ChevronRight className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
 
             <div className="relative pl-8 sm:pl-10 mt-8 space-y-6">
               {/* Vertical line timeline */}
@@ -904,13 +915,24 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
           {/* Right Column: Notice Board & Stats */}
           <div className="lg:col-span-5 flex flex-col justify-between h-full">
             <div>
-              <span className="text-[10px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase">
-                NOTICE BOARD
-              </span>
-              <h2 className="font-display text-2xl sm:text-3.5xl font-extrabold text-academic-900 mt-1">
-                Announcements & Results
-              </h2>
-              <div className="w-10 h-[3px] bg-blue-600 mt-2.5 rounded-full" />
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <span className="text-[10px] sm:text-xs font-bold text-blue-600 tracking-wider uppercase">
+                    NOTICE BOARD
+                  </span>
+                  <h2 className="font-display text-2xl sm:text-3.5xl font-extrabold text-academic-900 mt-1">
+                    Announcements & Results
+                  </h2>
+                  <div className="w-10 h-[3px] bg-blue-600 mt-2.5 rounded-full" />
+                </div>
+                <Link
+                  href="/news"
+                  className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-semibold transition-colors group mb-1 whitespace-nowrap"
+                >
+                  <span>View all</span>
+                  <ChevronRight className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
+                </Link>
+              </div>
 
               {/* Filter Tabs */}
               <div className="flex flex-wrap gap-2 mt-8">

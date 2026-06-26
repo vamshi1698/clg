@@ -1,10 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 import { postgresClient } from '../postgres/client'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export const SESSION_COOKIE = 'nc_cms_session'
 
@@ -16,7 +12,10 @@ export interface CmsSession {
 }
 
 function signToken(payload: string): string {
-  const secret = process.env.CMS_SESSION_SECRET || serviceRoleKey
+  const secret = process.env.CMS_SESSION_SECRET
+  if (!secret) {
+    throw new Error('CMS_SESSION_SECRET is not configured in environment variables')
+  }
   const sig = crypto.createHmac('sha256', secret).update(payload).digest('hex')
   return `${payload}.${sig}`
 }
@@ -27,12 +26,6 @@ function verifyToken(token: string): string | null {
   const payload = token.slice(0, idx)
   const expected = signToken(payload)
   return token === expected ? payload : null
-}
-
-export function adminClient() {
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
 }
 
 // Naive hash compatible with seeded users (bcrypt if available, else sha256).
@@ -60,7 +53,7 @@ export async function createSession(user: CmsSession) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 12, // 12 hours
+    maxAge: 60 * 60 * 1, // 1 hour
   })
 }
 

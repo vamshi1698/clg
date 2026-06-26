@@ -2,23 +2,25 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  FileText, 
-  CheckCircle, 
-  Calendar, 
-  GraduationCap, 
-  Phone, 
-  Mail, 
-  User, 
-  Award, 
+import {
+  FileText,
+  CheckCircle,
+  Calendar,
+  GraduationCap,
+  Phone,
+  Mail,
+  User,
+  Award,
   ChevronRight,
   TrendingUp,
   Percent
 } from 'lucide-react'
-import type { Course } from '@/types/database'
+import type { Course, ImportantDate } from '@/types/database'
+import { submitAdmissionEnquiry } from '@/lib/actions/public-actions'
 
 interface AdmissionsPageProps {
   courses: Course[]
+  importantDates?: ImportantDate[]
 }
 
 const fadeIn = {
@@ -31,7 +33,7 @@ const staggerContainer = {
   animate: { transition: { staggerChildren: 0.08 } }
 }
 
-export function AdmissionsPage({ courses }: AdmissionsPageProps) {
+export function AdmissionsPage({ courses, importantDates = [] }: AdmissionsPageProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -41,9 +43,10 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
     percentage: '',
     queries: ''
   })
-  
+
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Filter courses based on selected level
   const filteredCourses = courses.filter(c => c.level === formData.level)
@@ -51,12 +54,20 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    
-    // Simulate API request
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    setLoading(false)
-    setIsSubmitted(true)
+    setError(null)
+
+    try {
+      const res = await submitAdmissionEnquiry(formData)
+      if (res.error) {
+        setError(res.error)
+      } else {
+        setIsSubmitted(true)
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const steps = [
@@ -78,16 +89,25 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
     }
   ]
 
-  const dates = [
-    { event: 'Online Application Opens', date: 'June 1, 2026' },
-    { event: 'Last Date to Submit Enquiry', date: 'July 15, 2026' },
-    { event: 'First Counseling Merit List', date: 'July 20, 2026' },
-    { event: 'Commencement of Classes', date: 'August 1, 2026' }
-  ]
+  const dates = importantDates.length > 0
+    ? importantDates.map((d) => ({
+      event: d.event,
+      date: new Date(d.date).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+    }))
+    : [
+      { event: 'Online Application Opens', date: 'June 1, 2026' },
+      { event: 'Last Date to Submit Enquiry', date: 'July 15, 2026' },
+      { event: 'First Counseling Merit List', date: 'July 20, 2026' },
+      { event: 'Commencement of Classes', date: 'August 1, 2026' }
+    ]
 
   return (
     <div className="bg-white min-h-screen">
-      
+
       {/* Hero Section */}
       <section className="relative bg-academic-900 py-16 lg:py-24 text-white overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -95,7 +115,7 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
         </div>
         <div className="relative container-wide text-center">
           <motion.div initial="initial" animate="animate" variants={staggerContainer}>
-            <motion.span 
+            <motion.span
               variants={fadeIn}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-gold-500/20 border border-gold-500/35 rounded-full text-gold-500 text-xs sm:text-sm font-semibold mb-6 tracking-wide"
             >
@@ -116,10 +136,10 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
       <section className="py-16 bg-slate-50/30">
         <div className="container-wide">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-            
+
             {/* Left Column: Guidelines & Process (col-span-7) */}
             <div className="lg:col-span-7 space-y-10">
-              
+
               {/* Process */}
               <div>
                 <h2 className="font-display text-2xl font-bold text-academic-900 mb-6 flex items-center gap-2.5">
@@ -129,7 +149,7 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
                 <div className="relative pl-6 space-y-8">
                   {/* vertical step line */}
                   <div className="absolute left-[7px] top-2 bottom-2 w-[1px] bg-slate-200" />
-                  
+
                   {steps.map((step, index) => (
                     <div key={index} className="relative flex gap-4">
                       {/* number dot */}
@@ -174,7 +194,7 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
             {/* Right Column: Admission Form (col-span-5) */}
             <div className="lg:col-span-5">
               <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm">
-                
+
                 <AnimatePresence mode="wait">
                   {!isSubmitted ? (
                     <motion.div
@@ -191,7 +211,7 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
                       </p>
 
                       <form onSubmit={handleSubmit} className="space-y-4">
-                        
+
                         {/* Name */}
                         <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
@@ -302,6 +322,12 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
                           />
                         </div>
 
+                        {error && (
+                          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-semibold">
+                            {error}
+                          </div>
+                        )}
+
                         {/* Submit Button */}
                         <button
                           type="submit"
@@ -333,7 +359,7 @@ export function AdmissionsPage({ courses }: AdmissionsPageProps) {
                       <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-6">
                         Thank you for your interest, <strong className="text-slate-700">{formData.name}</strong>. Our admissions counseling officer will review your score (<strong className="text-slate-700">{formData.percentage}%</strong>) and get in touch with you shortly.
                       </p>
-                      
+
                       <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-100/50 space-y-3 mb-6">
                         <h4 className="text-xs font-bold text-slate-400 tracking-wider uppercase mb-1">What's Next?</h4>
                         <div className="flex gap-2.5 text-xs text-slate-600">

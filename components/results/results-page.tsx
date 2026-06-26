@@ -338,7 +338,7 @@ export function ResultsPage() {
                       {pdfAnnouncements.map((pdf) => (
                         <a
                           key={pdf.id}
-                          href={`/api/results/pdf/${pdf.id}`}
+                          href={`/results/${pdf.id}.pdf`}
                           target="_blank"
                           rel="noopener noreferrer"
                           download={pdf.title.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'}

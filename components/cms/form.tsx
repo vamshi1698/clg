@@ -19,6 +19,47 @@ export interface FormProps {
   singletonId?: string | number
 }
 
+function formatDateForInput(value: unknown, type: 'date' | 'datetime'): string {
+  if (value === null || value === undefined || value === '') return ''
+
+  // If it's a string that already matches YYYY-MM-DD
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4}-\d{2}-\d{2})/)
+    if (match) {
+      if (type === 'date') {
+        return match[1] // Return 'YYYY-MM-DD' directly!
+      } else {
+        // For datetime, we need YYYY-MM-DDTHH:MM.
+        const d = new Date(value)
+        if (!isNaN(d.getTime())) {
+          const year = d.getFullYear()
+          const month = String(d.getMonth() + 1).padStart(2, '0')
+          const day = String(d.getDate()).padStart(2, '0')
+          const hours = String(d.getHours()).padStart(2, '0')
+          const minutes = String(d.getMinutes()).padStart(2, '0')
+          return `${year}-${month}-${day}T${hours}:${minutes}`
+        }
+      }
+    }
+  }
+
+  // Fallback for Date objects or other formats
+  const d = new Date(String(value))
+  if (isNaN(d.getTime())) return ''
+
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  if (type === 'date') {
+    return `${year}-${month}-${day}`
+  } else {
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+}
+
 export function CmsForm({ config, references, initial, rowId, singletonId }: FormProps) {
   const router = useRouter()
   const [values, setValues] = useState<Record<string, unknown>>(initial || {})
@@ -260,16 +301,7 @@ function FieldRenderer({ field, value, references, onChange }: FieldRendererProp
 
     case 'date':
     case 'datetime': {
-      let v = ''
-      if (value) {
-        const d = new Date(String(value))
-        if (!isNaN(d.getTime())) {
-          v =
-            field.type === 'datetime'
-              ? d.toISOString().slice(0, 16)
-              : d.toISOString().slice(0, 10)
-        }
-      }
+      const v = formatDateForInput(value, field.type)
       return (
         <div className={wrapperClass}>
           {label}

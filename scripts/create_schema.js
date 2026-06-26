@@ -109,6 +109,7 @@ const createTableStatements = [
     curriculum_url TEXT,
     career_opportunities TEXT[],
     features TEXT[],
+    core_subjects TEXT[],
     image_url TEXT,
     annual_fee NUMERIC(12,2),
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -359,6 +360,37 @@ const createTableStatements = [
     replied_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS important_dates (
+    id UUID PRIMARY KEY,
+    event VARCHAR(255) NOT NULL,
+    date DATE NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS admission_enquiries (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    level VARCHAR(50) NOT NULL,
+    course_id UUID REFERENCES courses(id),
+    percentage NUMERIC(5,2) NOT NULL,
+    queries TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+  )`,
+
+  `CREATE TABLE IF NOT EXISTS otp_verifications (
+    id UUID PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    otp VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
   )`
 ]
 

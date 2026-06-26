@@ -90,6 +90,7 @@ export interface Course {
   curriculum_url: string | null
   career_opportunities: string[] | null
   features: string[] | null
+  core_subjects: string[] | null
   image_url: string | null
   annual_fee: number | null
   is_active: boolean
@@ -350,6 +351,15 @@ export interface ResultsPdf {
   academic_year: string
   semester: number
   pdf_filename: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ImportantDate {
+  id: string
+  event: string
+  date: string
   is_active: boolean
   created_at: string
   updated_at: string

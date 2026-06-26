@@ -37,7 +37,10 @@ export async function deleteResultsPdf(id: string) {
     }
 
     const filename = (record as any).pdf_filename
-    const uploadDir = process.env.RESULTS_UPLOAD_DIR || 'c:/Users/vamsi/clg-uploads/results'
+    const uploadDir = process.env.RESULTS_UPLOAD_DIR
+    if (!uploadDir) {
+      throw new Error('RESULTS_UPLOAD_DIR is not configured in environment variables')
+    }
     const filePath = path.join(uploadDir, filename)
 
     // 2. Delete file from file system

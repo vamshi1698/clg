@@ -17,6 +17,7 @@ import type {
   Student,
   Result,
   ResultSummary,
+  ImportantDate,
 } from '@/types/database'
 
 function logDataError(label: string, error: any) {
@@ -407,6 +408,21 @@ export async function getStudentResultSummaries(studentId: string): Promise<Resu
 
   if (error) {
     logDataError('Error fetching result summaries:', error)
+    return []
+  }
+  return data || []
+}
+
+// Get active important dates
+export async function getImportantDates(): Promise<ImportantDate[]> {
+  const { data, error } = await postgresClient
+    .from('important_dates')
+    .select('*')
+    .eq('is_active', true)
+    .order('date', { ascending: true })
+
+  if (error) {
+    logDataError('Error fetching important dates:', error)
     return []
   }
   return data || []

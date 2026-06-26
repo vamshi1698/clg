@@ -63,6 +63,7 @@ const NAV_SECTIONS = [
       { slug: 'settings', label: 'Site Settings', icon: 'Settings' },
       { slug: 'statistics', label: 'Statistics', icon: 'BarChart3' },
       { slug: 'messages', label: 'Messages', icon: 'Mail' },
+      { slug: 'admission-enquiries', label: 'Admission Enquiries', icon: 'FileText' },
     ],
   },
   {

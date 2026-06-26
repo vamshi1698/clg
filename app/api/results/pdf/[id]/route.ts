@@ -27,7 +27,10 @@ export async function GET(
     }
 
     const pdfRecord = data as any
-    const uploadDir = process.env.RESULTS_UPLOAD_DIR || 'c:/Users/vamsi/clg-uploads/results'
+    const uploadDir = process.env.RESULTS_UPLOAD_DIR
+    if (!uploadDir) {
+      return new Response('RESULTS_UPLOAD_DIR is not configured in environment variables', { status: 500 })
+    }
     const filePath = path.join(uploadDir, pdfRecord.pdf_filename)
 
     try {

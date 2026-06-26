@@ -79,21 +79,23 @@ const syllabusMap: Record<string, string[]> = {
 export function CourseDetailPage({ course }: CourseDetailPageProps) {
   const [isSyllabusOpen, setIsSyllabusOpen] = useState(false)
 
-  const subjects = syllabusMap[course.code.toUpperCase()] || [
-    'Core Subjects & Fundamentals',
-    'Applied Concepts & Laboratory',
-    'Specialized Electives & Seminars',
-    'Industry Integration Projects',
-    'Emerging Trends & Methodologies'
-  ]
+  const subjects = (course.core_subjects && course.core_subjects.length > 0)
+    ? course.core_subjects
+    : (syllabusMap[course.code.toUpperCase()] || [
+      'Core Subjects & Fundamentals',
+      'Applied Concepts & Laboratory',
+      'Specialized Electives & Seminars',
+      'Industry Integration Projects',
+      'Emerging Trends & Methodologies'
+    ])
 
   return (
     <div className="bg-slate-50/30 min-h-screen py-10">
       <div className="container-wide">
-        
+
         {/* Back Link */}
-        <Link 
-          href="/courses" 
+        <Link
+          href="/courses"
           className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm mb-8 transition-colors font-medium"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Programs
@@ -101,7 +103,7 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          
+
           {/* Left Block: Course Overview & details (col-span-8) */}
           <div className="lg:col-span-8 space-y-8">
             <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm">
@@ -126,7 +128,7 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
 
             {/* Quick specifications */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
+
               <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-start gap-4">
                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 shrink-0 border border-blue-100/50">
                   <Clock className="w-5 h-5" />
@@ -162,13 +164,13 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
 
           {/* Right Block: Action Card (col-span-4) */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
               <h3 className="font-display text-lg font-bold text-slate-900 mb-3">Course Curriculum</h3>
               <p className="text-slate-500 text-xs sm:text-sm mb-6 leading-relaxed">
                 Explore the complete core subjects and syllabus details of the program to understand the curriculum focus.
               </p>
-              
+
               <button
                 onClick={() => setIsSyllabusOpen(true)}
                 className="w-full py-3 bg-[#0F2D52] hover:bg-[#153B66] text-white text-xs font-bold rounded-2xl transition-all shadow-sm flex items-center justify-center gap-2 mb-3"
@@ -213,7 +215,7 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
       <AnimatePresence>
         {isSyllabusOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            
+
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -222,7 +224,7 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
               onClick={() => setIsSyllabusOpen(false)}
               className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
             />
-            
+
             {/* Modal Dialog */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -231,7 +233,7 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
               transition={{ type: 'spring', duration: 0.4 }}
               className="bg-white rounded-3xl w-full max-w-lg shadow-2xl p-6 relative z-10 overflow-hidden border border-slate-100"
             >
-              
+
               {/* Close Button top-right */}
               <button
                 onClick={() => setIsSyllabusOpen(false)}

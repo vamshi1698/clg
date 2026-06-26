@@ -15,8 +15,8 @@ export async function resolveReferenceOptions(config: TableConfig): Promise<Refe
     const ref = referenceFor(field)
     if (!ref) continue
 
-    const supabase = postgresClient
-    let query = supabase.from(ref.table).select(`${ref.value}, ${ref.label}`)
+    const postgres = postgresClient
+    let query = postgres.from(ref.table).select(`${ref.value}, ${ref.label}`)
     if (ref.table === 'students') {
       query = query.select(`${ref.value}, ${ref.label}, register_number`)
     }
@@ -55,32 +55,73 @@ function referenceFor(field: FieldConfig) {
 }
 
 export async function fetchRows(config: TableConfig, id?: string): Promise<any[] | any | null> {
-  const supabase = postgresClient
+  const postgres = postgresClient
   const select = config.select || '*'
   const orderBy = config.orderColumn || 'created_at'
   const ascending = config.orderColumn === 'sort_order' || config.orderColumn === 'year'
 
+  let resultData: any = null
+
   if (id) {
-    const { data, error } = await supabase
+    const { data, error } = await postgres
       .from(config.table)
       .select(select)
       .eq('id', id)
       .single()
-    if (error) return null
-    return data
+    if (!error) resultData = data
+  } else {
+    const { data, error } = await postgres
+      .from(config.table)
+      .select(select)
+      .order(orderBy, { ascending })
+    if (!error) resultData = data || []
   }
 
-  const { data, error } = await supabase
-    .from(config.table)
-    .select(select)
-    .order(orderBy, { ascending })
-  if (error) return []
-  return (data || []) as any[]
+  if (!resultData) return id ? null : []
+
+  const rows = Array.isArray(resultData) ? resultData : [resultData]
+
+  const hasCourseId = config.fields.some(f => f.name === 'course_id')
+  const hasDeptId = config.fields.some(f => f.name === 'department_id')
+  const hasStudentId = config.fields.some(f => f.name === 'student_id')
+
+  const [coursesRes, deptsRes, studentsRes] = await Promise.all([
+    hasCourseId ? postgresClient.from('courses').select('id, name, code') : null,
+    hasDeptId ? postgresClient.from('departments').select('id, name, code') : null,
+    hasStudentId ? postgresClient.from('students').select('id, name, register_number') : null,
+  ])
+
+  const courses = coursesRes?.data as any[] | null
+  const depts = deptsRes?.data as any[] | null
+  const students = studentsRes?.data as any[] | null
+
+  for (const row of rows) {
+    if (hasCourseId && row.course_id) {
+      const match = courses?.find(c => c.id === row.course_id)
+      if (match) {
+        row.courses = { name: `${match.name} (${match.code.toUpperCase()})` }
+      }
+    }
+    if (hasDeptId && row.department_id) {
+      const match = depts?.find(d => d.id === row.department_id)
+      if (match) {
+        row.departments = { name: `${match.name} (${match.code.toUpperCase()})` }
+      }
+    }
+    if (hasStudentId && row.student_id) {
+      const match = students?.find(s => s.id === row.student_id)
+      if (match) {
+        row.students = { name: `${match.name} (${match.register_number})` }
+      }
+    }
+  }
+
+  return id ? rows[0] : rows
 }
 
 export async function fetchSingleton(config: TableConfig): Promise<any | null> {
-  const supabase = postgresClient
-  const { data, error } = await supabase
+  const postgres = postgresClient
+  const { data, error } = await postgres
     .from(config.table)
     .select('*')
     .limit(1)
