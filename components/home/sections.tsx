@@ -177,12 +177,22 @@ export function PrincipalMessage({ name, message, image_url }: PrincipalMessageP
               {name || 'Dr. K. Srinivas'}
             </h2>
             <div className="prose prose-lg text-gray-600 leading-relaxed">
-              <p className="text-base md:text-lg">
-                {message || 'Welcome to National College Jayanagar. For over five decades, we have been committed to nurturing minds and shaping futures. Our institution stands as a beacon of academic excellence, combining traditional values with modern education methodology.'}
-              </p>
-              <p className="text-base md:text-lg mt-4">
-                We believe in holistic development of our students - academically, socially, and personally. Our dedicated faculty, state-of-the-art infrastructure, and industry partnerships ensure that every student receives the best possible education.
-              </p>
+              {message ? (
+                message.split('\n').filter((p) => p.trim()).map((p, idx) => (
+                  <p key={idx} className="text-base md:text-lg mt-4 first:mt-0">
+                    {p}
+                  </p>
+                ))
+              ) : (
+                <>
+                  <p className="text-base md:text-lg">
+                    Welcome to National College Jayanagar. For over five decades, we have been committed to nurturing minds and shaping futures. Our institution stands as a beacon of academic excellence, combining traditional values with modern education methodology.
+                  </p>
+                  <p className="text-base md:text-lg mt-4">
+                    We believe in holistic development of our students - academically, socially, and personally. Our dedicated faculty, state-of-the-art infrastructure, and industry partnerships ensure that every student receives the best possible education.
+                  </p>
+                </>
+              )}
             </div>
             <Button asChild className="mt-8 btn-primary">
               <Link href="/about#principal">
@@ -982,18 +992,18 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                 <div className="flex items-center gap-12 mt-2">
                   <div>
                     <div className="text-3xl sm:text-4xl font-extrabold font-sans text-white mb-0.5 tracking-tight">
-                      A++
+                      {statistics ? `${statistics.placement_percentage}%` : 'A++'}
                     </div>
                     <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                      NAAC RATING
+                      {statistics ? 'PLACEMENT RATE' : 'NAAC RATING'}
                     </div>
                   </div>
                   <div>
                     <div className="text-3xl sm:text-4xl font-extrabold font-sans text-white mb-0.5 tracking-tight">
-                      15+
+                      {statistics ? `${statistics.students_count.toLocaleString()}+` : '15+'}
                     </div>
                     <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                      STUDENT CLUBS
+                      {statistics ? 'ACTIVE STUDENTS' : 'STUDENT CLUBS'}
                     </div>
                   </div>
                 </div>

@@ -9,7 +9,9 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const article = await getNewsBySlug(params.slug)
+  const { slug } = await params
+
+  const article = await getNewsBySlug(slug)
   if (!article) return { title: 'Not Found' }
   return {
     title: article.title,
@@ -18,7 +20,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function NewsArticlePage({ params }: PageProps) {
-  const article = await getNewsBySlug(params.slug)
+  const { slug } = await params
+
+  const article = await getNewsBySlug(slug)
   if (!article) notFound()
 
   return (
@@ -67,9 +71,9 @@ export default async function NewsArticlePage({ params }: PageProps) {
                 <img src={article.image_url} alt={article.title} className="w-full h-auto object-cover max-h-[500px]" />
               </div>
             )}
-            
+
             {article.content && article.content.trim() !== '' ? (
-              <div 
+              <div
                 className="prose prose-slate prose-lg max-w-none prose-headings:font-display prose-headings:font-bold prose-a:text-blue-600 hover:prose-a:text-blue-700"
                 dangerouslySetInnerHTML={{ __html: article.content }}
               />
@@ -80,10 +84,10 @@ export default async function NewsArticlePage({ params }: PageProps) {
                 </div>
                 <h3 className="text-lg font-bold text-slate-800 mb-2">Announcement Details</h3>
                 <p className="text-slate-500 text-sm max-w-md mx-auto">
-                  This announcement does not contain any further detailed content. 
+                  This announcement does not contain any further detailed content.
                   {article.category === 'examination' ? ' Please visit the Results section to view or download the relevant official documents.' : ''}
                 </p>
-                
+
                 {article.category === 'examination' && (
                   <div className="mt-8">
                     <Link href="/results" className="inline-flex items-center justify-center px-6 py-3 bg-academic-900 text-white font-bold rounded-xl hover:bg-academic-800 transition-colors shadow-sm">
