@@ -81,14 +81,14 @@ export async function fetchRows(config: TableConfig, id?: string): Promise<any[]
 
   const rows = Array.isArray(resultData) ? resultData : [resultData]
 
-  const hasCourseId = config.fields.some(f => f.name === 'course_id')
+  const hasCourseId = config.fields.some(f => f.name === 'course_id') || config.table === 'results'
   const hasDeptId = config.fields.some(f => f.name === 'department_id')
   const hasStudentId = config.fields.some(f => f.name === 'student_id')
 
   const [coursesRes, deptsRes, studentsRes] = await Promise.all([
     hasCourseId ? postgresClient.from('courses').select('id, name, code') : null,
     hasDeptId ? postgresClient.from('departments').select('id, name, code') : null,
-    hasStudentId ? postgresClient.from('students').select('id, name, register_number') : null,
+    hasStudentId ? postgresClient.from('students').select('id, name, register_number, course_id') : null,
   ])
 
   const courses = coursesRes?.data as any[] | null
@@ -96,6 +96,16 @@ export async function fetchRows(config: TableConfig, id?: string): Promise<any[]
   const students = studentsRes?.data as any[] | null
 
   for (const row of rows) {
+    if (hasStudentId && row.student_id) {
+      const match = students?.find(s => s.id === row.student_id)
+      if (match) {
+        row.students = { name: `${match.name} (${match.register_number})` }
+        row.student_name = match.name
+        if (config.table === 'results') {
+          row.course_id = match.course_id
+        }
+      }
+    }
     if (hasCourseId && row.course_id) {
       const match = courses?.find(c => c.id === row.course_id)
       if (match) {
@@ -106,12 +116,6 @@ export async function fetchRows(config: TableConfig, id?: string): Promise<any[]
       const match = depts?.find(d => d.id === row.department_id)
       if (match) {
         row.departments = { name: `${match.name} (${match.code.toUpperCase()})` }
-      }
-    }
-    if (hasStudentId && row.student_id) {
-      const match = students?.find(s => s.id === row.student_id)
-      if (match) {
-        row.students = { name: `${match.name} (${match.register_number})` }
       }
     }
   }

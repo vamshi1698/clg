@@ -54,6 +54,43 @@ function findHeader(headers: string[], options: string[]): string | undefined {
   })
 }
 
+function findIndexedValue(row: any, options: string[], index: number): any {
+  const indexStr = String(index)
+  const rowKeys = Object.keys(row)
+  for (const rk of rowKeys) {
+    const cleanedKey = rk.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (cleanedKey.includes(indexStr)) {
+      for (const opt of options) {
+        if (opt === 'subject_code' && (cleanedKey.includes('subjectcode') || cleanedKey.includes('subcode') || (cleanedKey.includes('subject') && cleanedKey.includes('code')))) {
+          return row[rk]
+        }
+        if (opt === 'subject_name' && (cleanedKey.includes('subjectname') || cleanedKey.includes('subname') || (cleanedKey.includes('subject') && cleanedKey.includes('name')))) {
+          return row[rk]
+        }
+        if (opt === 'internal_marks' && (cleanedKey.includes('internal') || cleanedKey.includes('internals'))) {
+          return row[rk]
+        }
+        if (opt === 'external_marks' && (cleanedKey.includes('external') || cleanedKey.includes('externals'))) {
+          return row[rk]
+        }
+        if (opt === 'max_marks' && cleanedKey.includes('max')) {
+          return row[rk]
+        }
+        if (opt === 'credits' && (cleanedKey.includes('credits') || cleanedKey.includes('credit'))) {
+          return row[rk]
+        }
+        if (opt === 'grade' && cleanedKey.includes('grade')) {
+          return row[rk]
+        }
+        if (opt === 'result_status' && (cleanedKey.includes('status') || cleanedKey.includes('resultstatus'))) {
+          return row[rk]
+        }
+      }
+    }
+  }
+  return undefined
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData()
@@ -97,14 +134,19 @@ export async function POST(req: Request) {
     const cgpaField = findHeader(headers, ['cgpa'])
 
     // Validate presence of critical columns
+    const hasIndexedColumns = headers.some(h => {
+      const cleaned = h.toLowerCase().replace(/[^a-z0-9]/g, '')
+      return (cleaned.includes('subject1code') || cleaned.includes('subjectcode1') || cleaned.includes('subcode1'))
+    })
+
     if (!regNoField) {
       return NextResponse.json({ error: 'Could not find "Register Number" column in Excel.' }, { status: 400 })
     }
-    if (!subCodeField || !subNameField) {
-      return NextResponse.json({ error: 'Could not find "Subject Code" or "Subject Name" column in Excel.' }, { status: 400 })
-    }
     if (!semesterField || !academicYearField) {
       return NextResponse.json({ error: 'Could not find "Semester" or "Academic Year" column in Excel.' }, { status: 400 })
+    }
+    if ((!subCodeField || !subNameField) && !hasIndexedColumns) {
+      return NextResponse.json({ error: 'Could not find "Subject Code" or "Subject Name" column in Excel.' }, { status: 400 })
     }
 
     // Load departments & courses to resolve codes to IDs
@@ -130,16 +172,8 @@ export async function POST(req: Request) {
       const semVal = semesterField ? parseInt(row[semesterField], 10) : NaN
       const examType = examTypeField ? String(row[examTypeField] || 'Semester End Examination').trim() : 'Semester End Examination'
 
-      const subCode = String(row[subCodeField] || '').trim()
-      const subName = String(row[subNameField] || '').trim()
-      if (!subCode || !subName || isNaN(semVal)) continue
+      if (isNaN(semVal)) continue
 
-      const internal = internalField && row[internalField] !== undefined && row[internalField] !== '' ? Number(row[internalField]) : null
-      const external = externalField && row[externalField] !== undefined && row[externalField] !== '' ? Number(row[externalField]) : null
-      const max = maxField && row[maxField] !== undefined && row[maxField] !== '' ? Number(row[maxField]) : 100
-      const grade = gradeField && row[gradeField] !== undefined ? String(row[gradeField]).trim() : null
-      const credits = creditsField && row[creditsField] !== undefined && row[creditsField] !== '' ? Number(row[creditsField]) : null
-      const status = statusField && row[statusField] !== undefined ? String(row[statusField]).trim().toUpperCase() : null
       const sgpa = sgpaField && row[sgpaField] !== undefined && row[sgpaField] !== '' ? Number(row[sgpaField]) : undefined
       const cgpa = cgpaField && row[cgpaField] !== undefined && row[cgpaField] !== '' ? Number(row[cgpaField]) : undefined
 
@@ -166,16 +200,59 @@ export async function POST(req: Request) {
       if (courseCode && !group.courseCode) group.courseCode = courseCode
       if (deptCode && !group.deptCode) group.deptCode = deptCode
 
-      group.subjects.push({
-        subCode,
-        subName,
-        internal,
-        external,
-        max,
-        grade,
-        credits,
-        status
-      })
+      // 1. Unindexed base subject
+      if (subCodeField && subNameField) {
+        const subCode = String(row[subCodeField] || '').trim()
+        const subName = String(row[subNameField] || '').trim()
+        if (subCode && subName) {
+          const internal = internalField && row[internalField] !== undefined && row[internalField] !== '' ? Number(row[internalField]) : null
+          const external = externalField && row[externalField] !== undefined && row[externalField] !== '' ? Number(row[externalField]) : null
+          const max = maxField && row[maxField] !== undefined && row[maxField] !== '' ? Number(row[maxField]) : 100
+          const grade = gradeField && row[gradeField] !== undefined ? String(row[gradeField]).trim() : null
+          const credits = creditsField && row[creditsField] !== undefined && row[creditsField] !== '' ? Number(row[creditsField]) : null
+          const status = statusField && row[statusField] !== undefined ? String(row[statusField]).trim().toUpperCase() : null
+
+          group.subjects.push({
+            subCode,
+            subName,
+            internal,
+            external,
+            max,
+            grade,
+            credits,
+            status
+          })
+        }
+      }
+
+      // 2. Loop through potential indexed subjects (e.g. subject1_code ... subject20_code)
+      for (let index = 1; index <= 20; index++) {
+        const indexedCode = findIndexedValue(row, ['subject_code', 'sub_code'], index)
+        const indexedName = findIndexedValue(row, ['subject_name', 'sub_name'], index)
+        if (indexedCode !== undefined && indexedName !== undefined) {
+          const subCode = String(indexedCode).trim()
+          const subName = String(indexedName).trim()
+          if (subCode && subName) {
+            const internal = findIndexedValue(row, ['internal_marks', 'internal', 'internals'], index)
+            const external = findIndexedValue(row, ['external_marks', 'external', 'externals'], index)
+            const max = findIndexedValue(row, ['max_marks', 'max'], index)
+            const grade = findIndexedValue(row, ['grade'], index)
+            const credits = findIndexedValue(row, ['credits', 'credit'], index)
+            const status = findIndexedValue(row, ['result_status', 'status'], index)
+
+            group.subjects.push({
+              subCode,
+              subName,
+              internal: internal !== undefined && internal !== '' ? Number(internal) : null,
+              external: external !== undefined && external !== '' ? Number(external) : null,
+              max: max !== undefined && max !== '' ? Number(max) : 100,
+              grade: grade !== undefined ? String(grade).trim() : null,
+              credits: credits !== undefined && credits !== '' ? Number(credits) : null,
+              status: status !== undefined ? String(status).trim().toUpperCase() : null
+            })
+          }
+        }
+      }
     }
 
     let studentsImported = 0

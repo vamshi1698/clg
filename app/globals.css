@@ -192,3 +192,19 @@
     }
   }
 }
+
+@media print {
+  header, footer, nav, aside, .fixed, .z-50, .cookie-banner {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    background-image: none !important;
+  }
+  main {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+}
+

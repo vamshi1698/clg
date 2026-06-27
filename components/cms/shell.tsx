@@ -120,7 +120,7 @@ export function CmsShell({
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed lg:static inset-y-0 left-0 z-50 w-72 bg-academic-900 text-white flex flex-col transition-transform duration-300',
+          'fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-50 w-72 bg-academic-900 text-white flex flex-col transition-transform duration-300',
           open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >

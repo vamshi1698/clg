@@ -13,12 +13,19 @@ import {
   Database,
   Calendar,
   Layers,
-  Sparkles
+  Sparkles,
+  Download
 } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getResultsPdfs, deleteResultsPdf } from '@/lib/actions/results-actions'
+import { 
+  getResultsPdfs, 
+  deleteResultsPdf, 
+  getImportedExcelDatasets, 
+  deleteImportedExcelDataset 
+} from '@/lib/actions/results-actions'
 
 interface PdfRecord {
   id: string
@@ -31,6 +38,7 @@ interface PdfRecord {
 
 export default function ResultsUploadPage() {
   const [pdfs, setPdfs] = useState<PdfRecord[]>([])
+  const [datasets, setDatasets] = useState<{ academic_year: string, semester: number, examination_type: string }[]>([])
   const [pdfPending, startPdfTransition] = useTransition()
   const [excelPending, startExcelTransition] = useTransition()
 
@@ -52,9 +60,10 @@ export default function ResultsUploadPage() {
   const [excelError, setExcelError] = useState<string | null>(null)
   const excelInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch PDFs on mount
+  // Fetch PDFs and datasets on mount
   useEffect(() => {
     loadPdfs()
+    loadDatasets()
   }, [])
 
   async function loadPdfs() {
@@ -62,6 +71,135 @@ export default function ResultsUploadPage() {
     if (res.data) {
       setPdfs(res.data as PdfRecord[])
     }
+  }
+
+  async function loadDatasets() {
+    const res = await getImportedExcelDatasets()
+    if (res.data) {
+      setDatasets(res.data as any[])
+    }
+  }
+
+  const downloadTemplate = () => {
+    const headers = [
+      'register_number',
+      'name',
+      'dob',
+      'course_code',
+      'dept_code',
+      'semester',
+      'academic_year',
+      'examination_type',
+      'subject1_code',
+      'subject1_name',
+      'subject1_internal',
+      'subject1_external',
+      'subject1_max',
+      'subject1_credits',
+      'subject1_grade',
+      'subject1_status',
+      'subject2_code',
+      'subject2_name',
+      'subject2_internal',
+      'subject2_external',
+      'subject2_max',
+      'subject2_credits',
+      'subject2_grade',
+      'subject2_status',
+      'subject3_code',
+      'subject3_name',
+      'subject3_internal',
+      'subject3_external',
+      'subject3_max',
+      'subject3_credits',
+      'subject3_grade',
+      'subject3_status',
+    ]
+
+    const sampleRows = [
+      {
+        register_number: 'NCJ23BCA051',
+        name: 'Vamsi Anakarla',
+        dob: '2003-10-04',
+        course_code: 'BCA',
+        dept_code: 'CS',
+        semester: 6,
+        academic_year: '2026-27',
+        examination_type: 'Semester End Examination',
+        subject1_code: 'CS601',
+        subject1_name: 'Cloud Computing',
+        subject1_internal: 18,
+        subject1_external: 54,
+        subject1_max: 100,
+        subject1_credits: 4,
+        subject1_grade: 'A',
+        subject1_status: 'PASS',
+        subject2_code: 'CS602',
+        subject2_name: 'Cryptography',
+        subject2_internal: 19,
+        subject2_external: 62,
+        subject2_max: 100,
+        subject2_credits: 4,
+        subject2_grade: 'A+',
+        subject2_status: 'PASS',
+        subject3_code: 'CS603',
+        subject3_name: 'Mobile App Development',
+        subject3_internal: 17,
+        subject3_external: 48,
+        subject3_max: 100,
+        subject3_credits: 3,
+        subject3_grade: 'B+',
+        subject3_status: 'PASS'
+      },
+      {
+        register_number: 'NCJ23BCA091',
+        name: 'Vamsi Anakarla Two',
+        dob: '2004-03-22',
+        course_code: 'BCA',
+        dept_code: 'CS',
+        semester: 6,
+        academic_year: '2026-27',
+        examination_type: 'Semester End Examination',
+        subject1_code: 'CS601',
+        subject1_name: 'Cloud Computing',
+        subject1_internal: 16,
+        subject1_external: 42,
+        subject1_max: 100,
+        subject1_credits: 4,
+        subject1_grade: 'B',
+        subject1_status: 'PASS',
+        subject2_code: 'CS602',
+        subject2_name: 'Cryptography',
+        subject2_internal: 15,
+        subject2_external: 38,
+        subject2_max: 100,
+        subject2_credits: 4,
+        subject2_grade: 'C',
+        subject2_status: 'PASS',
+        subject3_code: 'CS603',
+        subject3_name: 'Mobile App Development',
+        subject3_internal: 18,
+        subject3_external: 50,
+        subject3_max: 100,
+        subject3_credits: 3,
+        subject3_grade: 'A',
+        subject3_status: 'PASS'
+      }
+    ]
+
+    const worksheet = XLSX.utils.json_to_sheet(sampleRows, { header: headers })
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Results Template')
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+    const url = window.URL.createObjectURL(data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'results_upload_template.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
   }
 
   const handlePdfSubmit = async (e: React.FormEvent) => {
@@ -131,6 +269,7 @@ export default function ResultsUploadPage() {
           setExcelResult(data)
           setExcelFile(null)
           if (excelInputRef.current) excelInputRef.current.value = ''
+          loadDatasets()
         }
       } catch (err: any) {
         setExcelError(err.message || 'An error occurred during import.')
@@ -148,6 +287,25 @@ export default function ResultsUploadPage() {
       } else {
         setPdfMessage({ type: 'success', text: 'PDF announcement deleted successfully.' })
         loadPdfs()
+      }
+    })
+  }
+
+  const handleDeleteDataset = async (academicYear: string, semester: number, examType: string) => {
+    if (!confirm(`Are you sure you want to delete all detailed results for Semester ${semester} ${examType} (${academicYear})? This will permanently delete all student marks and summaries for this exam.`)) return
+
+    startExcelTransition(async () => {
+      const res = await deleteImportedExcelDataset(academicYear, semester, examType)
+      if (res.error) {
+        setExcelError(res.error)
+      } else {
+        setExcelError(null)
+        setExcelResult({
+          studentsImported: 0,
+          marksImported: 0,
+          errors: ['Dataset deleted successfully.']
+        })
+        loadDatasets()
       }
     })
   }
@@ -408,6 +566,16 @@ export default function ResultsUploadPage() {
                 <p className="text-[10px] text-gray-500">
                   * SGPA, CGPA, and pass status are calculated automatically if not provided. Multiple rows per student are grouped under their registration number.
                 </p>
+                <div className="flex items-center justify-between gap-2 border-t border-academic-200/50 pt-2.5 mt-2">
+                  <span className="text-[10px] text-academic-900 font-medium">Use our pre-formatted spreadsheet template:</span>
+                  <button
+                    type="button"
+                    onClick={downloadTemplate}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-academic-900 text-white text-[10px] font-semibold rounded hover:bg-academic-800 transition-colors shadow-sm whitespace-nowrap"
+                  >
+                    <Download className="h-3 w-3" /> Download Template
+                  </button>
+                </div>
               </div>
 
               {/* Import Result Feedback */}
@@ -442,6 +610,46 @@ export default function ResultsUploadPage() {
                 </div>
               )}
 
+            </CardContent>
+          </Card>
+
+          {/* List of active Excel datasets */}
+          <Card className="border border-gray-200 shadow-md">
+            <CardHeader className="bg-gray-50/70 border-b border-gray-200/60 py-4">
+              <CardTitle className="font-display text-base text-academic-900">
+                Imported Detailed Datasets ({datasets.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {datasets.length > 0 ? (
+                <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                  {datasets.map((dataset, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 hover:bg-gray-50">
+                      <div className="min-w-0 pr-4">
+                        <p className="font-medium text-sm text-academic-900 truncate">
+                          Semester {dataset.semester} · {dataset.examination_type}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Academic Year: {dataset.academic_year}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                        onClick={() => handleDeleteDataset(dataset.academic_year, dataset.semester, dataset.examination_type)}
+                        disabled={excelPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-gray-500 text-sm">
+                  No detailed results imported from spreadsheets yet.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

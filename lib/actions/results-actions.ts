@@ -119,3 +119,51 @@ export async function createExcelResultNewsAnnouncement({ academicYear, semester
   revalidatePath('/')
   revalidatePath('/results')
 }
+
+export async function getImportedExcelDatasets() {
+  try {
+    const { data, error } = await postgresClient.query(`
+      SELECT DISTINCT academic_year, semester, examination_type
+      FROM results
+      ORDER BY academic_year DESC, semester DESC
+    `)
+    if (error) {
+      throw error
+    }
+    return { data: data || [] }
+  } catch (err: any) {
+    console.error('Error fetching imported datasets:', err)
+    return { error: err.message || 'Failed to fetch imported datasets.' }
+  }
+}
+
+export async function deleteImportedExcelDataset(academicYear: string, semester: number, examType: string) {
+  try {
+    // 1. Delete results
+    await postgresClient.query(
+      'DELETE FROM results WHERE academic_year = $1 AND semester = $2 AND examination_type = $3',
+      [academicYear, semester, examType]
+    )
+
+    // 2. Delete result summaries
+    await postgresClient.query(
+      'DELETE FROM result_summaries WHERE academic_year = $1 AND semester = $2 AND examination_type = $3',
+      [academicYear, semester, examType]
+    )
+
+    // 3. Delete matching news announcements
+    const title = `Results Declared: Semester ${semester} ${examType} (${academicYear})`
+    await postgresClient.query(
+      'DELETE FROM news WHERE title = $1',
+      [title]
+    )
+
+    revalidatePath('/results')
+    revalidatePath('/news')
+    revalidatePath('/')
+    return { ok: true }
+  } catch (err: any) {
+    console.error('Error deleting excel dataset:', err)
+    return { error: err.message || 'Failed to delete results dataset.' }
+  }
+}

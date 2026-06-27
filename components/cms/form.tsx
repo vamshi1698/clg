@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, Save, Loader2, AlertCircle, Plus } from 'lucide-react'
 import type { TableConfig, FieldConfig } from '@/lib/cms/tables'
 import { saveRow, deleteRow } from '@/lib/cms/actions'
+import { ResultsMultiForm } from './results-multi-form'
 
 export interface FormProps {
   config: TableConfig
@@ -62,6 +63,11 @@ function formatDateForInput(value: unknown, type: 'date' | 'datetime'): string {
 
 export function CmsForm({ config, references, initial, rowId, singletonId }: FormProps) {
   const router = useRouter()
+
+  if (config.slug === 'results' && !rowId && !config.singleton) {
+    return <ResultsMultiForm config={config} references={references} />
+  }
+
   const [values, setValues] = useState<Record<string, unknown>>(initial || {})
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
