@@ -116,11 +116,11 @@ export function CmsShell({
   const initials = session.name.charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed lg:sticky lg:top-0 lg:h-screen inset-y-0 left-0 z-50 w-72 bg-academic-900 text-white flex flex-col transition-transform duration-300',
+          'fixed lg:static inset-y-0 left-0 z-50 w-72 bg-academic-900 text-white flex flex-col transition-transform duration-300 h-full flex-shrink-0',
           open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
@@ -216,8 +216,8 @@ export function CmsShell({
       )}
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 lg:px-8 flex-shrink-0">
           <button
             className="lg:hidden p-2 text-gray-600"
             onClick={() => setOpen(true)}
@@ -235,7 +235,7 @@ export function CmsShell({
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8">{children}</main>
       </div>
     </div>
   )

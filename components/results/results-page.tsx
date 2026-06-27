@@ -57,7 +57,9 @@ interface PdfRecord {
 
 export function ResultsPage() {
   const [registerNumber, setRegisterNumber] = useState('')
-  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [dobDay, setDobDay] = useState('')
+  const [dobMonth, setDobMonth] = useState('')
+  const [dobYear, setDobYear] = useState('')
   const [result, setResult] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -79,10 +81,12 @@ export function ResultsPage() {
     setError(null)
     setResult(null)
 
-    if (!registerNumber.trim() || !dateOfBirth) {
-      setError('Please enter both register number and date of birth')
+    if (!registerNumber.trim() || !dobDay || !dobMonth || !dobYear) {
+      setError('Please enter your register number and select your complete date of birth')
       return
     }
+
+    const dateOfBirth = `${dobYear}-${dobMonth}-${dobDay}`
 
     startTransition(async () => {
       const res = await lookupResults(registerNumber.trim(), dateOfBirth)
@@ -149,12 +153,56 @@ export function ResultsPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Date of Birth
                         </label>
-                        <Input
-                          type="date"
-                          value={dateOfBirth}
-                          onChange={(e) => setDateOfBirth(e.target.value)}
-                          className="w-full border-gray-200"
-                        />
+                        <div className="grid grid-cols-3 gap-2">
+                          {/* Day selector */}
+                          <select
+                            value={dobDay}
+                            onChange={(e) => setDobDay(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-gray-250 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-academic-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-gray-700 shadow-sm"
+                          >
+                            <option value="">Day</option>
+                            {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
+                              <option key={d} value={d}>{d}</option>
+                            ))}
+                          </select>
+
+                          {/* Month selector */}
+                          <select
+                            value={dobMonth}
+                            onChange={(e) => setDobMonth(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-gray-250 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-academic-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-gray-700 shadow-sm"
+                          >
+                            <option value="">Month</option>
+                            {[
+                              { val: '01', name: 'Jan' },
+                              { val: '02', name: 'Feb' },
+                              { val: '03', name: 'Mar' },
+                              { val: '04', name: 'Apr' },
+                              { val: '05', name: 'May' },
+                              { val: '06', name: 'Jun' },
+                              { val: '07', name: 'Jul' },
+                              { val: '08', name: 'Aug' },
+                              { val: '09', name: 'Sep' },
+                              { val: '10', name: 'Oct' },
+                              { val: '11', name: 'Nov' },
+                              { val: '12', name: 'Dec' },
+                            ].map((m) => (
+                              <option key={m.val} value={m.val}>{m.name}</option>
+                            ))}
+                          </select>
+
+                          {/* Year selector */}
+                          <select
+                            value={dobYear}
+                            onChange={(e) => setDobYear(e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-gray-250 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-academic-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-gray-700 shadow-sm"
+                          >
+                            <option value="">Year</option>
+                            {Array.from({ length: 50 }, (_, i) => String(new Date().getFullYear() - 10 - i)).map((y) => (
+                              <option key={y} value={y}>{y}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -192,7 +240,7 @@ export function ResultsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-display text-lg font-semibold">National College Jayanagar</h3>
-                          <p className="text-gray-300 text-xs">Semester Examination Results</p>
+                          <p className="text-gray-300 text-xs">Semester {result.summary?.semester} Examination Results ({result.summary?.academic_year})</p>
                         </div>
                         <div className="print:hidden flex items-center gap-2">
                           <Button onClick={handlePrint} variant="outline" size="sm" className="bg-white text-academic-900 hover:bg-gray-100 border-none">
@@ -215,12 +263,12 @@ export function ResultsPage() {
                         <p className="text-[10px] text-gray-600 font-medium">Jayanagar, Bengaluru - 560070</p>
                         <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Accredited "A++" Grade by NAAC</p>
                         <h2 className="font-display text-xs font-bold uppercase tracking-widest text-academic-900 mt-3 border border-academic-900 px-3 py-1 bg-gray-50/50">
-                          PROVISIONAL STATEMENT OF MARKS
+                          PROVISIONAL STATEMENT OF MARKS: SEMESTER {result.summary?.semester} ({result.summary?.academic_year})
                         </h2>
                       </div>
 
                       {/* Student Info */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 print:bg-white rounded-lg print:rounded-none border border-gray-100 print:border-x-0 print:border-y print:border-gray-200 print:py-3 print:my-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 p-4 bg-gray-50 print:bg-white rounded-lg print:rounded-none border border-gray-100 print:border-x-0 print:border-y print:border-gray-200 print:py-3 print:my-4">
                         <div>
                           <p className="text-xs text-gray-500 font-medium">Name</p>
                           <p className="font-semibold text-sm text-academic-900">{result.student.name}</p>
@@ -233,6 +281,12 @@ export function ResultsPage() {
                           <div>
                             <p className="text-xs text-gray-500 font-medium">Course</p>
                             <p className="font-semibold text-sm text-academic-900">{result.student.course_name}</p>
+                          </div>
+                        )}
+                        {result.summary?.semester && (
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium">Semester</p>
+                            <p className="font-semibold text-sm text-academic-900">Semester {result.summary.semester}</p>
                           </div>
                         )}
                         {result.student.department_name && (

@@ -610,46 +610,43 @@ export default function ResultsUploadPage() {
                 </div>
               )}
 
-            </CardContent>
-          </Card>
-
-          {/* List of active Excel datasets */}
-          <Card className="border border-gray-200 shadow-md">
-            <CardHeader className="bg-gray-50/70 border-b border-gray-200/60 py-4">
-              <CardTitle className="font-display text-base text-academic-900">
-                Imported Detailed Datasets ({datasets.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {datasets.length > 0 ? (
-                <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-                  {datasets.map((dataset, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                      <div className="min-w-0 pr-4">
-                        <p className="font-medium text-sm text-academic-900 truncate">
-                          Semester {dataset.semester} · {dataset.examination_type}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Academic Year: {dataset.academic_year}
-                        </p>
+              {/* Imported Detailed Datasets Section inside the Excel Card */}
+              <div className="border-t border-gray-200/60 pt-6 space-y-4">
+                <h4 className="font-semibold text-sm text-academic-900 flex items-center gap-2">
+                  <Database className="h-4.5 w-4.5 text-gold-600" />
+                  Imported Detailed Datasets ({datasets.length})
+                </h4>
+                {datasets.length > 0 ? (
+                  <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto border border-gray-150 rounded-lg">
+                    {datasets.map((dataset, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 hover:bg-gray-50 bg-white first:rounded-t-lg last:rounded-b-lg">
+                        <div className="min-w-0 pr-4">
+                          <p className="font-medium text-xs text-academic-900 truncate">
+                            Semester {dataset.semester} · {dataset.examination_type}
+                          </p>
+                          <p className="text-[10px] text-gray-500 mt-0.5">
+                            Academic Year: {dataset.academic_year}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 flex-shrink-0"
+                          onClick={() => handleDeleteDataset(dataset.academic_year, dataset.semester, dataset.examination_type)}
+                          disabled={excelPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                        onClick={() => handleDeleteDataset(dataset.academic_year, dataset.semester, dataset.examination_type)}
-                        disabled={excelPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center text-gray-500 text-sm">
-                  No detailed results imported from spreadsheets yet.
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-400 text-xs bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+                    No detailed results imported from spreadsheets yet.
+                  </div>
+                )}
+              </div>
+
             </CardContent>
           </Card>
         </div>

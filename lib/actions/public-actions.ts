@@ -18,12 +18,39 @@ export async function lookupResults(registerNumber: string, dateOfBirth: string)
     const results = await getStudentResults(student.id)
     const summaries = await getStudentResultSummaries(student.id)
 
+    let courseName = undefined
+    let deptName = undefined
+
+    if ((student as any).course_id) {
+      const { data: course } = await postgresClient
+        .from('courses')
+        .select('name')
+        .eq('id', (student as any).course_id)
+        .single()
+      if (course) {
+        courseName = (course as any).name
+      }
+    }
+
+    if ((student as any).department_id) {
+      const { data: dept } = await postgresClient
+        .from('departments')
+        .select('name')
+        .eq('id', (student as any).department_id)
+        .single()
+      if (dept) {
+        deptName = (dept as any).name
+      }
+    }
+
     // Match UI component course/dept structure if needed
     return {
       student: {
         id: student.id,
         name: student.name,
         register_number: student.register_number,
+        course_name: courseName,
+        department_name: deptName,
       },
       results: results.map(r => ({
         semester: r.semester,
