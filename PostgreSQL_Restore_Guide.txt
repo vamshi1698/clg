@@ -1,0 +1,30 @@
+PostgreSQL Restore Guide (Windows)
+
+Step 1: Copy the backup
+
+Place the backup file at:
+
+C:.backup
+
+If C:doesn’t exist, create it:
+
+mkdir C:
+
+Step 2: Set the password
+
+set PGPASSWORD=Vamsi@1698
+
+Step 3: Restore the database
+
+If the postgres database already exists (it usually does), run:
+
+“C:Files\18_restore.exe” -h localhost -p 5432 -U postgres -d postgres
+“C:.backup”
+
+Step 4: Verify
+
+Open psql:
+
+“C:Files\18.exe” -h localhost -U postgres -d postgres
+
+Then list the tables:

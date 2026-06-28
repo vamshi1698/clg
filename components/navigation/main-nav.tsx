@@ -10,10 +10,8 @@ import logoImage from '../brand/channels4_profile.jpg'
 
 const globalNavigation = [
   { name: 'Students', href: '/students' },
-  { name: 'Faculty/Staff', href: '/faculty-staff' },
   { name: 'Alumni', href: '/alumni' },
-  { name: 'Parents', href: '/parents' },
-  { name: 'Visitors', href: '/visitors' },
+  { name: 'Results', href: '/results' },
 ]
 
 const mainNavigation = [

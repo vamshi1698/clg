@@ -8,31 +8,50 @@ import {
   getRecruiters,
   getTestimonials,
   getAchievements,
-  getDepartments,
 } from '@/lib/data/public'
+import { getActiveResultsPdfs } from '@/lib/actions/public-actions'
 import {
   HeroSection,
   StatsSection,
   PrincipalMessage,
   ProgramsSection,
-  NewsAndEventsSection,
   GalleryPreview,
   RecruitersSection,
   TestimonialsSection,
   AchievementsSection,
   CTASection,
 } from '@/components/home/sections'
+import { NoticeBoard } from '@/components/home/notice-board'
 import { AutoCarouselSection } from '@/components/home/auto-carousel-section'
 import { BookOpen, BriefcaseBusiness, Users, ArrowRight, ChevronRight, Film, MonitorSmartphone } from 'lucide-react'
 import Link from 'next/link'
-
+import LanyardWrapper from '@/components/reactbits/LanyardWrapper';
 const marqueeItems = [
   'Latest information: admissions, events, and notices are updated regularly.',
   'Academic calendar and results are available through the campus portal.',
   'Faculty profiles and department highlights are now featured on the homepage.',
 ]
 
+const highlightSlides = [
+  {
+    title: 'Campus momentum',
+    description: 'A rotating visual preview for announcements, campus life, and student achievements.',
+  },
+  {
+    title: 'Academic excellence',
+    description: 'A clean carousel-style section that keeps the homepage lively and focused.',
+  },
+  {
+    title: 'Student pathways',
+    description: 'Clear calls to action that guide visitors to departments, careers, and faculty.',
+  },
+]
 
+const departmentPreview = [
+  { title: 'Computer Applications', text: 'Software, systems, and applied computing pathways.', href: '/departments' },
+  { title: 'Commerce & Management', text: 'Business, finance, and professional growth tracks.', href: '/departments' },
+  { title: 'Arts & Humanities', text: 'Culture, critical thinking, and communication-led study.', href: '/departments' },
+]
 
 const careerPreview = [
   { title: 'Placement guidance', text: 'Career support, resume preparation, and interview readiness.' },
@@ -47,7 +66,7 @@ const facultyPreview = [
 ]
 
 export default async function HomePage() {
-  const [settings, statistics, courses, news, events, gallery, recruiters, testimonials, achievements, departmentPreview] = await Promise.all([
+  const [settings, statistics, courses, news, events, gallery, recruiters, testimonials, achievements, resultPdfsRes] = await Promise.all([
     getSiteSettings(),
     getStatistics(),
     getCourses(),
@@ -56,8 +75,11 @@ export default async function HomePage() {
     getGallery({ limit: 10 }),
     getRecruiters(),
     getTestimonials(),
-    getAchievements(), getDepartments()
+    getAchievements(),
+    getActiveResultsPdfs(),
   ])
+
+  const resultPdfs = (resultPdfsRes?.data as any[]) || []
 
   return (
     <>
@@ -66,9 +88,12 @@ export default async function HomePage() {
         tagline={settings?.tagline || undefined}
         established_year={settings?.established_year}
       />
+      
+      {/* Dynamic Image Carousel controlled via CMS (Gallery) */}
+      <AutoCarouselSection />
 
-      {/* Stanford style: News and Events directly after the hero */}
-      <NewsAndEventsSection news={news} events={events} statistics={statistics} />
+      {/* Unified Notice Board System for News, Events, and Result Bulletins */}
+      <NoticeBoard news={news} events={events} resultPdfs={resultPdfs} />
 
       <StatsSection statistics={statistics} />
 
@@ -80,17 +105,17 @@ export default async function HomePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-academic-600">Academics</p>
               <h2 className="font-display mt-2 text-3xl font-bold text-academic-950 md:text-4xl">Schools & Departments</h2>
             </div>
-            <Link href="/departments" className="hidden items-center gap-2 text-gold-600 text-sm font-medium md:inline-flex">
+            <Link href="/departments" className="hidden items-center gap-2 text-sm font-medium text-academic-700 md:inline-flex">
               View all <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="grid gap-6 lg:grid-cols-3">
             {departmentPreview.map((item) => (
-              <div key={item.name} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
                 <BookOpen className="h-8 w-8 text-academic-700" />
-                <h3 className="mt-4 font-display text-2xl font-semibold text-academic-950">{item.name}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.description}</p>
-                <Link href={`/departments/${item.code}`} className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-academic-700 hover:text-gold-600 transition-colors">
+                <h3 className="mt-4 font-display text-2xl font-semibold text-academic-950">{item.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
+                <Link href={item.href} className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-academic-700 hover:text-gold-600 transition-colors">
                   Explore <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -142,9 +167,9 @@ export default async function HomePage() {
       </section>
 
       <AchievementsSection achievements={achievements} />
-
+      
       {gallery.length > 0 && <GalleryPreview items={gallery} />}
-
+      
       <PrincipalMessage
         name={settings?.principal_name || undefined}
         message={settings?.principal_message || undefined}
@@ -153,6 +178,15 @@ export default async function HomePage() {
 
       {recruiters.length > 0 && <RecruitersSection recruiters={recruiters} />}
       {testimonials.length > 0 && <TestimonialsSection testimonials={testimonials} />}
+      
+      <section className="relative w-full overflow-hidden bg-academic-950">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 text-center w-full px-4">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">Welcome to the Family</h2>
+          <p className="text-gold-400">Your potential student ID awaits.</p>
+        </div>
+        <LanyardWrapper position={[0, 0, 20]} gravity={[0, -40, 0]} />
+      </section>
+
       <CTASection />
     </>
   )
