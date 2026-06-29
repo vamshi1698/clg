@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { motion, useMotionValue, useSpring, useTransform, Variants } from 'framer-motion'
 import Link from 'next/link'
 import { BookOpen, BriefcaseBusiness, Users, ArrowRight, ChevronRight } from 'lucide-react'
 
@@ -53,7 +53,7 @@ const TiltCard = ({ children, className = '' }: { children: React.ReactNode, cla
   )
 }
 
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -61,7 +61,7 @@ const staggerContainer = {
   }
 }
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } }
 }

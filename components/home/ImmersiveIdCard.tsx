@@ -106,52 +106,56 @@ export function ImmersiveIdCard() {
           <div className="w-2 h-2 bg-gray-800 rounded-full mx-auto mt-1 opacity-50"></div>
         </div>
 
-        {/* Card Body */}
-        <motion.div
-          animate={{ rotateX, rotateY }}
-          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        {/* Card Body Container (Stable for mouse events) */}
+        <div
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          className="w-72 h-[420px] bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-white flex flex-col relative"
-          style={{
-            transformStyle: 'preserve-3d',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0,0,0,0.05)'
-          }}
+          className="w-72 h-[420px] relative"
         >
-          {/* Header */}
-          <div className="bg-academic-900 w-full p-4 flex flex-col items-center justify-center">
-            <h3 className="text-white font-display font-bold text-lg tracking-wider">NATIONAL COLLEGE</h3>
-            <div className="w-full h-1 bg-gold-500 mt-2"></div>
-          </div>
-
-          {/* Photo Placeholder */}
-          <div className="w-32 h-32 rounded-lg border-4 border-slate-100 bg-slate-200 mx-auto mt-8 shadow-inner overflow-hidden relative flex items-center justify-center">
-             <div className="w-16 h-16 rounded-full bg-slate-300 absolute top-4"></div>
-             <div className="w-24 h-16 rounded-t-full bg-slate-300 absolute bottom-0"></div>
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 px-6 pt-6 flex flex-col items-center text-center">
-            <h4 className="text-2xl font-bold text-slate-800 font-display">Future Student</h4>
-            <p className="text-gold-600 font-medium text-sm mt-1 uppercase tracking-widest">Class of 2028</p>
-            
-            <div className="w-full mt-auto mb-6 flex justify-between items-end border-t border-slate-100 pt-4">
-               <div className="text-left">
-                 <p className="text-[10px] text-slate-400 font-bold uppercase">ID Number</p>
-                 <p className="text-sm font-mono text-slate-700">NC-8042-XXXX</p>
-               </div>
-               {/* Barcode Mock */}
-               <div className="flex gap-[2px] h-8 opacity-70">
-                 {[...Array(16)].map((_, i) => (
-                   <div key={i} className={`bg-slate-800 ${i % 3 === 0 ? 'w-1' : i % 5 === 0 ? 'w-[3px]' : 'w-[2px]'}`}></div>
-                 ))}
-               </div>
+          <motion.div
+            animate={{ rotateX, rotateY }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="w-full h-full bg-white rounded-2xl shadow-2xl overflow-hidden border-4 border-white flex flex-col relative"
+            style={{
+              transformStyle: 'preserve-3d',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0,0,0,0.05)'
+            }}
+          >
+            {/* Header */}
+            <div className="bg-academic-900 w-full p-4 flex flex-col items-center justify-center">
+              <h3 className="text-white font-display font-bold text-lg tracking-wider">NATIONAL COLLEGE</h3>
+              <div className="w-full h-1 bg-gold-500 mt-2"></div>
             </div>
-          </div>
-
-          {/* Glare effect */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ transform: 'translateZ(10px)' }}></div>
-        </motion.div>
+  
+            {/* Photo Placeholder */}
+            <div className="w-32 h-32 rounded-lg border-4 border-slate-100 bg-slate-200 mx-auto mt-8 shadow-inner overflow-hidden relative flex items-center justify-center">
+               <div className="w-16 h-16 rounded-full bg-slate-300 absolute top-4"></div>
+               <div className="w-24 h-16 rounded-t-full bg-slate-300 absolute bottom-0"></div>
+            </div>
+  
+            {/* Info */}
+            <div className="flex-1 px-6 pt-6 flex flex-col items-center text-center">
+              <h4 className="text-2xl font-bold text-slate-800 font-display">Future Student</h4>
+              <p className="text-gold-600 font-medium text-sm mt-1 uppercase tracking-widest">Class of 2028</p>
+              
+              <div className="w-full mt-auto mb-6 flex justify-between items-end border-t border-slate-100 pt-4">
+                 <div className="text-left">
+                   <p className="text-[10px] text-slate-400 font-bold uppercase">ID Number</p>
+                   <p className="text-sm font-mono text-slate-700">NC-8042-XXXX</p>
+                 </div>
+                 {/* Barcode Mock */}
+                 <div className="flex gap-[2px] h-8 opacity-70">
+                   {[...Array(16)].map((_, i) => (
+                     <div key={i} className={`bg-slate-800 ${i % 3 === 0 ? 'w-1' : i % 5 === 0 ? 'w-[3px]' : 'w-[2px]'}`}></div>
+                   ))}
+                 </div>
+              </div>
+            </div>
+  
+            {/* Glare effect */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ transform: 'translateZ(10px)' }}></div>
+          </motion.div>
+        </div>
       </motion.div>
     </div>
   );

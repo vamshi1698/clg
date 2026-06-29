@@ -28,10 +28,7 @@ import Link from 'next/link'
 import { ImmersiveIdCard } from '@/components/home/ImmersiveIdCard';
 import CurvedLoop from '@/components/reactbits/CurvedLoop';
 import { SchoolsAndDepartments, CareerAndFaculty } from '@/components/home/interactive-showcase';
-  'Latest information: admissions, events, and notices are updated regularly.',
-  'Academic calendar and results are available through the campus portal.',
-  'Faculty profiles and department highlights are now featured on the homepage.',
-]
+import { WhyChooseUs } from '@/components/home/why-choose-us';
 
 const highlightSlides = [
   {
@@ -120,6 +117,8 @@ export default async function HomePage() {
       <CareerAndFaculty careerItems={careerPreview} facultyItems={facultyPreview} />
 
       <AchievementsSection achievements={achievements} />
+      
+      <WhyChooseUs />
       
       {gallery.length > 0 && <GalleryPreview items={gallery} />}
       

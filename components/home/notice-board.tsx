@@ -1,23 +1,9 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Bell, Calendar, FileText, Newspaper } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-
-const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 },
-}
+import { useState } from 'react'
+import { ArrowRight, Bell, Calendar, FileText, Newspaper, ExternalLink } from 'lucide-react'
 
 interface NoticeBoardProps {
   news: any[]
@@ -25,135 +11,187 @@ interface NoticeBoardProps {
   resultPdfs: any[]
 }
 
+const typeConfig = {
+  news:   { label: 'News',   color: 'bg-sky-100 text-sky-700',    dot: 'bg-sky-500',    icon: Newspaper },
+  event:  { label: 'Event',  color: 'bg-violet-100 text-violet-700', dot: 'bg-violet-500', icon: Calendar  },
+  result: { label: 'Result', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500', icon: FileText },
+}
+
 export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
-  // Combine all items into a single timeline, sorted by date
+  const tabs = ['All', 'News', 'Events', 'Results'] as const
+  const [active, setActive] = useState<typeof tabs[number]>('All')
+
   const allItems = [
     ...news.map(n => ({
-      ...n,
-      type: 'news',
+      id: n.id, type: 'news' as const,
+      title: n.title,
       date: new Date(n.published_at || n.created_at),
-      icon: Newspaper,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
       href: `/news/${n.slug}`,
-      badge: 'News'
+      isExternal: false,
     })),
     ...events.map(e => ({
-      ...e,
-      type: 'event',
+      id: e.id, type: 'event' as const,
+      title: e.title,
       date: new Date(e.event_date),
-      icon: Calendar,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
       href: `/events`,
-      badge: 'Event'
+      isExternal: false,
     })),
     ...resultPdfs.map(r => ({
-      ...r,
-      type: 'result',
-      date: new Date(r.created_at),
-      icon: FileText,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      href: `/api/results/pdf/${r.id}`,
-      badge: 'Result',
+      id: r.id, type: 'result' as const,
       title: r.title,
-      excerpt: `Semester ${r.semester} - ${r.academic_year}`
-    }))
-  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 8)
+      date: new Date(r.created_at),
+      href: `/api/results/pdf/${r.id}`,
+      isExternal: true,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 12)
+
+  const filtered = allItems.filter(item => {
+    if (active === 'All') return true
+    if (active === 'News') return item.type === 'news'
+    if (active === 'Events') return item.type === 'event'
+    if (active === 'Results') return item.type === 'result'
+    return true
+  })
 
   return (
-    <section className="section-padding bg-slate-50 border-t border-slate-200">
+    <section className="py-16 bg-white border-t border-slate-100">
       <div className="container-wide">
-        <div className="grid lg:grid-cols-[1fr_380px] gap-8 items-start">
-          
-          {/* Main Feed */}
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="space-y-6"
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-academic-950 flex items-center gap-3">
-                <Bell className="h-6 w-6 text-gold-500" />
-                Notice Board
-              </h2>
+
+        {/* Header row */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gold-500 rounded-xl flex items-center justify-center shadow-sm">
+              <Bell className="h-5 w-5 text-white" />
             </div>
-            
-            <div className="grid gap-4">
-              {allItems.map((item, i) => (
-                <motion.div key={`${item.type}-${item.id || i}`} variants={fadeIn}>
-                  <Link href={item.href} target={item.type === 'result' ? '_blank' : '_self'} className="block group">
-                    <Card className="border border-slate-200 shadow-sm hover:shadow-md hover:border-gold-300 transition-all">
-                      <CardContent className="p-4 sm:p-5 flex items-start gap-4 sm:gap-6">
-                        <div className={`shrink-0 p-3 rounded-xl ${item.bgColor} group-hover:scale-110 transition-transform`}>
-                          <item.icon className={`h-6 w-6 ${item.color}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${item.bgColor} ${item.color}`}>
-                              {item.badge}
-                            </span>
-                            <span className="text-xs font-medium text-slate-500">
-                              {item.date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </span>
-                          </div>
-                          <h3 className="text-base sm:text-lg font-semibold text-academic-950 group-hover:text-gold-600 transition-colors line-clamp-1">
-                            {item.title}
-                          </h3>
-                          {item.excerpt && (
-                            <p className="text-sm text-slate-600 mt-1 line-clamp-1">{item.excerpt}</p>
-                          )}
-                        </div>
-                        <div className="shrink-0 self-center hidden sm:flex">
-                          <ArrowRight className="h-5 w-5 text-slate-300 group-hover:text-gold-500 transition-colors" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                </motion.div>
-              ))}
-              {allItems.length === 0 && (
-                <div className="text-center py-12 text-slate-500 bg-white rounded-2xl border border-slate-200">
-                  <Bell className="h-8 w-8 mx-auto text-slate-300 mb-3" />
-                  <p>No recent announcements found.</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
+            <h2 className="font-display text-2xl font-bold text-academic-950">Notice Board</h2>
+          </div>
+
+          {/* Tab pills */}
+          <div className="flex gap-2 flex-wrap">
+            {tabs.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActive(tab)}
+                className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                  active === tab
+                    ? 'bg-academic-950 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main grid */}
+        <div className="grid lg:grid-cols-[1fr_280px] gap-6">
+
+          {/* Feed */}
+          <div className="min-h-[200px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+                className="divide-y divide-slate-100"
+              >
+                {filtered.length === 0 && (
+                  <div className="py-16 text-center text-slate-400 text-sm">
+                    No items in this category yet.
+                  </div>
+                )}
+                {filtered.map((item) => {
+                  const cfg = typeConfig[item.type]
+                  const Icon = cfg.icon
+                  return (
+                    <Link
+                      key={`${item.type}-${item.id}`}
+                      href={item.href}
+                      target={item.isExternal ? '_blank' : '_self'}
+                      className="flex items-center gap-4 py-3.5 group"
+                    >
+                      {/* Dot */}
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+
+                      {/* Badge */}
+                      <span className={`hidden sm:inline-flex text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0 ${cfg.color}`}>
+                        {cfg.label}
+                      </span>
+
+                      {/* Title */}
+                      <span className="flex-1 text-sm font-medium text-academic-950 group-hover:text-gold-600 transition-colors line-clamp-1">
+                        {item.title}
+                      </span>
+
+                      {/* Date */}
+                      <span className="hidden md:block text-xs text-slate-400 shrink-0 tabular-nums">
+                        {item.date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </span>
+
+                      {/* Arrow */}
+                      {item.isExternal
+                        ? <ExternalLink className="h-3.5 w-3.5 text-slate-300 group-hover:text-gold-500 shrink-0 transition-colors" />
+                        : <ArrowRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-gold-500 shrink-0 transition-colors" />
+                      }
+                    </Link>
+                  )
+                })}
+              </motion.div>
+            </AnimatePresence>
+
+            <Link
+              href="/news"
+              className="inline-flex items-center gap-1.5 mt-4 text-sm font-semibold text-academic-700 hover:text-gold-600 transition-colors"
+            >
+              View all notices <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
 
           {/* Sidebar */}
-          <motion.div
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="space-y-6"
-          >
-            <motion.div variants={fadeIn} className="bg-academic-950 rounded-3xl p-6 md:p-8 text-white shadow-xl">
-              <h3 className="font-display text-xl font-bold mb-4">Check Results</h3>
-              <p className="text-sm text-slate-300 mb-6 leading-relaxed">
-                Students can check their individual semester results by entering their Register Number and Date of Birth on the results portal.
+          <div className="space-y-4">
+            {/* Results CTA */}
+            <div className="bg-academic-950 rounded-2xl p-6 text-white">
+              <FileText className="h-7 w-7 text-gold-400 mb-3" />
+              <h3 className="font-display text-lg font-bold mb-1">Check Results</h3>
+              <p className="text-slate-400 text-xs leading-relaxed mb-4">
+                Enter your register number to view semester results.
               </p>
-              <Link href="/results" className="inline-flex w-full items-center justify-center gap-2 bg-gold-500 hover:bg-gold-400 text-academic-950 font-bold py-3 px-6 rounded-xl transition-colors">
-                <FileText className="h-5 w-5" />
-                View Results Portal
+              <Link
+                href="/results"
+                className="flex items-center justify-center gap-2 bg-gold-500 hover:bg-gold-400 text-academic-950 font-bold py-2.5 px-4 rounded-xl text-sm transition-colors"
+              >
+                Results Portal
               </Link>
-            </motion.div>
+            </div>
 
-            <motion.div variants={fadeIn} className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-sm">
-              <h3 className="font-display text-lg font-bold text-academic-950 mb-4">Quick Links</h3>
-              <ul className="space-y-3 text-sm font-medium">
-                <li><Link href="/news" className="text-slate-600 hover:text-gold-600 flex items-center gap-2"><ArrowRight className="h-4 w-4" /> All News</Link></li>
-                <li><Link href="/events" className="text-slate-600 hover:text-gold-600 flex items-center gap-2"><ArrowRight className="h-4 w-4" /> Event Calendar</Link></li>
-                <li><Link href="/admissions" className="text-slate-600 hover:text-gold-600 flex items-center gap-2"><ArrowRight className="h-4 w-4" /> Admissions</Link></li>
+            {/* Quick links */}
+            <div className="border border-slate-200 rounded-2xl p-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Quick Links</p>
+              <ul className="space-y-2.5">
+                {[
+                  { label: 'All News', href: '/news' },
+                  { label: 'Event Calendar', href: '/events' },
+                  { label: 'Admissions', href: '/admissions' },
+                  { label: 'Academic Results', href: '/results' },
+                ].map(link => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      className="flex items-center justify-between text-sm text-slate-600 hover:text-gold-600 font-medium transition-colors group"
+                    >
+                      {link.label}
+                      <ArrowRight className="h-3.5 w-3.5 text-slate-300 group-hover:text-gold-500 transition-colors" />
+                    </Link>
+                  </li>
+                ))}
               </ul>
-            </motion.div>
-          </motion.div>
-
+            </div>
+          </div>
         </div>
+
       </div>
     </section>
   )

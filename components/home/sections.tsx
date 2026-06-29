@@ -98,34 +98,33 @@ export function StatsSection({ statistics }: StatsSectionProps) {
   if (!statistics) return null
 
   const stats = [
-    { label: 'Years of Excellence', value: statistics.years_of_excellence, icon: Award },
-    { label: 'Students', value: statistics.students_count.toLocaleString(), icon: Users },
-    { label: 'Faculty Members', value: statistics.faculty_count, icon: Building2 },
-    { label: 'Departments', value: statistics.departments_count, icon: Building2 },
-    { label: 'Placement Rate', value: `${statistics.placement_percentage}%`, icon: TrendingUp },
+    { label: 'Years', value: statistics.years_of_excellence },
+    { label: 'Students', value: statistics.students_count.toLocaleString() },
+    { label: 'Faculty', value: statistics.faculty_count },
+    { label: 'Departments', value: statistics.departments_count },
+    { label: 'Placement', value: `${statistics.placement_percentage}%` },
   ]
 
   return (
-    <section className="relative z-10 -mt-1 border-y border-slate-200 bg-white py-12">
+    <section className="bg-academic-950 py-8 border-y border-white/5">
       <div className="container-wide">
         <motion.div
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
           variants={staggerContainer}
-          className="grid grid-cols-2 gap-4 md:grid-cols-5 md:gap-6"
+          className="flex flex-wrap items-center justify-between gap-y-6 gap-x-4"
         >
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
               variants={fadeIn}
-              className="rounded-2xl border border-slate-200 bg-white p-5 text-center shadow-sm"
+              className="flex-1 min-w-[100px] text-center px-4"
             >
-              <stat.icon className="mx-auto mb-3 h-8 w-8 text-academic-600" />
-              <div className="font-display mb-2 text-3xl font-bold text-academic-950 md:text-4xl">
-                {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
+              <div className="font-display text-4xl md:text-5xl font-bold text-gold-400">
+                {stat.value}
               </div>
-              <div className="text-sm text-slate-600">{stat.label}</div>
+              <div className="text-[11px] uppercase tracking-widest text-slate-400 mt-1.5 font-semibold">{stat.label}</div>
             </motion.div>
           ))}
         </motion.div>
@@ -204,7 +203,7 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
   const displayCourses = courses.slice(0, 6)
 
   return (
-    <section className="section-padding bg-gray-50">
+    <section className="py-14 bg-white border-t border-slate-100">
       <div className="container-wide">
         <motion.div
           initial="initial"
@@ -212,61 +211,43 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
           viewport={{ once: true }}
           variants={staggerContainer}
         >
-          <motion.div variants={fadeIn} className="text-center mb-12">
-            <span className="text-gold-600 font-semibold text-sm uppercase tracking-wide">
-              Our Programs
-            </span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-academic-900 mt-2 mb-4">
-              Courses We Offer
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Choose from a wide range of undergraduate and postgraduate programs across various disciplines.
-            </p>
+          <motion.div variants={fadeIn} className="flex items-end justify-between mb-8">
+            <div>
+              <span className="text-gold-600 font-semibold text-xs uppercase tracking-[0.2em]">Our Programs</span>
+              <h2 className="font-display text-3xl font-bold text-academic-900 mt-1">Courses We Offer</h2>
+            </div>
+            <Button asChild variant="ghost" className="hidden md:inline-flex text-sm text-academic-700 hover:text-gold-600">
+              <Link href="/courses">View all <ArrowRight className="ml-1 h-4 w-4" /></Link>
+            </Button>
           </motion.div>
 
           <motion.div
             variants={staggerContainer}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
           >
             {displayCourses.map((course) => (
-              <motion.div 
-                key={course.id} 
-                variants={fadeIn}
-                whileHover={{ y: -8, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="h-full"
-              >
-                <Card className="h-full overflow-hidden border-slate-200 shadow-sm hover:shadow-xl transition-shadow duration-300">
-                  <CardContent className="p-6 flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-semibold px-3 py-1 rounded-full bg-academic-100 text-academic-900 uppercase">
-                        {course.level}
-                      </span>
-                      <span className="text-sm text-gray-500">{course.duration}</span>
+              <motion.div key={course.id} variants={fadeIn}>
+                <Link
+                  href={`/courses/${course.code.toLowerCase()}`}
+                  className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-academic-950 hover:border-academic-950 hover:text-white group transition-all duration-200"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-400 mb-0.5">
+                      {course.level} · {course.duration}
                     </div>
-                    <h3 className="font-display text-xl font-semibold text-academic-900 mb-2">
+                    <div className="font-semibold text-academic-950 group-hover:text-white text-sm truncate transition-colors">
                       {course.name}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow">
-                      {course.overview || 'A comprehensive program designed to prepare students for successful careers.'}
-                    </p>
-                    <Link
-                      href={`/courses/${course.code.toLowerCase()}`}
-                      className="inline-flex items-center text-gold-600 hover:text-gold-700 font-medium text-sm mt-auto group"
-                    >
-                      Learn More <ArrowRight className="ml-1 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </CardContent>
-                </Card>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-gold-400 shrink-0 transition-colors" />
+                </Link>
               </motion.div>
             ))}
           </motion.div>
 
-          <motion.div variants={fadeIn} className="text-center mt-10">
+          <motion.div variants={fadeIn} className="mt-5 md:hidden text-center">
             <Button asChild variant="outline" className="btn-outline">
-              <Link href="/courses">
-                View All Programs <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+              <Link href="/courses">View All Programs <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </motion.div>
         </motion.div>
