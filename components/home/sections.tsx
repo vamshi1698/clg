@@ -143,60 +143,49 @@ interface PrincipalMessageProps {
 
 export function PrincipalMessage({ name, message, image_url }: PrincipalMessageProps) {
   return (
-    <section className="section-padding bg-white">
+    <section className="py-12 bg-white border-t border-slate-100">
       <div className="container-wide">
         <motion.div
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
           variants={staggerContainer}
-          className="grid lg:grid-cols-2 gap-12 items-center"
+          className="flex flex-col md:flex-row gap-6 items-center bg-academic-50 rounded-2xl p-6 md:p-8"
         >
-          <motion.div variants={fadeIn} className="relative">
-            <div className="relative z-10">
-              <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-academic-100">
-                {image_url ? (
-                  <img src={image_url} alt={name || 'Principal'} className="w-full h-full object-cover" />
-                ) : (
-                  <img
-                    src="https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg"
-                    alt={name || 'Principal'}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </div>
-            </div>
-            <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-gold-500 rounded-2xl -z-0" />
-          </motion.div>
-
-          <motion.div variants={fadeIn}>
-            <span className="text-gold-600 font-semibold text-sm uppercase tracking-wide">
-              Message from the Principal
-            </span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-academic-900 mt-2 mb-6">
-              {name || 'Dr. K. Srinivas'}
-            </h2>
-            <div className="prose prose-lg text-gray-600 leading-relaxed">
-              {message ? (
-                message.split('\n').filter((p) => p.trim()).map((p, idx) => (
-                  <p key={idx} className="text-base md:text-lg mt-4 first:mt-0">
-                    {p}
-                  </p>
-                ))
+          <motion.div variants={fadeIn} className="shrink-0 relative">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-white shadow-md relative z-10">
+              {image_url ? (
+                <img src={image_url} alt={name || 'Principal'} className="w-full h-full object-cover" />
               ) : (
-                <>
-                  <p className="text-base md:text-lg">
-                    Welcome to National College Jayanagar. For over five decades, we have been committed to nurturing minds and shaping futures. Our institution stands as a beacon of academic excellence, combining traditional values with modern education methodology.
-                  </p>
-                  <p className="text-base md:text-lg mt-4">
-                    We believe in holistic development of our students - academically, socially, and personally. Our dedicated faculty, state-of-the-art infrastructure, and industry partnerships ensure that every student receives the best possible education.
-                  </p>
-                </>
+                <img
+                  src="https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg"
+                  alt={name || 'Principal'}
+                  className="w-full h-full object-cover"
+                />
               )}
             </div>
-            <Button asChild className="mt-8 btn-primary">
+            <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-gold-500 rounded-full -z-0" />
+          </motion.div>
+
+          <motion.div variants={fadeIn} className="flex-1 text-center md:text-left">
+            <span className="text-gold-600 font-semibold text-xs uppercase tracking-wide">
+              Message from the Principal
+            </span>
+            <h2 className="font-display text-2xl font-bold text-academic-900 mt-1 mb-3">
+              {name || 'Dr. K. Srinivas'}
+            </h2>
+            <div className="prose prose-sm text-gray-600 leading-relaxed max-w-none line-clamp-3 md:line-clamp-none">
+              {message ? (
+                <p>{message.split('\n')[0]}</p>
+              ) : (
+                <p>
+                  Welcome to National College Jayanagar. For over five decades, we have been committed to nurturing minds and shaping futures. Our institution stands as a beacon of academic excellence, combining traditional values with modern education methodology to ensure every student receives the best possible education.
+                </p>
+              )}
+            </div>
+            <Button asChild variant="link" className="mt-2 text-academic-700 p-0 h-auto font-semibold hover:text-gold-600">
               <Link href="/about#principal">
-                Read Full Message <ArrowRight className="ml-2 h-4 w-4" />
+                Read Full Message <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
             </Button>
           </motion.div>
@@ -240,9 +229,15 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
             className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {displayCourses.map((course) => (
-              <motion.div key={course.id} variants={fadeIn}>
-                <Card className="card-hover h-full overflow-hidden">
-                  <CardContent className="p-6">
+              <motion.div 
+                key={course.id} 
+                variants={fadeIn}
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className="h-full"
+              >
+                <Card className="h-full overflow-hidden border-slate-200 shadow-sm hover:shadow-xl transition-shadow duration-300">
+                  <CardContent className="p-6 flex flex-col h-full">
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-academic-100 text-academic-900 uppercase">
                         {course.level}
@@ -252,14 +247,14 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
                     <h3 className="font-display text-xl font-semibold text-academic-900 mb-2">
                       {course.name}
                     </h3>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-grow">
                       {course.overview || 'A comprehensive program designed to prepare students for successful careers.'}
                     </p>
                     <Link
                       href={`/courses/${course.code.toLowerCase()}`}
-                      className="inline-flex items-center text-gold-600 hover:text-gold-700 font-medium text-sm"
+                      className="inline-flex items-center text-gold-600 hover:text-gold-700 font-medium text-sm mt-auto group"
                     >
-                      Learn More <ArrowRight className="ml-1 h-4 w-4" />
+                      Learn More <ArrowRight className="ml-1 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </CardContent>
                 </Card>
@@ -645,20 +640,7 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
                     <blockquote className="text-gray-300 text-sm italic line-clamp-4">
                       "{testimonial.content}"
                     </blockquote>
-                    {testimonial.rating && (
-                      <div className="flex items-center gap-1 mt-4">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <svg
-                            key={i}
-                            className={`h-4 w-4 ${i < testimonial.rating! ? 'text-gold-500' : 'text-gray-600'}`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                      </div>
-                    )}
+
                   </CardContent>
                 </Card>
               </motion.div>

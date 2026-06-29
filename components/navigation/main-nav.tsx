@@ -80,7 +80,7 @@ export function Header() {
             </div>
             <div>
               <h1 className="font-display text-2xl font-bold uppercase tracking-widest text-academic-900 leading-none group-hover:text-gold-600 transition-colors">
-                The National College
+                The National College Jayanagar
               </h1>
             </div>
           </Link>

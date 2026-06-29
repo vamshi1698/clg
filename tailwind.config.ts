@@ -87,9 +87,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        serif: ['Merriweather', 'Georgia', 'Times New Roman', 'serif'],
-        display: ['Playfair Display', 'Georgia', 'serif'],
+        sans: ['Lato', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['Lato', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Abolition', 'Bebas Neue', 'sans-serif'],
       },
       spacing: {
         '18': '4.5rem',

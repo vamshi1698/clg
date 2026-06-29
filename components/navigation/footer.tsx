@@ -46,8 +46,8 @@ export function Footer() {
                 <span className="text-academic-900 font-display font-bold text-xl">N</span>
               </div>
               <div>
-                <h2 className="font-display text-lg font-bold text-white">National College</h2>
-                <p className="text-xs text-gray-400">Jayanagar, Bangalore</p>
+                <h2 className="font-display text-lg font-bold text-white">The National College Jayanagar</h2>
+                <p className="text-xs text-gray-400">Bangalore, Karnataka</p>
               </div>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed">

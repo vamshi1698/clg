@@ -25,8 +25,9 @@ import { NoticeBoard } from '@/components/home/notice-board'
 import { AutoCarouselSection } from '@/components/home/auto-carousel-section'
 import { BookOpen, BriefcaseBusiness, Users, ArrowRight, ChevronRight, Film, MonitorSmartphone } from 'lucide-react'
 import Link from 'next/link'
-import LanyardWrapper from '@/components/reactbits/LanyardWrapper';
-const marqueeItems = [
+import { ImmersiveIdCard } from '@/components/home/ImmersiveIdCard';
+import CurvedLoop from '@/components/reactbits/CurvedLoop';
+import { SchoolsAndDepartments, CareerAndFaculty } from '@/components/home/interactive-showcase';
   'Latest information: admissions, events, and notices are updated regularly.',
   'Academic calendar and results are available through the campus portal.',
   'Faculty profiles and department highlights are now featured on the homepage.',
@@ -83,12 +84,25 @@ export default async function HomePage() {
 
   return (
     <>
+      <div className="w-full bg-academic-950 text-white py-4 md:py-6 overflow-hidden">
+        <CurvedLoop 
+          marqueeItems={[
+            ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
+            ...events.map(e => ({ title: e.title, href: '/events' })),
+            ...resultPdfs.map(r => ({ title: r.title, href: `/api/results/pdf/${r.id}` }))
+          ].slice(0, 10)}
+          speed={2}
+          curveAmount={0}
+          className="fill-white"
+        />
+      </div>
+
       <HeroSection
         image_url={settings?.hero_image_url || undefined}
         tagline={settings?.tagline || undefined}
         established_year={settings?.established_year}
       />
-      
+
       {/* Dynamic Image Carousel controlled via CMS (Gallery) */}
       <AutoCarouselSection />
 
@@ -97,74 +111,13 @@ export default async function HomePage() {
 
       <StatsSection statistics={statistics} />
 
-      {/* Departments & Academics */}
-      <section className="section-padding bg-slate-50">
-        <div className="container-wide">
-          <div className="mb-10 flex items-end justify-between gap-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-academic-600">Academics</p>
-              <h2 className="font-display mt-2 text-3xl font-bold text-academic-950 md:text-4xl">Schools & Departments</h2>
-            </div>
-            <Link href="/departments" className="hidden items-center gap-2 text-sm font-medium text-academic-700 md:inline-flex">
-              View all <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {departmentPreview.map((item) => (
-              <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
-                <BookOpen className="h-8 w-8 text-academic-700" />
-                <h3 className="mt-4 font-display text-2xl font-semibold text-academic-950">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{item.text}</p>
-                <Link href={item.href} className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-academic-700 hover:text-gold-600 transition-colors">
-                  Explore <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Departments & Academics (Immersive) */}
+      <SchoolsAndDepartments items={departmentPreview} />
 
       <ProgramsSection courses={courses} />
 
-      {/* Career & Faculty */}
-      <section className="section-padding bg-white">
-        <div className="container-wide grid gap-6 lg:grid-cols-2">
-          <div className="rounded-[2rem] border border-slate-200 bg-academic-950 p-8 text-white shadow-xl">
-            <div className="inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-white/80">
-              Career Pathways
-            </div>
-            <h2 className="font-display mt-4 text-3xl font-bold">Bridging education and industry</h2>
-            <div className="mt-6 space-y-4">
-              {careerPreview.map((item) => (
-                <div key={item.title} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <BriefcaseBusiness className="mt-1 h-5 w-5 text-gold-500" />
-                  <div>
-                    <h3 className="font-semibold text-white">{item.title}</h3>
-                    <p className="mt-1 text-sm leading-7 text-white/75">{item.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-8 shadow-sm">
-            <div className="inline-flex rounded-full bg-academic-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-academic-700">
-              Faculty
-            </div>
-            <h2 className="font-display mt-4 text-3xl font-bold text-academic-950">Expert guidance at every step</h2>
-            <div className="mt-6 space-y-4">
-              {facultyPreview.map((item) => (
-                <div key={item.title} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-                  <Users className="mt-1 h-5 w-5 text-academic-700" />
-                  <div>
-                    <h3 className="font-semibold text-academic-950">{item.title}</h3>
-                    <p className="mt-1 text-sm leading-7 text-slate-600">{item.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Career & Faculty (Immersive) */}
+      <CareerAndFaculty careerItems={careerPreview} facultyItems={facultyPreview} />
 
       <AchievementsSection achievements={achievements} />
       
@@ -179,13 +132,7 @@ export default async function HomePage() {
       {recruiters.length > 0 && <RecruitersSection recruiters={recruiters} />}
       {testimonials.length > 0 && <TestimonialsSection testimonials={testimonials} />}
       
-      <section className="relative w-full overflow-hidden bg-academic-950">
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 text-center w-full px-4">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">Welcome to the Family</h2>
-          <p className="text-gold-400">Your potential student ID awaits.</p>
-        </div>
-        <LanyardWrapper position={[0, 0, 20]} gravity={[0, -40, 0]} />
-      </section>
+      <ImmersiveIdCard />
 
       <CTASection />
     </>
