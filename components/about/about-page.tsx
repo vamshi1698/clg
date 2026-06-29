@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { Award, Target, Eye, Flag, Users, BookOpen, Building2, Medal, Calendar } from 'lucide-react'
 import type { SiteSettings, Milestone, Accreditation, Leadership } from '@/types/database'
 
@@ -88,11 +89,13 @@ export function AboutPage({ settings, milestones, accreditations, leadership }: 
             </motion.div>
 
             <motion.div variants={fadeIn} className="relative">
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100">
-                <img
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100 relative z-10">
+                <Image
                   src="https://images.pexels.com/photos/2897375/pexels-photo-2897375.jpeg"
                   alt="National College Campus"
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover"
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 w-48 h-48 bg-gold-500 rounded-2xl -z-0" />
@@ -173,9 +176,9 @@ export function AboutPage({ settings, milestones, accreditations, leadership }: 
                 <motion.div key={member.id} variants={fadeIn}>
                   <div className="bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow">
                     <div className="flex items-center gap-4">
-                      <div className="w-20 h-20 bg-academic-100 rounded-full flex items-center justify-center overflow-hidden">
+                      <div className="w-20 h-20 bg-academic-100 rounded-full flex items-center justify-center overflow-hidden relative">
                         {member.image_url ? (
-                          <img src={member.image_url} alt={member.name} className="w-full h-full object-cover" />
+                          <Image src={member.image_url} alt={member.name} fill sizes="80px" className="object-cover" />
                         ) : (
                           <span className="text-academic-900 font-display font-bold text-2xl">
                             {member.name.charAt(0)}

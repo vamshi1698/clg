@@ -1,0 +1,17 @@
+{
+  "name": "National College Jayanagar",
+  "short_name": "NCJ",
+  "description": "A premier autonomous institution committed to academic excellence, holistic development, and preparing students for successful careers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#03152c",
+  "theme_color": "#03152c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

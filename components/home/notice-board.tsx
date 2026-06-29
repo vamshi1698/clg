@@ -43,7 +43,7 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
       href: `/api/results/pdf/${r.id}`,
       isExternal: true,
     })),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 12)
+  ].sort((a, b) => b.date.getTime() - a.date.getTime())
 
   const filtered = allItems.filter(item => {
     if (active === 'All') return true
@@ -51,37 +51,18 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
     if (active === 'Events') return item.type === 'event'
     if (active === 'Results') return item.type === 'result'
     return true
-  })
+  }).slice(0, 5)
 
   return (
     <section className="py-16 bg-white border-t border-slate-100">
       <div className="container-wide">
 
         {/* Header row */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gold-500 rounded-xl flex items-center justify-center shadow-sm">
-              <Bell className="h-5 w-5 text-white" />
-            </div>
-            <h2 className="font-display text-2xl font-bold text-academic-950">Notice Board</h2>
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-9 h-9 bg-gold-500 rounded-xl flex items-center justify-center shadow-sm">
+            <Bell className="h-5 w-5 text-white" />
           </div>
-
-          {/* Tab pills */}
-          <div className="flex gap-2 flex-wrap">
-            {tabs.map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActive(tab)}
-                className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
-                  active === tab
-                    ? 'bg-academic-950 text-white shadow-sm'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          <h2 className="font-display text-2xl font-bold text-academic-950">Notice Board</h2>
         </div>
 
         {/* Main grid */}
@@ -89,6 +70,23 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
 
           {/* Feed */}
           <div className="min-h-[200px]">
+            {/* Tab pills */}
+            <div className="flex gap-2 flex-wrap mb-6 border-b border-slate-100 pb-4">
+              {tabs.map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActive(tab)}
+                  className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
+                    active === tab
+                      ? 'bg-academic-950 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={active}
@@ -153,18 +151,34 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
           {/* Sidebar */}
           <div className="space-y-4">
             {/* Results CTA */}
-            <div className="bg-academic-950 rounded-2xl p-6 text-white">
-              <FileText className="h-7 w-7 text-gold-400 mb-3" />
-              <h3 className="font-display text-lg font-bold mb-1">Check Results</h3>
-              <p className="text-slate-400 text-xs leading-relaxed mb-4">
-                Enter your register number to view semester results.
-              </p>
-              <Link
-                href="/results"
-                className="flex items-center justify-center gap-2 bg-gold-500 hover:bg-gold-400 text-academic-950 font-bold py-2.5 px-4 rounded-xl text-sm transition-colors"
-              >
-                Results Portal
-              </Link>
+            <div className="p-6 bg-gradient-to-r from-[#03152c] to-[#0A2540] rounded-3xl shadow-lg text-white relative overflow-hidden">
+              <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4">
+                <svg width="180" height="180" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="40" stroke="white" strokeWidth="2" strokeDasharray="4 4" />
+                  <path d="M50 10 L50 90 M10 50 L90 50" stroke="white" strokeWidth="1" />
+                  <polygon points="50,30 55,45 70,50 55,55 50,70 45,55 30,50 45,45" fill="white" />
+                </svg>
+              </div>
+
+              <div className="relative z-10">
+                <span className="text-[10px] sm:text-xs font-bold text-blue-400 tracking-wider uppercase mb-2.5 block">
+                  RESULTS
+                </span>
+                <h3 className="font-display text-xl sm:text-2xl font-bold text-white mb-1.5">
+                  Check Results
+                </h3>
+                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4">
+                  Enter your register number to view semester results.
+                </p>
+                <div className="flex">
+                  <Link
+                    href="/results"
+                    className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-5 rounded-xl text-xs sm:text-sm transition-colors shadow-sm"
+                  >
+                    Results Portal <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
             </div>
 
             {/* Quick links */}

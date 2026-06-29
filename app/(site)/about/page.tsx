@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Award, BookOpen, Users, Building2, Globe, Star, CheckCircle2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function AboutPage() {
   const fadeUp = {
@@ -48,10 +49,13 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1562774053-701939374585?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
             alt="National College Campus"
-            className="w-full h-full object-cover"
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-academic-950/85 via-academic-950/70 to-academic-950" />
         </div>
@@ -195,10 +199,12 @@ export default function AboutPage() {
 
       {/* Campus Photo */}
       <section className="relative h-[60vh] overflow-hidden">
-        <img
+        <Image
           src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
           alt="Campus life"
-          className="w-full h-full object-cover"
+          fill
+          sizes="100vw"
+          className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-academic-950/90 to-transparent flex items-center">
           <div className="container-wide text-white">

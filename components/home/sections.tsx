@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Clock, Download, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -154,12 +155,14 @@ export function PrincipalMessage({ name, message, image_url }: PrincipalMessageP
           <motion.div variants={fadeIn} className="shrink-0 relative">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-white shadow-md relative z-10">
               {image_url ? (
-                <img src={image_url} alt={name || 'Principal'} className="w-full h-full object-cover" />
+                <Image src={image_url} alt={name || 'Principal'} fill sizes="(max-width: 768px) 128px, 160px" className="object-cover" />
               ) : (
-                <img
+                <Image
                   src="https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg"
                   alt={name || 'Principal'}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 128px, 160px"
+                  className="object-cover"
                 />
               )}
             </div>
@@ -296,9 +299,9 @@ export function NewsSection({ news }: NewsSectionProps) {
             {displayNews.map((item, index) => (
               <motion.div key={item.id} variants={fadeIn}>
                 <Card className="card-hover h-full overflow-hidden">
-                  <div className="aspect-video bg-gray-100">
+                  <div className="aspect-video bg-gray-100 relative">
                     {item.image_url ? (
-                      <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
+                      <Image src={item.image_url} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-academic-100">
                         <span className="text-academic-300 text-6xl font-display font-bold">NC</span>
@@ -477,11 +480,13 @@ export function GalleryPreview({ items }: GalleryPreviewProps) {
                 variants={fadeIn}
                 className={`relative overflow-hidden rounded-lg ${index === 0 ? 'col-span-2 row-span-2' : ''}`}
               >
-                <div className={`bg-gray-100 ${index === 0 ? 'aspect-square' : 'aspect-video'}`}>
-                  <img
+                <div className={`bg-gray-100 relative overflow-hidden ${index === 0 ? 'aspect-square' : 'aspect-video'}`}>
+                  <Image
                     src={item.image_url}
                     alt={item.title}
-                    className="w-full h-full object-cover transition-transform hover:scale-105"
+                    fill
+                    sizes={index === 0 ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 50vw, 33vw"}
+                    className="object-cover transition-transform hover:scale-105"
                   />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-academic-900/60 via-transparent to-transparent" />
@@ -827,11 +832,13 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                     {/* Event Card */}
                     <div className="flex flex-col sm:flex-row bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                       {/* Image block */}
-                      <div className="relative w-full sm:w-44 h-40 sm:h-auto flex-shrink-0 bg-slate-100">
-                        <img
+                      <div className="relative w-full sm:w-44 h-40 sm:h-auto flex-shrink-0 bg-slate-100 min-h-[160px]">
+                        <Image
                           src={imageSrc}
                           alt={event.title}
-                          className="w-full h-full object-cover"
+                          fill
+                          sizes="(max-width: 640px) 100vw, 176px"
+                          className="object-cover"
                         />
                         <span className={`absolute top-3 left-3 px-2 py-0.5 text-[9px] font-bold text-white rounded-md tracking-wider uppercase shadow-sm ${
                           isOngoing ? 'bg-orange-500' : 'bg-blue-500'
@@ -960,7 +967,7 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
               </div>
             </div>
 
-            {/* Live Statistics Card */}
+            {/* Check Results Card */}
             <div className="mt-8 p-6 bg-gradient-to-r from-[#03152c] to-[#0A2540] rounded-3xl shadow-lg text-white relative overflow-hidden">
               <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4">
                 <svg width="180" height="180" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -971,26 +978,21 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
               </div>
 
               <div className="relative z-10">
-                <span className="text-[10px] sm:text-xs font-bold text-blue-400 tracking-wider uppercase mb-3 block">
-                  LIVE STATISTICS
+                <span className="text-[10px] sm:text-xs font-bold text-blue-400 tracking-wider uppercase mb-2.5 block">
+                  RESULTS
                 </span>
-                <div className="flex items-center gap-12 mt-2">
-                  <div>
-                    <div className="text-3xl sm:text-4xl font-extrabold font-sans text-white mb-0.5 tracking-tight">
-                      {statistics ? `${statistics.placement_percentage}%` : 'A++'}
-                    </div>
-                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                      {statistics ? 'PLACEMENT RATE' : 'NAAC RATING'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-3xl sm:text-4xl font-extrabold font-sans text-white mb-0.5 tracking-tight">
-                      {statistics ? `${statistics.students_count.toLocaleString()}+` : '15+'}
-                    </div>
-                    <div className="text-[9px] sm:text-[10px] font-bold text-slate-400 tracking-wider uppercase">
-                      {statistics ? 'ACTIVE STUDENTS' : 'STUDENT CLUBS'}
-                    </div>
-                  </div>
+                <h3 className="font-display text-xl sm:text-2xl font-bold text-white mb-1.5">
+                  Check Results
+                </h3>
+                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4 max-w-sm">
+                  Enter your register number to view semester results.
+                </p>
+                <div className="flex">
+                  <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-xl text-xs sm:text-sm transition-colors border-none">
+                    <Link href="/results">
+                      Results Portal <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </div>

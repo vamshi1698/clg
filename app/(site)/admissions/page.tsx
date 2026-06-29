@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, CheckCircle2, ChevronDown, GraduationCap, FileText, Calendar, CreditCard, Award, Users } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 
 const fadeUp = {
@@ -66,10 +67,13 @@ export default function AdmissionsPage() {
       {/* Hero */}
       <section className="relative min-h-[65vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
             alt="Students on campus"
-            className="w-full h-full object-cover"
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-academic-950/90 via-academic-950/70 to-transparent" />
         </div>

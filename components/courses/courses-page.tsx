@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { Clock, Users, IndianRupee, BookOpen, Search, Info, Award, GraduationCap } from 'lucide-react'
+import Image from 'next/image'
+import { Clock, Users, IndianRupee, BookOpen, Search, Info, Award, GraduationCap, CheckCircle2, ArrowRight } from 'lucide-react'
 import type { Course, Department } from '@/types/database'
 
 interface CoursesPageProps {
@@ -19,6 +20,19 @@ const fadeIn = {
 
 const staggerContainer = {
   animate: { transition: { staggerChildren: 0.05 } }
+}
+
+function getCourseGradient(code: string): string {
+  const cleanCode = code.toLowerCase();
+  if (cleanCode.includes('b.a') || cleanCode === 'ba') return 'from-purple-700 to-indigo-700';
+  if (cleanCode.includes('b.sc') || cleanCode === 'bsc') return 'from-emerald-700 to-teal-700';
+  if (cleanCode.includes('b.com') || cleanCode === 'bcom') return 'from-blue-700 to-cyan-700';
+  if (cleanCode.includes('bca')) return 'from-academic-800 to-slate-900';
+  if (cleanCode.includes('bba')) return 'from-gold-600 to-amber-700';
+  if (cleanCode.includes('m.a') || cleanCode === 'ma') return 'from-violet-700 to-fuchsia-700';
+  if (cleanCode.includes('m.sc') || cleanCode === 'msc') return 'from-teal-700 to-emerald-800';
+  if (cleanCode.includes('m.com') || cleanCode === 'mcom') return 'from-sky-700 to-indigo-800';
+  return 'from-slate-700 to-slate-800';
 }
 
 export function CoursesPage({ courses, departments }: CoursesPageProps) {
@@ -162,77 +176,68 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
               >
                 {filteredCourses.map((course) => {
-                  const hasImage = !!course.image_url
+                  const gradient = getCourseGradient(course.code)
+                  const hasStreams = course.core_subjects && course.core_subjects.length > 0
                   
                   return (
                     <motion.div key={course.id} variants={fadeIn} className="group">
                       <Link href={`/courses/${course.code.toLowerCase()}`} className="block h-full">
-                        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:border-gold-300/40 transition-all duration-300 h-full flex flex-col justify-between">
+                        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col justify-between">
                           
-                          {/* Top Part: Cover photo */}
-                          <div>
-                            <div className="h-44 bg-gradient-to-br from-academic-900 to-academic-800 relative overflow-hidden flex items-center justify-center">
-                              {hasImage ? (
-                                <img 
-                                  src={course.image_url!} 
-                                  alt={course.name} 
-                                  className="w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105" 
-                                />
+                          {/* Top Part: Gradient Header */}
+                          <div className={`bg-gradient-to-br ${gradient} p-7 text-white relative`}>
+                            <BookOpen className="h-9 w-9 mb-4 opacity-80" />
+                            <h3 className="font-display text-xl font-bold leading-snug min-h-[3.5rem] flex items-center">{course.name}</h3>
+                            <div className="flex items-center gap-4 mt-3 text-white/70 text-sm">
+                              <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" />{course.duration}</span>
+                              {course.seats && (
+                                <span className="flex items-center gap-1.5"><Users className="h-4 w-4" />{course.seats} Seats</span>
+                              )}
+                            </div>
+                            
+                            <span className="absolute top-4 right-4 px-2.5 py-0.5 bg-white/20 backdrop-blur-md text-white border border-white/20 text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-sm z-10">
+                              {course.level.toUpperCase()}
+                            </span>
+                          </div>
+
+                          {/* Bottom Part: Content / Streams */}
+                          <div className="bg-white p-6 flex-1 flex flex-col justify-between">
+                            <div>
+                              {hasStreams ? (
+                                <>
+                                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Available Streams</p>
+                                  <ul className="space-y-2">
+                                    {course.core_subjects!.slice(0, 5).map((s, idx) => (
+                                      <li key={idx} className="flex items-start gap-2 text-slate-700 text-sm">
+                                        <CheckCircle2 className="h-4 w-4 text-gold-500 shrink-0 mt-0.5" />
+                                        <span className="line-clamp-1">{s}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </>
                               ) : (
-                                <div className="absolute inset-0 bg-[#0F2D52] flex items-center justify-center opacity-90 transition-transform duration-500 group-hover:scale-105">
-                                  <span className="text-white/10 font-display font-extrabold text-9xl">
-                                    {course.code.toUpperCase()}
+                                <>
+                                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Program Overview</p>
+                                  <p className="text-slate-600 text-sm leading-relaxed line-clamp-5">
+                                    {course.overview || 'A comprehensive program designed to prepare students for successful careers.'}
+                                  </p>
+                                </>
+                              )}
+
+                              {course.annual_fee && (
+                                <div className="flex items-center justify-between mt-5 pt-3 border-t border-slate-100">
+                                  <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Annual Fee</span>
+                                  <span className="font-extrabold text-academic-900 flex items-center text-sm sm:text-base">
+                                    <IndianRupee className="w-3.5 h-3.5 shrink-0" />
+                                    ₹{Number(course.annual_fee).toLocaleString('en-IN')}/year
                                   </span>
                                 </div>
                               )}
-                              
-                              <span className="absolute top-4 left-4 px-3 py-1 bg-amber-500 text-slate-950 text-[10px] font-extrabold rounded-md uppercase tracking-wider shadow-sm z-10">
-                                {course.level.toUpperCase()}
-                              </span>
                             </div>
 
-                            {/* Center Part: Content */}
-                            <div className="p-6 space-y-2">
-                              {course.department && (
-                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block">
-                                  Dept. of {course.department.name}
-                                </span>
-                              )}
-                              <h3 className="font-display font-extrabold text-slate-900 text-lg leading-snug group-hover:text-blue-600 transition-colors">
-                                {course.name}
-                              </h3>
-                              <p className="text-slate-500 text-xs sm:text-sm leading-relaxed line-clamp-2 pt-1">
-                                {course.overview || 'A comprehensive program designed to prepare students for successful careers.'}
-                              </p>
+                            <div className="inline-flex items-center gap-1.5 mt-6 text-academic-700 font-semibold text-sm hover:text-gold-600 transition-colors">
+                              Course Details <ArrowRight className="h-4 w-4" />
                             </div>
-                          </div>
-
-                          {/* Bottom Part: Specifications & Price */}
-                          <div className="px-6 pb-6 pt-3 border-t border-slate-50 space-y-4">
-                            
-                            <div className="flex items-center gap-5 text-slate-400 text-xs">
-                              <div className="flex items-center gap-1.5 font-semibold">
-                                <Clock className="w-4 h-4 text-blue-500" />
-                                <span>{course.duration}</span>
-                              </div>
-                              {course.seats && (
-                                <div className="flex items-center gap-1.5 font-semibold">
-                                  <Users className="w-4 h-4 text-blue-500" />
-                                  <span>{course.seats} Seats</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {course.annual_fee && (
-                              <div className="flex items-center justify-between pt-1">
-                                <span className="text-[9px] font-bold text-slate-400 tracking-wider uppercase">Annual Fee</span>
-                                <span className="font-extrabold text-academic-900 flex items-center text-sm sm:text-base">
-                                  <IndianRupee className="w-3.5 h-3.5 shrink-0" />
-                                  ₹{Number(course.annual_fee).toLocaleString('en-IN')}/year
-                                </span>
-                              </div>
-                            )}
-
                           </div>
 
                         </div>

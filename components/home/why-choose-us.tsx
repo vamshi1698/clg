@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Award, GraduationCap, Globe, Zap, ShieldCheck, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -96,10 +97,12 @@ export function WhyChooseUs() {
                 transition={{ duration: 0.5, delay: i * 0.1 }}
                 className="relative rounded-2xl overflow-hidden group aspect-square"
               >
-                <img
+                <Image
                   src={item.img}
                   alt={item.label}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 300px"
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                 <span className="absolute bottom-3 left-3 text-white font-bold text-sm">{item.label}</span>

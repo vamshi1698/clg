@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { ArrowRight, Music, Trophy, Utensils, Heart, Bus, Home, Users, Dumbbell } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -64,10 +65,13 @@ export default function CampusLifePage() {
       {/* Hero */}
       <section className="relative min-h-[80vh] flex items-end overflow-hidden">
         <div className="absolute inset-0">
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
             alt="Campus Life"
-            className="w-full h-full object-cover"
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-academic-950 via-academic-950/50 to-transparent" />
         </div>
@@ -116,10 +120,12 @@ export default function CampusLifePage() {
                 className={`relative overflow-hidden rounded-2xl group ${img.span}`}
                 style={{ minHeight: i === 0 ? '400px' : '180px' }}
               >
-                <img
+                <Image
                   src={img.src}
                   alt={img.label}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  fill
+                  sizes={i === 0 ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 250px"}
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <span className="absolute bottom-4 left-4 text-white font-bold text-sm">{img.label}</span>
@@ -152,9 +158,9 @@ export default function CampusLifePage() {
               <motion.div
                 {...fadeUp}
                 transition={{ duration: 0.7, delay: 0.15 }}
-                className={`rounded-3xl overflow-hidden shadow-xl ${feature.flip ? 'lg:order-1' : ''}`}
+                className={`relative h-80 rounded-3xl overflow-hidden shadow-xl ${feature.flip ? 'lg:order-1' : ''}`}
               >
-                <img src={feature.img} alt={feature.title} className="w-full h-80 object-cover" />
+                <Image src={feature.img} alt={feature.title} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
               </motion.div>
             </div>
           </div>
