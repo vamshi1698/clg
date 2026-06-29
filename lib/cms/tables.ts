@@ -281,7 +281,7 @@ export const TABLE_CONFIGS: TableConfig[] = [
     ],
   },
   {
-    table: 'gallery',
+    table: 'gallery_items',
     slug: 'gallery',
     label: 'Gallery',
     singular: 'Gallery Item',

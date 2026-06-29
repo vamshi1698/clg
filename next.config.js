@@ -14,6 +14,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.supabase.co',
       },
+      {
+        protocol: 'https',
+        hostname: '*.gstatic.com',
+      },
     ],
   },
   allowedDevOrigins: ['192.168.0.107'],

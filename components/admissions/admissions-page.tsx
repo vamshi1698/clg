@@ -1,39 +1,36 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  FileText,
-  CheckCircle,
-  Calendar,
-  GraduationCap,
-  Phone,
-  Mail,
-  User,
-  Award,
-  ChevronRight,
-  TrendingUp,
-  Percent
-} from 'lucide-react'
-import type { Course, ImportantDate } from '@/types/database'
+import { motion } from 'framer-motion'
+import { ArrowRight, CheckCircle2, ChevronDown, GraduationCap, FileText, Calendar, CreditCard, Award, Users, Mail, Phone } from 'lucide-react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useState, useMemo } from 'react'
+import type { ImportantDate, Course } from '@/types/database'
 import { submitAdmissionEnquiry } from '@/lib/actions/public-actions'
 
+const fadeUp = {
+  initial: { opacity: 0, y: 40 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-50px' },
+  transition: { duration: 0.7 }
+}
+
+const faqs = [
+  { q: 'What is the minimum eligibility for UG programs?', a: 'Candidates must have passed their 10+2 (PUC) from a recognized board with at least 45% aggregate marks. SC/ST candidates have a 5% relaxation.' },
+  { q: 'Is there an entrance exam?', a: 'Most UG programs offer merit-based admissions. However, specific PG programs like MBA and MCA may require entrance examinations as specified in their prospectus.' },
+  { q: 'Are there scholarships available?', a: 'Yes. We offer Government Post-Matric Scholarships, Merit-based fee waivers, sports scholarships, and several privately funded scholarships. Visit the Financial Aid office for details.' },
+  { q: 'Can I apply for hostel accommodation along with admission?', a: 'Yes, hostel applications are processed alongside admission. Seats are limited and allotted on a first-come-first-served basis.' },
+  { q: 'What is the refund policy if I withdraw?', a: 'Fees are refundable as per the Bangalore University norms. A nominal administrative charge may be deducted. Contact the accounts office for details.' },
+]
+
 interface AdmissionsPageProps {
+  importantDates: ImportantDate[]
   courses: Course[]
-  importantDates?: ImportantDate[]
 }
 
-const fadeIn = {
-  initial: { opacity: 0, y: 15 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4 }
-}
-
-const staggerContainer = {
-  animate: { transition: { staggerChildren: 0.08 } }
-}
-
-export function AdmissionsPage({ courses, importantDates = [] }: AdmissionsPageProps) {
+export function AdmissionsPage({ importantDates, courses }: AdmissionsPageProps) {
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -43,351 +40,400 @@ export function AdmissionsPage({ courses, importantDates = [] }: AdmissionsPageP
     percentage: '',
     queries: ''
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<{ success?: boolean; message?: string } | null>(null)
 
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  // Filter courses based on selected level
-  const filteredCourses = courses.filter(c => c.level === formData.level)
+  const filteredCourses = useMemo(() => {
+    if (!courses) return []
+    return courses.filter(c => c.level === formData.level)
+  }, [courses, formData.level])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
-
+    setIsSubmitting(true)
+    setSubmitStatus(null)
     try {
       const res = await submitAdmissionEnquiry(formData)
-      if (res.error) {
-        setError(res.error)
+      if (res?.error) {
+        setSubmitStatus({ success: false, message: res.error })
       } else {
-        setIsSubmitted(true)
+        setSubmitStatus({ success: true, message: 'Enquiry submitted successfully! We will get in touch shortly.' })
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          level: 'ug',
+          courseId: '',
+          percentage: '',
+          queries: ''
+        })
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred. Please try again.')
+      setSubmitStatus({ success: false, message: err.message || 'An error occurred while submitting.' })
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
   const steps = [
-    {
-      title: 'Online Enquiry',
-      desc: 'Submit the application enquiry form with your academic details and preferences.'
-    },
-    {
-      title: 'Document Submission',
-      desc: 'Upload/submit copies of Class 10/12 marks cards, transfer certificate, and identification.'
-    },
-    {
-      title: 'Counseling & Interview',
-      desc: 'Attend the interactive counseling session and personal interview with our admission panel.'
-    },
-    {
-      title: 'Fee Payment & Confirmation',
-      desc: 'Secure your admission seat by paying the prescribed registration and tuition fee.'
-    }
+    { icon: FileText, title: 'Check Eligibility', desc: 'Review program-specific requirements for your desired course — UG, PG, or Certificate.' },
+    { icon: GraduationCap, title: 'Fill Application', desc: 'Complete the online application form at the campus portal with all required documents.' },
+    { icon: Award, title: 'Merit Evaluation', desc: 'Our admissions team reviews your academic record, achievements, and application.' },
+    { icon: CreditCard, title: 'Pay Fees & Confirm', desc: 'Once selected, pay the enrollment fees to confirm your seat before the deadline.' },
   ]
 
-  const dates = importantDates.length > 0
-    ? importantDates.map((d) => ({
-      event: d.event,
-      date: new Date(d.date).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-      })
-    }))
-    : [
-      { event: 'Online Application Opens', date: 'June 1, 2026' },
-      { event: 'Last Date to Submit Enquiry', date: 'July 15, 2026' },
-      { event: 'First Counseling Merit List', date: 'July 20, 2026' },
-      { event: 'Commencement of Classes', date: 'August 1, 2026' }
-    ]
+  const programs = [
+    {
+      level: 'Undergraduate',
+      duration: '3 Years',
+      color: 'from-blue-600 to-indigo-700',
+      courses: ['B.A. (Humanities)', 'B.Sc. (Science)', 'B.Com (Commerce)', 'BCA (Computer Applications)', 'B.Com (Professional)'],
+    },
+    {
+      level: 'Postgraduate',
+      duration: '2 Years',
+      color: 'from-academic-800 to-academic-950',
+      courses: ['M.A. (History / English)', 'M.Sc. (Mathematics / Physics)', 'M.Com', 'MCA', 'MBA'],
+    },
+    {
+      level: 'Certificate Programs',
+      duration: '3-6 Months',
+      color: 'from-gold-600 to-amber-700',
+      courses: ['Digital Marketing', 'Financial Accounting', 'Tally ERP', 'Spoken English', 'Photography & Media'],
+    },
+  ]
+
+  const displayDates = importantDates && importantDates.length > 0 ? importantDates.map(d => ({
+    event: d.event,
+    date: new Date(d.date).toLocaleDateString('en-US', {
+      timeZone: 'Asia/Kolkata',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  })) : [
+    { event: 'Application Opens', date: 'March 1, 2025' },
+    { event: 'Last Date for UG Applications', date: 'June 30, 2025' },
+    { event: 'Last Date for PG Applications', date: 'July 15, 2025' },
+    { event: 'Merit List Publication', date: 'July 20, 2025' },
+    { event: 'Fee Payment Window', date: 'July 21–31, 2025' },
+    { event: 'Orientation & Commencement', date: 'August 5, 2025' },
+  ]
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white text-academic-950">
 
-      {/* Hero Section */}
-      <section className="relative bg-academic-900 py-16 lg:py-24 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl" />
+      {/* Hero */}
+      <section className="relative min-h-[65vh] flex items-center overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
+            alt="Students on campus"
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-academic-950/90 via-academic-950/70 to-transparent" />
         </div>
-        <div className="relative container-wide text-center">
-          <motion.div initial="initial" animate="animate" variants={staggerContainer}>
-            <motion.span
-              variants={fadeIn}
-              className="inline-flex items-center gap-2 px-4 py-1.5 bg-gold-500/20 border border-gold-500/35 rounded-full text-gold-500 text-xs sm:text-sm font-semibold mb-6 tracking-wide"
-            >
-              <Award className="h-4 w-4" />
-              Admissions Open 2026-27
-            </motion.span>
-            <motion.h1 variants={fadeIn} className="font-display text-4xl md:text-5xl font-extrabold text-white mb-6">
-              Shape Your Future With Us
-            </motion.h1>
-            <motion.p variants={fadeIn} className="text-gray-300 text-base md:text-lg max-w-2xl mx-auto">
-              Join a legacy of academic excellence, top placements, and holistic development. Explore our UG, PG, and Diploma programs.
-            </motion.p>
+        <div className="relative container-wide pt-36 pb-16 text-white">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
+            <span className="inline-block bg-gold-500/20 border border-gold-500/40 text-gold-300 text-xs font-bold uppercase tracking-[0.25em] px-4 py-2 rounded-full mb-6">
+              Admissions Open
+            </span>
+            <h1 className="font-display text-5xl md:text-7xl font-bold mb-6 leading-tight">
+              Begin Your <span className="text-gold-400">Journey</span> Here
+            </h1>
+            <p className="text-xl text-slate-300 leading-relaxed mb-8">
+              Take the first step toward a transformative academic career. Discover our programs, process, and everything you need to become part of the National College family.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link href="#programs" className="inline-flex items-center gap-2 bg-gold-500 text-academic-950 font-bold px-7 py-4 rounded-full hover:bg-gold-400 transition-colors text-lg">
+                View Programs <ArrowRight className="h-5 w-5" />
+              </Link>
+              <Link href="#process" className="inline-flex items-center gap-2 border border-white/30 bg-white/10 backdrop-blur text-white font-semibold px-7 py-4 rounded-full hover:bg-white hover:text-academic-950 transition-all text-lg">
+                How to Apply
+              </Link>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Main Section */}
-      <section className="py-16 bg-slate-50/30">
+      {/* Process & Enquiry Split Section */}
+      <section id="apply-enquiry" className="section-padding bg-slate-50 border-b border-slate-100">
         <div className="container-wide">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-
-            {/* Left Column: Guidelines & Process (col-span-7) */}
-            <div className="lg:col-span-7 space-y-10">
-
-              {/* Process */}
+          <div className="grid lg:grid-cols-12 gap-12 items-start">
+            
+            {/* Left Column: Timeline & Dates */}
+            <div className="lg:col-span-7 space-y-12">
               <div>
-                <h2 className="font-display text-2xl font-bold text-academic-900 mb-6 flex items-center gap-2.5">
-                  <GraduationCap className="h-6 w-6 text-blue-600" />
-                  Admission Process
-                </h2>
-                <div className="relative pl-6 space-y-8">
-                  {/* vertical step line */}
-                  <div className="absolute left-[7px] top-2 bottom-2 w-[1px] bg-slate-200" />
+                <span className="text-gold-600 font-semibold text-xs uppercase tracking-[0.25em] block mb-2">Admission Process</span>
+                <h2 className="font-display text-4xl font-bold text-academic-950">How to Apply</h2>
+              </div>
 
-                  {steps.map((step, index) => (
-                    <div key={index} className="relative flex gap-4">
-                      {/* number dot */}
-                      <div className="absolute -left-[25px] top-1.5 w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white shadow-sm flex items-center justify-center">
-                        <div className="w-1 h-1 rounded-full bg-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-sm text-slate-900 mb-1">
-                          {index + 1}. {step.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-                          {step.desc}
-                        </p>
-                      </div>
+              {/* Timeline */}
+              <div className="relative pl-6 border-l-2 border-blue-100 space-y-8 ml-3">
+                {steps.map((step, idx) => (
+                  <div key={idx} className="relative">
+                    {/* Circle Indicator */}
+                    <div className="absolute -left-[36px] top-1.5 w-6 h-6 rounded-full bg-white border-4 border-blue-600 flex items-center justify-center z-10 shadow-sm" />
+                    <div className="pl-2">
+                      <h4 className="font-display text-lg font-bold text-academic-950 flex items-center gap-2">
+                        {idx + 1}. {step.title}
+                      </h4>
+                      <p className="text-slate-600 text-sm mt-1 leading-relaxed">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Important Admission Dates */}
+              <div className="pt-8 border-t border-slate-200/60">
+                <h3 className="font-display text-2xl font-bold text-academic-950 flex items-center gap-2.5 mb-6">
+                  <Calendar className="h-6 w-6 text-blue-600" />
+                  Important Admission Dates
+                </h3>
+                <div className="space-y-3">
+                  {displayDates.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between bg-white border border-slate-200/60 rounded-xl px-5 py-4 shadow-sm hover:shadow transition-shadow">
+                      <span className="text-slate-700 font-semibold text-sm">{d.event}</span>
+                      <span className="text-blue-600 font-bold text-sm shrink-0 ml-4">{d.date}</span>
                     </div>
                   ))}
                 </div>
               </div>
-
-              {/* Dates */}
-              <div>
-                <h2 className="font-display text-2xl font-bold text-academic-900 mb-6 flex items-center gap-2.5">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                  Important Admission Dates
-                </h2>
-                <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden shadow-sm">
-                  <div className="divide-y divide-slate-100">
-                    {dates.map((item, index) => (
-                      <div key={index} className="flex justify-between items-center p-4">
-                        <span className="font-semibold text-slate-700 text-xs sm:text-sm">{item.event}</span>
-                        <span className="text-blue-600 font-bold text-xs sm:text-sm bg-blue-50/50 px-3 py-1 rounded-lg border border-blue-100/30">
-                          {item.date}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-            {/* Right Column: Admission Form (col-span-5) */}
+            {/* Right Column: Admission Enquiry Form Card */}
             <div className="lg:col-span-5">
-              <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-md hover:shadow-lg transition-all duration-300">
+                <h3 className="font-display text-2xl font-bold text-academic-950">Admission Enquiry</h3>
+                <p className="text-slate-500 text-xs sm:text-sm mt-2 leading-relaxed mb-6">
+                  Submit your details to check course eligibility. Our admissions officer will get in touch with you shortly.
+                </p>
 
-                <AnimatePresence mode="wait">
-                  {!isSubmitted ? (
-                    <motion.div
-                      key="form"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                    >
-                      <h3 className="font-display text-xl font-bold text-slate-900 mb-2">
-                        Admission Enquiry
-                      </h3>
-                      <p className="text-slate-500 text-xs sm:text-sm mb-6 leading-normal">
-                        Submit your details to check course eligibility. Our admissions officer will get in touch with you shortly.
-                      </p>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* FULL NAME */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
+                    <div className="relative">
+                      <Users className="absolute left-3.5 top-3 h-4.5 w-4.5 text-slate-400" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="John Doe"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full pl-10 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
 
-                      <form onSubmit={handleSubmit} className="space-y-4">
-
-                        {/* Name */}
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              required
-                              value={formData.name}
-                              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                              placeholder="John Doe"
-                              className="w-full pl-10 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                            />
-                            <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                          </div>
-                        </div>
-
-                        {/* Email & Phone */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
-                            <div className="relative">
-                              <input
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                placeholder="john@example.com"
-                                className="w-full pl-10 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                              />
-                              <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
-                            <div className="relative">
-                              <input
-                                type="tel"
-                                required
-                                value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                placeholder="9876543210"
-                                className="w-full pl-10 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                              />
-                              <Phone className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Level & Percentage */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Program Level</label>
-                            <select
-                              value={formData.level}
-                              onChange={(e) => setFormData({ ...formData, level: e.target.value, courseId: '' })}
-                              className="w-full px-3 py-2.5 text-slate-800 text-sm bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer"
-                            >
-                              <option value="ug">Undergraduate (UG)</option>
-                              <option value="pg">Postgraduate (PG)</option>
-                              <option value="diploma">Diploma</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Marks Obtained (%)</label>
-                            <div className="relative">
-                              <input
-                                type="number"
-                                required
-                                min="35"
-                                max="100"
-                                value={formData.percentage}
-                                onChange={(e) => setFormData({ ...formData, percentage: e.target.value })}
-                                placeholder="85"
-                                className="w-full pl-10 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                              />
-                              <Percent className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-400" />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Course */}
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Desired Program</label>
-                          <select
-                            required
-                            value={formData.courseId}
-                            onChange={(e) => setFormData({ ...formData, courseId: e.target.value })}
-                            className="w-full px-3 py-2.5 text-slate-800 text-sm bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer"
-                          >
-                            <option value="">Select a course...</option>
-                            {filteredCourses.map(course => (
-                              <option key={course.id} value={course.id}>
-                                {course.name} ({course.code.toUpperCase()})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* Queries */}
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Questions / Notes</label>
-                          <textarea
-                            rows={3}
-                            value={formData.queries}
-                            onChange={(e) => setFormData({ ...formData, queries: e.target.value })}
-                            placeholder="Type any questions here..."
-                            className="w-full px-3 py-2.5 text-slate-800 text-sm bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
-                          />
-                        </div>
-
-                        {error && (
-                          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-semibold">
-                            {error}
-                          </div>
-                        )}
-
-                        {/* Submit Button */}
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="w-full py-3 bg-[#0F2D52] hover:bg-[#163D6C] text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
-                        >
-                          {loading ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          ) : (
-                            'Submit Application Enquiry'
-                          )}
-                        </button>
-
-                      </form>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="success"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-8"
-                    >
-                      <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-emerald-100">
-                        <CheckCircle className="w-8 h-8 text-emerald-500" />
+                  {/* EMAIL & PHONE */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3.5 top-3 h-4.5 w-4.5 text-slate-400" />
+                        <input
+                          type="email"
+                          required
+                          placeholder="john@example.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                          className="w-full pl-10 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                        />
                       </div>
-                      <h3 className="font-display text-xl font-bold text-slate-900 mb-3">
-                        Enquiry Submitted!
-                      </h3>
-                      <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-6">
-                        Thank you for your interest, <strong className="text-slate-700">{formData.name}</strong>. Our admissions counseling officer will review your score (<strong className="text-slate-700">{formData.percentage}%</strong>) and get in touch with you shortly.
-                      </p>
-
-                      <div className="bg-slate-50 rounded-2xl p-4 text-left border border-slate-100/50 space-y-3 mb-6">
-                        <h4 className="text-xs font-bold text-slate-400 tracking-wider uppercase mb-1">What's Next?</h4>
-                        <div className="flex gap-2.5 text-xs text-slate-600">
-                          <ChevronRight className="w-4 h-4 shrink-0 text-blue-500" />
-                          <span>Check your inbox for the welcome pack.</span>
-                        </div>
-                        <div className="flex gap-2.5 text-xs text-slate-600">
-                          <ChevronRight className="w-4 h-4 shrink-0 text-blue-500" />
-                          <span>Ensure your documents are ready.</span>
-                        </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone Number</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-3 h-4.5 w-4.5 text-slate-400" />
+                        <input
+                          type="tel"
+                          required
+                          placeholder="9876543210"
+                          value={formData.phone}
+                          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                          className="w-full pl-10 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                        />
                       </div>
+                    </div>
+                  </div>
 
-                      <button
-                        onClick={() => {
-                          setFormData({ name: '', email: '', phone: '', level: 'ug', courseId: '', percentage: '', queries: '' })
-                          setIsSubmitted(false)
-                        }}
-                        className="w-full py-2.5 border border-slate-200 text-slate-600 hover:text-slate-800 text-xs font-bold rounded-xl transition-all"
+                  {/* LEVEL & PERCENTAGE */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Program Level</label>
+                      <select
+                        value={formData.level}
+                        onChange={(e) => setFormData(prev => ({ ...prev, level: e.target.value, courseId: '' }))}
+                        className="w-full px-3 py-2.5 text-slate-800 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer font-medium"
                       >
-                        Submit Another Enquiry
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                        <option value="ug">Undergraduate (UG)</option>
+                        <option value="pg">Postgraduate (PG)</option>
+                        <option value="diploma">Diploma</option>
+                        <option value="certificate">Certificate</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Marks Obtained (%)</label>
+                      <div className="relative">
+                        <span className="absolute left-3.5 top-2.5 text-slate-400 font-semibold text-sm">%</span>
+                        <input
+                          type="number"
+                          required
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="85"
+                          value={formData.percentage}
+                          onChange={(e) => setFormData(prev => ({ ...prev, percentage: e.target.value }))}
+                          className="w-full pl-8 pr-4 py-2.5 text-slate-800 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
+                  {/* DESIRED PROGRAM */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Desired Program</label>
+                    <select
+                      required
+                      value={formData.courseId}
+                      onChange={(e) => setFormData(prev => ({ ...prev, courseId: e.target.value }))}
+                      className="w-full px-3 py-2.5 text-slate-800 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer font-medium"
+                    >
+                      <option value="">Select a course...</option>
+                      {filteredCourses.map(course => (
+                        <option key={course.id} value={course.id}>
+                          {course.name} ({course.code.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* QUESTIONS / NOTES */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Questions / Notes</label>
+                    <textarea
+                      rows={3}
+                      placeholder="Type any questions here..."
+                      value={formData.queries}
+                      onChange={(e) => setFormData(prev => ({ ...prev, queries: e.target.value }))}
+                      className="w-full px-3 py-2.5 text-slate-800 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+                    />
+                  </div>
+
+                  {/* Submitting Status Alerts */}
+                  {submitStatus && (
+                    <div className={`p-3 rounded-xl text-xs font-semibold ${submitStatus.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-250' : 'bg-red-50 text-red-800 border border-red-250'}`}>
+                      {submitStatus.message}
+                    </div>
+                  )}
+
+                  {/* SUBMIT BUTTON */}
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3 bg-academic-900 text-white font-bold rounded-xl hover:bg-gold-600 transition-colors shadow focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-55 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? 'Submitting Enquiry...' : 'Submit Application Enquiry'}
+                  </button>
+                </form>
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* Programs */}
+      <section id="programs" className="section-padding bg-white">
+        <div className="container-wide">
+          <motion.div {...fadeUp} className="text-center mb-16">
+            <span className="text-gold-600 font-semibold text-xs uppercase tracking-[0.25em]">Choose Your Path</span>
+            <h2 className="font-display text-4xl md:text-5xl font-bold text-academic-950 mt-3">Programs We Offer</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {programs.map((prog, i) => (
+              <motion.div
+                key={i}
+                {...fadeUp}
+                transition={{ duration: 0.6, delay: i * 0.12 }}
+                className="rounded-3xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all hover:-translate-y-1"
+              >
+                <div className={`bg-gradient-to-br ${prog.color} p-8 text-white`}>
+                  <GraduationCap className="h-10 w-10 mb-4 opacity-80" />
+                  <h3 className="font-display text-2xl font-bold">{prog.level}</h3>
+                  <p className="text-white/70 text-sm mt-1">{prog.duration} Program</p>
+                </div>
+                <div className="bg-white p-6">
+                  <ul className="space-y-3">
+                    {prog.courses.map((c, j) => (
+                      <li key={j} className="flex items-center gap-3 text-slate-700 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-gold-500 shrink-0" />
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/courses" className="inline-flex items-center gap-2 mt-6 text-academic-700 font-semibold text-sm hover:text-gold-600 transition-colors">
+                    View all courses <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Financial Aid Strip */}
+      <section className="py-16 bg-gold-50 border-y border-gold-200">
+        <div className="container-wide text-center">
+          <motion.div {...fadeUp}>
+            <Users className="h-12 w-12 text-gold-600 mx-auto mb-4" />
+            <h2 className="font-display text-3xl font-bold text-academic-950 mb-3">Financial Aid & Scholarships</h2>
+            <p className="text-slate-600 max-w-2xl mx-auto text-lg mb-6">
+              We believe financial constraints should never stop a deserving student. Explore Government scholarships, merit-based waivers, and specially funded grants.
+            </p>
+            <Link href="/contact" className="inline-flex items-center gap-2 bg-gold-500 text-academic-950 font-bold px-7 py-3 rounded-full hover:bg-gold-400 transition-colors">
+              Learn About Aid Options <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="section-padding bg-white">
+        <div className="container-wide max-w-3xl mx-auto">
+          <motion.div {...fadeUp} className="text-center mb-12">
+            <span className="text-gold-600 font-semibold text-xs uppercase tracking-[0.25em]">Got Questions?</span>
+            <h2 className="font-display text-4xl font-bold text-academic-950 mt-3">Frequently Asked Questions</h2>
+          </motion.div>
+
+          <div className="space-y-3">
+            {faqs.map((faq, i) => (
+              <motion.div
+                key={i}
+                {...fadeUp}
+                transition={{ duration: 0.5, delay: i * 0.05 }}
+                className="border border-slate-200 rounded-2xl overflow-hidden"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full flex items-center justify-between text-left p-6 hover:bg-slate-50 transition-colors"
+                >
+                  <span className="font-semibold text-academic-950 text-base pr-4">{faq.q}</span>
+                  <ChevronDown className={`h-5 w-5 text-slate-400 shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
+                </button>
+                {openFaq === i && (
+                  <div className="px-6 pb-6 text-slate-600 leading-relaxed border-t border-slate-100 pt-4">
+                    {faq.a}
+                  </div>
+                )}
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>

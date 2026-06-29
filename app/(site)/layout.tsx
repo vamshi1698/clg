@@ -10,7 +10,7 @@ export default function SiteLayout({
   return (
     <>
       <Header />
-      <main className="flex-1 pt-[72px] md:pt-[120px]">{children}</main>
+      <main className="flex-1 pt-[96px] md:pt-[144px]">{children}</main>
       <Footer />
       <LegalConsentBanner />
     </>

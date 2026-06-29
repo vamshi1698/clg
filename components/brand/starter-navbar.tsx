@@ -33,7 +33,7 @@ export function StarterNavbar() {
         <div className="flex items-center justify-between gap-4 py-4">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-14 w-14 overflow-hidden rounded-full bg-white shadow-[0_8px_24px_rgba(15,23,42,0.12)] ring-1 ring-slate-200">
-              <Image src={logoImage} alt="National College logo" fill className="object-cover" priority />
+              <Image src={logoImage} alt="National College logo" fill sizes="56px" className="object-cover" priority />
             </div>
             <div>
               <div className="font-display text-[1.05rem] font-bold uppercase tracking-[0.06em] text-academic-950">The National College</div>

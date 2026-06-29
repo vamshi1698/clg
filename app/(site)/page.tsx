@@ -26,7 +26,6 @@ import { AutoCarouselSection } from '@/components/home/auto-carousel-section'
 import { BookOpen, BriefcaseBusiness, Users, ArrowRight, ChevronRight, Film, MonitorSmartphone } from 'lucide-react'
 import Link from 'next/link'
 import { ImmersiveIdCard } from '@/components/home/ImmersiveIdCard';
-import CurvedLoop from '@/components/reactbits/CurvedLoop';
 import { SchoolsAndDepartments, CareerAndFaculty } from '@/components/home/interactive-showcase';
 import { WhyChooseUs } from '@/components/home/why-choose-us';
 
@@ -81,17 +80,46 @@ export default async function HomePage() {
 
   return (
     <>
-      <div className="w-full bg-academic-950 text-white py-4 md:py-6 overflow-hidden">
-        <CurvedLoop 
-          marqueeItems={[
-            ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
-            ...events.map(e => ({ title: e.title, href: '/events' })),
-            ...resultPdfs.map(r => ({ title: r.title, href: `/api/results/pdf/${r.id}` }))
-          ].slice(0, 10)}
-          speed={2}
-          curveAmount={0}
-          className="fill-white"
-        />
+      <div className="w-full bg-academic-950 text-white py-2.5 md:py-3.5 overflow-hidden border-b border-slate-800">
+        <div className="container-wide flex items-center overflow-hidden py-0.5 text-xs md:text-sm font-semibold tracking-wider">
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <div className="marquee-track flex w-[400%] md:w-[200%] items-center gap-10 whitespace-nowrap text-white/90">
+              {[
+                ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
+                ...events.map(e => ({ title: e.title, href: '/events' })),
+                ...resultPdfs.map(r => ({ title: r.title, href: `/api/results/pdf/${r.id}` }))
+              ].slice(0, 10).map((item, idx) => (
+                <span key={idx} className="flex items-center gap-10">
+                  {item.href ? (
+                    <Link href={item.href} className="hover:text-gold-400 transition-colors">
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <span>{item.title}</span>
+                  )}
+                  <span className="text-gold-500">✦</span>
+                </span>
+              ))}
+              {/* Duplicate track for seamless infinite scroll */}
+              {[
+                ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
+                ...events.map(e => ({ title: e.title, href: '/events' })),
+                ...resultPdfs.map(r => ({ title: r.title, href: `/api/results/pdf/${r.id}` }))
+              ].slice(0, 10).map((item, idx) => (
+                <span key={`dup-${idx}`} className="flex items-center gap-10" aria-hidden="true">
+                  {item.href ? (
+                    <Link href={item.href} className="hover:text-gold-400 transition-colors">
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <span>{item.title}</span>
+                  )}
+                  <span className="text-gold-500">✦</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <HeroSection

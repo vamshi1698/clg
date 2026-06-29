@@ -64,8 +64,8 @@ function formatDateForInput(value: unknown, type: 'date' | 'datetime'): string {
 export function CmsForm({ config, references, initial, rowId, singletonId }: FormProps) {
   const router = useRouter()
 
-  if (config.slug === 'results' && !rowId && !config.singleton) {
-    return <ResultsMultiForm config={config} references={references} />
+  if (config.slug === 'results' && !config.singleton) {
+    return <ResultsMultiForm config={config} references={references} initialData={initial} />
   }
 
   const [values, setValues] = useState<Record<string, unknown>>(initial || {})

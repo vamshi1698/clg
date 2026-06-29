@@ -76,7 +76,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-4 group">
             <div className="relative h-16 w-16 overflow-hidden rounded-full shadow-sm ring-1 ring-slate-100 group-hover:shadow-md transition-shadow">
-              <Image src={logoImage} alt="National College logo" fill className="object-cover" priority />
+              <Image src={logoImage} alt="National College logo" fill sizes="64px" className="object-cover" priority />
             </div>
             <div>
               <h1 className="font-display text-2xl font-bold uppercase tracking-widest text-academic-900 leading-none group-hover:text-gold-600 transition-colors">

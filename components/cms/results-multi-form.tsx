@@ -22,32 +22,37 @@ interface SubjectRow {
 export interface ResultsMultiFormProps {
   config: TableConfig
   references?: Record<string, { value: string; label: string }[]>
+  initialData?: any
   onCancel?: () => void
 }
 
-export function ResultsMultiForm({ config, references }: ResultsMultiFormProps) {
+export function ResultsMultiForm({ config, references, initialData }: ResultsMultiFormProps) {
   const router = useRouter()
-  const [studentId, setStudentId] = useState('')
-  const [semester, setSemester] = useState('')
-  const [academicYear, setAcademicYear] = useState('')
-  const [examinationType, setExaminationType] = useState('Semester End Examination')
+  const isEdit = !!initialData
+
+  const [studentId, setStudentId] = useState(initialData?.student_id || '')
+  const [semester, setSemester] = useState(initialData?.semester !== undefined ? String(initialData.semester) : '')
+  const [academicYear, setAcademicYear] = useState(initialData?.academic_year || '')
+  const [examinationType, setExaminationType] = useState(initialData?.examination_type || 'Semester End Examination')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   // State for dynamic subject list
-  const [subjects, setSubjects] = useState<SubjectRow[]>([
-    {
-      subject_code: '',
-      subject_name: '',
-      internal_marks: '',
-      external_marks: '',
-      max_marks: '100',
-      credits: '3',
-      grade: '',
-      result_status: '',
-      is_active: true,
-    },
-  ])
+  const [subjects, setSubjects] = useState<SubjectRow[]>(
+    initialData?.subjects || [
+      {
+        subject_code: '',
+        subject_name: '',
+        internal_marks: '',
+        external_marks: '',
+        max_marks: '100',
+        credits: '3',
+        grade: '',
+        result_status: '',
+        is_active: true,
+      },
+    ]
+  )
 
   const studentOptions = references?.student_id || []
 
@@ -180,10 +185,10 @@ export function ResultsMultiForm({ config, references }: ResultsMultiFormProps) 
           </Link>
           <div>
             <h1 className="font-display text-2xl font-bold text-academic-900">
-              Bulk Add Results Entry
+              {isEdit ? 'Edit Results Entry' : 'Bulk Add Results Entry'}
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
-              Select student and add as many subjects as needed at once.
+              {isEdit ? 'Correct and manage grades and marks for this semester.' : 'Select student and add as many subjects as needed at once.'}
             </p>
           </div>
         </div>
@@ -210,8 +215,9 @@ export function ResultsMultiForm({ config, references }: ResultsMultiFormProps) 
               <select
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-academic-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-academic-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-450"
                 required
+                disabled={isEdit}
               >
                 <option value="">— Select Student —</option>
                 {studentOptions.map((o) => (
@@ -233,8 +239,9 @@ export function ResultsMultiForm({ config, references }: ResultsMultiFormProps) 
                 value={semester}
                 onChange={(e) => setSemester(e.target.value)}
                 placeholder="e.g. 6"
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-academic-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-academic-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-455"
                 required
+                disabled={isEdit}
               />
             </div>
 
