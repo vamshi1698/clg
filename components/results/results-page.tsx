@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { lookupResults, getActiveResultsPdfs } from '@/lib/actions/public-actions'
+import Image from 'next/image'
+import logoImage from '@/components/brand/channels4_profile.jpg'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -240,7 +242,7 @@ export function ResultsPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-display text-lg font-semibold">National College Jayanagar</h3>
-                          <p className="text-gray-300 text-xs">Semester {result.summary?.semester} Examination Results ({result.summary?.academic_year})</p>
+                          <p className="text-gray-300 text-xs">Semester Examination Results</p>
                         </div>
                         <div className="print:hidden flex items-center gap-2">
                           <Button onClick={handlePrint} variant="outline" size="sm" className="bg-white text-academic-900 hover:bg-gray-100 border-none">
@@ -255,7 +257,7 @@ export function ResultsPage() {
                       {/* Print-Only Header */}
                       <div className="hidden print:flex flex-col items-center justify-center text-center mb-6 border-b-2 border-academic-900 pb-4">
                         <div className="flex items-center gap-3 justify-center mb-1">
-                          <Award className="h-8 w-8 text-academic-900 flex-shrink-0" />
+                          <Image src={logoImage} alt="Logo" width={32} height={32} className="flex-shrink-0" />
                           <h1 className="font-display text-xl font-bold uppercase tracking-wider text-academic-900">
                             THE NATIONAL COLLEGE
                           </h1>
@@ -268,7 +270,7 @@ export function ResultsPage() {
                       </div>
 
                       {/* Student Info */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 p-4 bg-gray-50 print:bg-white rounded-lg print:rounded-none border border-gray-100 print:border-x-0 print:border-y print:border-gray-200 print:py-3 print:my-4">
+                      <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 print:bg-white rounded-lg print:rounded-none border border-gray-100 print:border-x-0 print:border-y print:border-gray-200 print:py-3 print:my-4">
                         <div>
                           <p className="text-xs text-gray-500 font-medium">Name</p>
                           <p className="font-semibold text-sm text-academic-900">{result.student.name}</p>
@@ -277,24 +279,6 @@ export function ResultsPage() {
                           <p className="text-xs text-gray-500 font-medium">Register No.</p>
                           <p className="font-semibold text-sm text-academic-900">{result.student.register_number}</p>
                         </div>
-                        {result.student.course_name && (
-                          <div>
-                            <p className="text-xs text-gray-500 font-medium">Course</p>
-                            <p className="font-semibold text-sm text-academic-900">{result.student.course_name}</p>
-                          </div>
-                        )}
-                        {result.summary?.semester && (
-                          <div>
-                            <p className="text-xs text-gray-500 font-medium">Semester</p>
-                            <p className="font-semibold text-sm text-academic-900">Semester {result.summary.semester}</p>
-                          </div>
-                        )}
-                        {result.student.department_name && (
-                          <div>
-                            <p className="text-xs text-gray-500 font-medium">Department</p>
-                            <p className="font-semibold text-sm text-academic-900">{result.student.department_name}</p>
-                          </div>
-                        )}
                       </div>
 
                       {/* GPA Metrics Summary */}

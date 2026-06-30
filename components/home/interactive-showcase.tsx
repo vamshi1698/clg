@@ -100,7 +100,7 @@ export function SchoolsAndDepartments({ items }: { items: {title: string, text: 
                 <div className="bg-academic-50 w-14 h-14 rounded-full flex items-center justify-center mb-6">
                   <BookOpen className="h-7 w-7 text-academic-700" />
                 </div>
-                <h3 className="font-display text-2xl font-semibold text-academic-950">{item.title}</h3>
+                <h3 className="font-sans text-2xl font-bold tracking-wide text-academic-950">{item.title}</h3>
                 <p className="mt-4 text-sm leading-7 text-slate-600">{item.text}</p>
                 <Link href={item.href} className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-academic-700 hover:text-gold-600 transition-colors">
                   Explore <ArrowRight className="h-4 w-4" />

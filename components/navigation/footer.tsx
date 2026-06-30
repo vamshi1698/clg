@@ -18,14 +18,17 @@ const resourceLinks = [
   { name: 'Alumni', href: '/alumni' },
   { name: 'Gallery', href: '/gallery' },
   { name: 'Research', href: '/research' },
+  { name: 'Facilities', href: '/facilities' },
+  { name: 'News & Announcements', href: '/news' },
+  { name: 'Events', href: '/events' },
   { name: 'Contact Us', href: '/contact' },
 ]
 
 const socialLinks = [
   { name: 'Facebook', icon: Facebook, href: '#' },
   { name: 'Twitter', icon: Twitter, href: '#' },
-  { name: 'LinkedIn', icon: Linkedin, href: '#' },
-  { name: 'Instagram', icon: Instagram, href: '#' },
+  { name: 'LinkedIn', icon: Linkedin, href: 'https://www.linkedin.com/school/national-college-jayanagar-bangalore-82-autonomous-/' },
+  { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/ncj_1965?igsh=cHM5bTgxdzZiZXNq' },
   { name: 'YouTube', icon: Youtube, href: '#' },
 ]
 

@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { useState, useMemo } from 'react'
 import type { ImportantDate, Course, Faq } from '@/types/database'
 import { submitAdmissionEnquiry } from '@/lib/actions/public-actions'
+import { ImmersiveIdCard } from '@/components/home/ImmersiveIdCard'
 
 const fadeUp = {
   initial: { opacity: 0, y: 40 },
@@ -176,43 +177,10 @@ export function AdmissionsPage({ importantDates, courses, faqs }: AdmissionsPage
         <div className="container-wide">
           <div className="grid lg:grid-cols-12 gap-12 items-start">
             
-            {/* Left Column: Timeline & Dates */}
-            <div className="lg:col-span-7 space-y-12">
-              <div>
-                <span className="text-gold-600 font-semibold text-xs uppercase tracking-[0.25em] block mb-2">Admission Process</span>
-                <h2 className="font-display text-4xl font-bold text-academic-950">How to Apply</h2>
-              </div>
-
-              {/* Timeline */}
-              <div className="relative pl-6 border-l-2 border-blue-100 space-y-8 ml-3">
-                {steps.map((step, idx) => (
-                  <div key={idx} className="relative">
-                    {/* Circle Indicator */}
-                    <div className="absolute -left-[36px] top-1.5 w-6 h-6 rounded-full bg-white border-4 border-blue-600 flex items-center justify-center z-10 shadow-sm" />
-                    <div className="pl-2">
-                      <h4 className="font-display text-lg font-bold text-academic-950 flex items-center gap-2">
-                        {idx + 1}. {step.title}
-                      </h4>
-                      <p className="text-slate-600 text-sm mt-1 leading-relaxed">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Important Admission Dates */}
-              <div className="pt-8 border-t border-slate-200/60">
-                <h3 className="font-display text-2xl font-bold text-academic-950 flex items-center gap-2.5 mb-6">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                  Important Admission Dates
-                </h3>
-                <div className="space-y-3">
-                  {displayDates.map((d, i) => (
-                    <div key={i} className="flex items-center justify-between bg-white border border-slate-200/60 rounded-xl px-5 py-4 shadow-sm hover:shadow transition-shadow">
-                      <span className="text-slate-700 font-semibold text-sm">{d.event}</span>
-                      <span className="text-blue-600 font-bold text-sm shrink-0 ml-4">{d.date}</span>
-                    </div>
-                  ))}
-                </div>
+            {/* Left Column: ID Card Tag */}
+            <div className="lg:col-span-7 h-full flex flex-col">
+              <div className="rounded-3xl overflow-hidden shadow-2xl flex-1 relative min-h-[600px]">
+                <ImmersiveIdCard />
               </div>
             </div>
 

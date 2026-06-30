@@ -21,13 +21,13 @@ import {
   TestimonialsSection,
   AchievementsSection,
   CTASection,
+  NewsAndEventsSection,
 } from '@/components/home/sections'
-import { NoticeBoard } from '@/components/home/notice-board'
 import { AutoCarouselSection } from '@/components/home/auto-carousel-section'
 import { BookOpen, BriefcaseBusiness, Users, ArrowRight, ChevronRight, Film, MonitorSmartphone } from 'lucide-react'
 import Link from 'next/link'
 import { ImmersiveIdCard } from '@/components/home/ImmersiveIdCard';
-import { SchoolsAndDepartments, CareerAndFaculty } from '@/components/home/interactive-showcase';
+import { SchoolsAndDepartments } from '@/components/home/interactive-showcase';
 import { WhyChooseUs } from '@/components/home/why-choose-us';
 
 
@@ -73,7 +73,7 @@ export default async function HomePage() {
               {[
                 ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
                 ...events.map(e => ({ title: e.title, href: '/events' })),
-                ...resultPdfs.map(r => ({ title: r.title, href: `/api/results/pdf/${r.id}` }))
+                ...resultPdfs.map(r => ({ title: r.title, href: `/results` }))
               ].slice(0, 10).map((item, idx) => (
                 <span key={idx} className="flex items-center gap-10">
                   {item.href ? (
@@ -90,7 +90,7 @@ export default async function HomePage() {
               {[
                 ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
                 ...events.map(e => ({ title: e.title, href: '/events' })),
-                ...resultPdfs.map(r => ({ title: r.title, href: `/api/results/pdf/${r.id}` }))
+                ...resultPdfs.map(r => ({ title: r.title, href: `/results` }))
               ].slice(0, 10).map((item, idx) => (
                 <span key={`dup-${idx}`} className="flex items-center gap-10" aria-hidden="true">
                   {item.href ? (
@@ -109,26 +109,23 @@ export default async function HomePage() {
       </div>
 
       <HeroSection
-        image_url={settings?.hero_image_url || undefined}
+        image_url={settings?.hero_image_url || 'https://images.unsplash.com/photo-1541829070740-15665fc885ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'}
         tagline={settings?.tagline || undefined}
         established_year={settings?.established_year}
       />
 
-      {/* Dynamic Image Carousel controlled via CMS (Gallery) */}
-      <AutoCarouselSection />
-
-      {/* Unified Notice Board System for News, Events, and Result Bulletins */}
-      <NoticeBoard news={news} events={events} resultPdfs={resultPdfs} />
-
-      <StatsSection statistics={statistics} />
+      <ProgramsSection courses={courses} />
 
       {/* Departments & Academics (Immersive) */}
       <SchoolsAndDepartments items={departmentItems} />
 
-      <ProgramsSection courses={courses} />
+      {/* Unified Notice Board System for News, Events, and Result Bulletins */}
+      <NewsAndEventsSection news={news} events={events} statistics={statistics} />
 
-      {/* Career & Faculty (Immersive) */}
-      <CareerAndFaculty careerItems={careerPreview} facultyItems={facultyPreview} />
+      {/* Dynamic Image Carousel controlled via CMS (Gallery) */}
+      <AutoCarouselSection />
+
+      <StatsSection statistics={statistics} />
 
       <AchievementsSection achievements={achievements} />
 
@@ -144,8 +141,6 @@ export default async function HomePage() {
 
       {recruiters.length > 0 && <RecruitersSection recruiters={recruiters} />}
       {testimonials.length > 0 && <TestimonialsSection testimonials={testimonials} />}
-
-      <ImmersiveIdCard />
 
       <CTASection />
     </>

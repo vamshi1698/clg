@@ -163,7 +163,7 @@ export function PrincipalMessage({ name, message, image_url }: PrincipalMessageP
                 <Image src={image_url} alt={name || 'Principal'} fill sizes="(max-width: 768px) 128px, 160px" className="object-cover" />
               ) : (
                 <Image
-                  src="https://images.pexels.com/photos/2182970/pexels-photo-2182970.jpeg"
+                  src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop"
                   alt={name || 'Principal'}
                   fill
                   sizes="(max-width: 768px) 128px, 160px"
@@ -181,20 +181,15 @@ export function PrincipalMessage({ name, message, image_url }: PrincipalMessageP
             <h2 className="font-display text-2xl font-bold text-academic-900 mt-1 mb-3">
               {name || 'Dr. K. Srinivas'}
             </h2>
-            <div className="prose prose-sm text-gray-600 leading-relaxed max-w-none line-clamp-3 md:line-clamp-none">
+            <div className="prose prose-sm text-gray-600 leading-relaxed max-w-none">
               {message ? (
-                <p>{message.split('\n')[0]}</p>
+                <div className="whitespace-pre-line">{message}</div>
               ) : (
                 <p>
                   Welcome to National College Jayanagar. For over five decades, we have been committed to nurturing minds and shaping futures. Our institution stands as a beacon of academic excellence, combining traditional values with modern education methodology to ensure every student receives the best possible education.
                 </p>
               )}
             </div>
-            <Button asChild variant="link" className="mt-2 text-academic-700 p-0 h-auto font-semibold hover:text-gold-600">
-              <Link href="/about#principal">
-                Read Full Message <ArrowRight className="ml-1 h-3 w-3" />
-              </Link>
-            </Button>
           </motion.div>
         </motion.div>
       </div>
@@ -328,7 +323,7 @@ export function NewsSection({ news }: NewsSectionProps) {
                           : 'Recent'}
                       </span>
                     </div>
-                    <h3 className="font-display text-lg font-semibold text-academic-900 mb-2 line-clamp-2">
+                    <h3 className="font-sans text-lg font-bold tracking-wide text-academic-900 mb-2 line-clamp-2">
                       {item.title}
                     </h3>
                     <p className="text-gray-600 text-sm line-clamp-2 mb-4">{item.excerpt}</p>
@@ -408,7 +403,7 @@ export function EventsSection({ events }: EventsSectionProps) {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-display text-lg font-semibold text-white mb-2">
+                        <h3 className="font-sans text-lg font-bold tracking-wide text-white mb-2">
                           {event.title}
                         </h3>
                         <div className="space-y-2 text-sm text-gray-400">
@@ -680,7 +675,7 @@ export function AchievementsSection({ achievements }: AchievementsSectionProps) 
                     <div className="w-16 h-16 bg-gold-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Award className="h-8 w-8 text-gold-600" />
                     </div>
-                    <h3 className="font-display text-lg font-semibold text-academic-900 mb-2">
+                    <h3 className="font-sans text-lg font-bold tracking-wide text-academic-900 mb-2">
                       {achievement.title}
                     </h3>
                     <p className="text-gray-600 text-sm">{achievement.description}</p>
@@ -951,12 +946,12 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                           </span>
                         </div>
                         <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug hover:text-blue-600 transition-colors line-clamp-2">
-                          <Link href={item?.slug ? `/news/${item.slug}` : '#'}>{item.title}</Link>
+                          <Link href={item.category === 'examination' ? '/results' : (item?.slug ? `/news/${item.slug}` : '#')}>{item.title}</Link>
                         </h4>
                       </div>
                       <div className="flex-shrink-0">
                         <Link 
-                          href={item?.slug ? `/news/${item.slug}` : '#'}
+                          href={item.category === 'examination' ? '/results' : (item?.slug ? `/news/${item.slug}` : '#')}
                           className="flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-xl transition-all shadow-sm"
                           title="Download document"
                         >
@@ -974,7 +969,7 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
               </div>
             </div>
 
-            {/* Check Results Card */}
+            {/* Live Statistics Card */}
             <div className="mt-8 p-6 bg-gradient-to-r from-[#03152c] to-[#0A2540] rounded-3xl shadow-lg text-white relative overflow-hidden">
               <div className="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4">
                 <svg width="180" height="180" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -986,20 +981,21 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
 
               <div className="relative z-10">
                 <span className="text-[10px] sm:text-xs font-bold text-blue-400 tracking-wider uppercase mb-2.5 block">
-                  RESULTS
+                  LIVE STATISTICS
                 </span>
-                <h3 className="font-display text-xl sm:text-2xl font-bold text-white mb-1.5">
-                  Check Results
-                </h3>
-                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-4 max-w-sm">
-                  Enter your register number to view semester results.
-                </p>
-                <div className="flex">
-                  <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-xl text-xs sm:text-sm transition-colors border-none">
-                    <Link href="/results">
-                      Results Portal <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
-                    </Link>
-                  </Button>
+                <div className="flex items-center justify-between gap-4 mt-2">
+                  <div>
+                    <h3 className="font-display text-3xl sm:text-4xl font-bold text-white mb-1">
+                      {statistics ? `${statistics.placement_percentage}.00%` : '95.00%'}
+                    </h3>
+                    <p className="text-slate-300 text-[10px] font-bold uppercase tracking-wider">Placement Rate</p>
+                  </div>
+                  <div>
+                    <h3 className="font-display text-3xl sm:text-4xl font-bold text-white mb-1">
+                      {statistics ? `${(statistics.students_count / 1000).toFixed(0)}k+` : '5,000+'}
+                    </h3>
+                    <p className="text-slate-300 text-[10px] font-bold uppercase tracking-wider">Active Students</p>
+                  </div>
                 </div>
               </div>
             </div>
