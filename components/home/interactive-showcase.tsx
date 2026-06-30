@@ -127,12 +127,12 @@ export function SchoolsAndDepartments({ items }: { items: {title: string, text: 
                   
                   {/* Hover Reveal Action */}
                   <div className="mt-8 overflow-hidden">
-                    <div className="flex items-center gap-3 text-sm font-bold text-gold-400 transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                    <div className="flex items-center gap-3 text-sm font-bold text-gold-400 transform translate-y-0 opacity-100 lg:translate-y-8 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 transition-all duration-500">
                       <span className="tracking-wider uppercase">Explore Department</span>
                       <ArrowRight className="h-4 w-4" />
                     </div>
                     {/* Default state line */}
-                    <div className="h-[2px] w-12 bg-white/20 mt-4 group-hover:w-full group-hover:bg-gold-500/50 transition-all duration-700 ease-in-out" />
+                    <div className="h-[2px] w-full lg:w-12 bg-gold-500/50 lg:bg-white/20 mt-4 lg:group-hover:w-full lg:group-hover:bg-gold-500/50 transition-all duration-700 ease-in-out" />
                   </div>
                   
                   <Link href={item.href} className="absolute inset-0 z-30">

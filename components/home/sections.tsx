@@ -255,8 +255,8 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
                   </div>
                   
                   {/* Action Icon */}
-                  <div className="relative z-10 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-gold-500 group-hover:border-gold-500 group-hover:scale-110 transition-all duration-300 shrink-0">
-                    <ArrowRight className="h-4 w-4 text-white group-hover:text-academic-950 transition-colors" />
+                  <div className="relative z-10 w-10 h-10 rounded-full bg-gold-500 lg:bg-white/5 border border-gold-500 lg:border-white/10 flex items-center justify-center lg:group-hover:bg-gold-500 lg:group-hover:border-gold-500 lg:group-hover:scale-110 transition-all duration-300 shrink-0">
+                    <ArrowRight className="h-4 w-4 text-academic-950 lg:text-white lg:group-hover:text-academic-950 transition-colors" />
                   </div>
                 </Link>
               </motion.div>

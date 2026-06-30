@@ -7,19 +7,19 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 const slides = [
   {
-    title: 'Campus life in motion',
-    description: 'A dynamic look at the spaces, activity, and atmosphere that shape the student experience.',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1600&auto=format&fit=crop&q=80',
+    title: 'A Legacy of Excellence',
+    description: 'Our iconic campus has been nurturing brilliant minds and shaping futures for over five decades.',
+    image: 'https://images.unsplash.com/photo-1562774053-701939374585?w=1600&auto=format&fit=crop&q=80',
   },
   {
-    title: 'Learning spaces built for focus',
-    description: 'Modern classrooms, labs, and study areas that support academic depth and collaboration.',
-    image: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?w=1600&auto=format&fit=crop&q=80',
+    title: 'Modern Learning Spaces',
+    description: 'State-of-the-art libraries and laboratories designed to foster deep research and collaboration.',
+    image: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=1600&auto=format&fit=crop&q=80',
   },
   {
-    title: 'A student journey worth following',
-    description: 'The carousel keeps changing to highlight stories, spaces, and the feel of campus life.',
-    image: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=1600&auto=format&fit=crop&q=80',
+    title: 'Vibrant Student Community',
+    description: 'Experience a campus full of life, diversity, and endless opportunities to grow together.',
+    image: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1600&auto=format&fit=crop&q=80',
   },
 ]
 
@@ -41,7 +41,7 @@ export function AutoCarouselSection() {
       <div className="container-wide">
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-50 shadow-sm">
-            <div className="relative aspect-[16/10]">
+            <div className="relative aspect-square sm:aspect-[4/3] lg:aspect-[16/10]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeIndex}
@@ -53,10 +53,10 @@ export function AutoCarouselSection() {
                 >
                   <Image src={activeSlide.image} alt={activeSlide.title} fill className="object-cover" unoptimized />
                   <div className="absolute inset-0 bg-gradient-to-r from-academic-950/70 via-academic-950/25 to-transparent" />
-                  <div className="absolute inset-x-0 bottom-0 p-6 md:p-8 text-white">
-                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-500">Campus carousel</p>
-                    <h2 className="mt-3 max-w-xl font-display text-3xl font-bold md:text-5xl">{activeSlide.title}</h2>
-                    <p className="mt-4 max-w-xl text-sm leading-7 text-white/85 md:text-base">{activeSlide.description}</p>
+                  <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8 text-white bg-gradient-to-t from-academic-950/90 to-transparent">
+                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.24em] text-gold-500">Campus Highlight</p>
+                    <h2 className="mt-2 sm:mt-3 max-w-xl font-display text-2xl font-bold sm:text-3xl md:text-5xl leading-tight">{activeSlide.title}</h2>
+                    <p className="mt-2 sm:mt-4 max-w-xl text-xs sm:text-sm leading-relaxed text-white/90 md:text-base">{activeSlide.description}</p>
                   </div>
                 </motion.div>
               </AnimatePresence>
