@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Facebook, Twitter, Linkedin, Instagram, Youtube, Mail, Phone, MapPin, Clock } from 'lucide-react'
+import logoImage from '@/components/brand/channels4_profile.jpg'
 
 const quickLinks = [
   { name: 'About Us', href: '/about' },
@@ -11,12 +13,12 @@ const quickLinks = [
 ]
 
 const resourceLinks = [
-  { name: 'Academic Calendar', href: '/academic-calendar' },
-  { name: 'Student Portal', href: '/portal' },
-  { name: 'Library', href: '/library' },
-  { name: 'Career Services', href: '/careers' },
-  { name: 'Placements', href: '/placements' },
+  { name: 'Campus Life', href: '/campus-life' },
+  { name: 'Students', href: '/students' },
+  { name: 'Alumni', href: '/alumni' },
+  { name: 'Gallery', href: '/gallery' },
   { name: 'Research', href: '/research' },
+  { name: 'Contact Us', href: '/contact' },
 ]
 
 const socialLinks = [
@@ -42,8 +44,8 @@ export function Footer() {
           {/* College Info */}
           <div className="space-y-6">
             <Link href="/" className="inline-flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gold-500 shadow-lg shadow-gold-500/20">
-                <span className="text-academic-900 font-display font-bold text-xl">N</span>
+              <div className="relative h-12 w-12 overflow-hidden rounded-full shadow-md ring-2 ring-gold-500/30 flex-shrink-0">
+                <Image src={logoImage} alt="National College logo" fill sizes="48px" className="object-cover" />
               </div>
               <div>
                 <h2 className="font-display text-lg font-bold text-white">The National College Jayanagar</h2>
@@ -154,8 +156,8 @@ export function Footer() {
             <Link href="/terms" className="text-gray-400 hover:text-gold-500 transition-colors">
               Terms of Use
             </Link>
-            <Link href="/sitemap" className="text-gray-400 hover:text-gold-500 transition-colors">
-              Sitemap
+            <Link href="/contact" className="text-gray-400 hover:text-gold-500 transition-colors">
+              Contact
             </Link>
           </div>
         </div>
