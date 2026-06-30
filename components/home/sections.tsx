@@ -32,11 +32,16 @@ export function HeroSection({ image_url, tagline, established_year = 1965 }: Her
 
   return (
     <section className="relative w-full min-h-[85vh] flex items-center justify-center overflow-hidden">
-      {/* Background Image / Pattern */}
+      {/* Background Image */}
       <div className="absolute inset-0 bg-academic-950">
-        <div 
-          className="absolute inset-0 opacity-50 bg-cover bg-center"
-          style={{ backgroundImage: `url(${image_url || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'})` }} 
+        <Image
+          src={image_url || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'}
+          alt="National College Campus"
+          fill
+          sizes="100vw"
+          priority
+          fetchPriority="high"
+          className="object-cover opacity-50"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-academic-950 via-academic-900/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-academic-950/80 via-academic-900/40 to-transparent" />
@@ -79,7 +84,7 @@ export function HeroSection({ image_url, tagline, established_year = 1965 }: Her
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="border-white/30 bg-white/10 backdrop-blur-md text-lg h-14 px-8 text-white hover:bg-white hover:text-academic-900 transition-all">
-              <Link href="/courses">
+              <Link href="/academics/undergraduate">
                 Explore Courses
               </Link>
             </Button>
@@ -220,7 +225,7 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
               <h2 className="font-display text-3xl font-bold text-academic-900 mt-1">Courses We Offer</h2>
             </div>
             <Button asChild variant="ghost" className="hidden md:inline-flex text-sm text-academic-700 hover:text-gold-600">
-              <Link href="/courses">View all <ArrowRight className="ml-1 h-4 w-4" /></Link>
+              <Link href="/academics/undergraduate">View all <ArrowRight className="ml-1 h-4 w-4" /></Link>
             </Button>
           </motion.div>
 
@@ -231,11 +236,11 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
             {displayCourses.map((course) => (
               <motion.div key={course.id} variants={fadeIn}>
                 <Link
-                  href={`/courses/${course.code.toLowerCase()}`}
+                  href={course?.code ? `/courses/${course.code.toLowerCase()}` : '#'}
                   className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-academic-950 hover:border-academic-950 hover:text-white group transition-all duration-200"
                 >
                   <div className="min-w-0">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-400 mb-0.5">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-600 group-hover:text-slate-400 mb-0.5">
                       {course.level} · {course.duration}
                     </div>
                     <div className="font-semibold text-academic-950 group-hover:text-white text-sm truncate transition-colors">
@@ -250,7 +255,7 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
 
           <motion.div variants={fadeIn} className="mt-5 md:hidden text-center">
             <Button asChild variant="outline" className="btn-outline">
-              <Link href="/courses">View All Programs <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link href="/academics/undergraduate">View All Programs <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </motion.div>
         </motion.div>
@@ -328,7 +333,7 @@ export function NewsSection({ news }: NewsSectionProps) {
                     </h3>
                     <p className="text-gray-600 text-sm line-clamp-2 mb-4">{item.excerpt}</p>
                     <Link
-                      href={`/news/${item.slug}`}
+                      href={item?.slug ? `/news/${item.slug}` : '#'}
                       className="inline-flex items-center text-gold-600 hover:text-gold-700 font-medium text-sm"
                     >
                       Read More <ArrowRight className="ml-1 h-4 w-4" />
@@ -905,15 +910,17 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
               </div>
 
               {/* Filter Tabs */}
-              <div className="flex flex-wrap gap-2 mt-8">
+              <div className="flex flex-wrap gap-2 mt-8" role="tablist" aria-label="Notice filter">
                 {(['all', 'results', 'circulars', 'general'] as const).map((tab) => (
                   <button
                     key={tab}
+                    role="tab"
                     onClick={() => setActiveTab(tab)}
+                    aria-selected={activeTab === tab}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all border ${
                       activeTab === tab
                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                        : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     {tab === 'all' && 'All Notices'}
@@ -944,12 +951,12 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                           </span>
                         </div>
                         <h4 className="font-bold text-slate-800 text-xs sm:text-sm leading-snug hover:text-blue-600 transition-colors line-clamp-2">
-                          <Link href={`/news/${item.slug}`}>{item.title}</Link>
+                          <Link href={item?.slug ? `/news/${item.slug}` : '#'}>{item.title}</Link>
                         </h4>
                       </div>
                       <div className="flex-shrink-0">
                         <Link 
-                          href={`/news/${item.slug}`}
+                          href={item?.slug ? `/news/${item.slug}` : '#'}
                           className="flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-xl transition-all shadow-sm"
                           title="Download document"
                         >

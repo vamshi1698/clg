@@ -1,13 +1,31 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { Lato, Bebas_Neue } from 'next/font/google'
+
+// Load fonts via next/font for zero render-blocking, automatic preloading & self-hosting
+const lato = Lato({
+  subsets: ['latin'],
+  weight: ['300', '400', '700', '900'],
+  display: 'swap',
+  variable: '--font-lato',
+  preload: true,
+})
+
+const bebasNeue = Bebas_Neue({
+  subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  variable: '--font-bebas-neue',
+  preload: false, // only used for display headings — not needed for FCP
+})
 
 export const metadata: Metadata = {
   title: {
     default: 'National College Jayanagar | Excellence in Education Since 1965',
     template: '%s | National College Jayanagar',
   },
-  description: 'National College Jayanagar - A premier autonomous institution committed to academic excellence, holistic development, and preparing students for successful careers.',
-  keywords: ['National College', 'Jayanagar', 'Bangalore', 'Higher Education', 'Autonomous College', 'Science', 'Commerce', 'Management'],
+  description: 'National College Jayanagar — a premier NAAC A++ autonomous institution committed to academic excellence, holistic development, and preparing students for successful careers since 1965.',
+  keywords: ['National College', 'Jayanagar', 'Bangalore', 'Higher Education', 'Autonomous College', 'NAAC A++', 'Science', 'Commerce', 'Management', 'Arts', 'UG PG programs Bangalore'],
   authors: [{ name: 'National College Jayanagar' }],
   creator: 'National College Jayanagar',
   publisher: 'National College Jayanagar',
@@ -60,7 +78,46 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/site.webmanifest',
+  verification: {
+    google: 'your-google-search-console-token', // Replace with actual token after adding to Google Search Console
+  },
 }
+
+// JSON-LD structured data for rich search results
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'EducationalOrganization',
+  name: 'National College Jayanagar',
+  alternateName: 'National College (Autonomous)',
+  url: 'https://nationalcollege.edu.in',
+  logo: 'https://nationalcollege.edu.in/logo.png',
+  image: 'https://nationalcollege.edu.in/og-image.jpg',
+  description: 'National College Jayanagar is a premier NAAC A++ autonomous institution offering UG and PG programs in Science, Commerce, Management and Arts, established in 1965.',
+  foundingDate: '1965',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: '18th Cross, Jayanagar 4th Block',
+    addressLocality: 'Bengaluru',
+    addressRegion: 'Karnataka',
+    postalCode: '560011',
+    addressCountry: 'IN',
+  },
+  telephone: '+91-80-12345678',
+  email: 'info@nationalcollege.edu.in',
+  sameAs: [
+    'https://www.facebook.com/NationalCollegeJayanagar',
+    'https://www.instagram.com/nationalcollege',
+    'https://www.linkedin.com/school/national-college-jayanagar',
+    'https://twitter.com/NationalColl',
+  ],
+  hasCredential: [
+    { '@type': 'EducationalOccupationalCredential', credentialCategory: 'NAAC A++ Accredited' },
+    { '@type': 'EducationalOccupationalCredential', credentialCategory: 'UGC Recognized' },
+    { '@type': 'EducationalOccupationalCredential', credentialCategory: 'Autonomous Institution' },
+  ],
+}
+
+import { Toaster } from '@/components/ui/toaster'
 
 export default function RootLayout({
   children,
@@ -68,10 +125,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className={`scroll-smooth ${lato.variable} ${bebasNeue.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+      </head>
       <body className="min-h-screen flex flex-col antialiased">
         {children}
+        <Toaster />
       </body>
     </html>
   )
 }
+

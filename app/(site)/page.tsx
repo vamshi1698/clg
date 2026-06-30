@@ -8,6 +8,7 @@ import {
   getRecruiters,
   getTestimonials,
   getAchievements,
+  getDepartments,
 } from '@/lib/data/public'
 import { getActiveResultsPdfs } from '@/lib/actions/public-actions'
 import {
@@ -29,26 +30,6 @@ import { ImmersiveIdCard } from '@/components/home/ImmersiveIdCard';
 import { SchoolsAndDepartments, CareerAndFaculty } from '@/components/home/interactive-showcase';
 import { WhyChooseUs } from '@/components/home/why-choose-us';
 
-const highlightSlides = [
-  {
-    title: 'Campus momentum',
-    description: 'A rotating visual preview for announcements, campus life, and student achievements.',
-  },
-  {
-    title: 'Academic excellence',
-    description: 'A clean carousel-style section that keeps the homepage lively and focused.',
-  },
-  {
-    title: 'Student pathways',
-    description: 'Clear calls to action that guide visitors to departments, careers, and faculty.',
-  },
-]
-
-const departmentPreview = [
-  { title: 'Computer Applications', text: 'Software, systems, and applied computing pathways.', href: '/departments' },
-  { title: 'Commerce & Management', text: 'Business, finance, and professional growth tracks.', href: '/departments' },
-  { title: 'Arts & Humanities', text: 'Culture, critical thinking, and communication-led study.', href: '/departments' },
-]
 
 const careerPreview = [
   { title: 'Placement guidance', text: 'Career support, resume preparation, and interview readiness.' },
@@ -63,7 +44,7 @@ const facultyPreview = [
 ]
 
 export default async function HomePage() {
-  const [settings, statistics, courses, news, events, gallery, recruiters, testimonials, achievements, resultPdfsRes] = await Promise.all([
+  const [settings, statistics, courses, news, events, gallery, recruiters, testimonials, achievements, resultPdfsRes, departmentPreview] = await Promise.all([
     getSiteSettings(),
     getStatistics(),
     getCourses(),
@@ -73,8 +54,13 @@ export default async function HomePage() {
     getRecruiters(),
     getTestimonials(),
     getAchievements(),
-    getActiveResultsPdfs(),
+    getActiveResultsPdfs(), getDepartments()
   ])
+  const departmentItems = departmentPreview.slice(0, 3).map((dept) => ({
+    title: dept.name,
+    text: dept.description ?? "",
+    href: `/departments/${dept.code.toLowerCase()}`,
+  }))
 
   const resultPdfs = (resultPdfsRes?.data as any[]) || []
 
@@ -137,7 +123,7 @@ export default async function HomePage() {
       <StatsSection statistics={statistics} />
 
       {/* Departments & Academics (Immersive) */}
-      <SchoolsAndDepartments items={departmentPreview} />
+      <SchoolsAndDepartments items={departmentItems} />
 
       <ProgramsSection courses={courses} />
 
@@ -145,11 +131,11 @@ export default async function HomePage() {
       <CareerAndFaculty careerItems={careerPreview} facultyItems={facultyPreview} />
 
       <AchievementsSection achievements={achievements} />
-      
+
       <WhyChooseUs />
-      
+
       {gallery.length > 0 && <GalleryPreview items={gallery} />}
-      
+
       <PrincipalMessage
         name={settings?.principal_name || undefined}
         message={settings?.principal_message || undefined}
@@ -158,7 +144,7 @@ export default async function HomePage() {
 
       {recruiters.length > 0 && <RecruitersSection recruiters={recruiters} />}
       {testimonials.length > 0 && <TestimonialsSection testimonials={testimonials} />}
-      
+
       <ImmersiveIdCard />
 
       <CTASection />

@@ -1,7 +1,19 @@
+import type { Metadata } from 'next'
 import SpotlightCard from '@/components/reactbits/SpotlightCard'
 import ScrollReveal from '@/components/reactbits/ScrollReveal'
 
-export const metadata = { title: 'Academics | National College' }
+export const metadata: Metadata = {
+  title: 'Academics | National College Jayanagar',
+  description: 'Explore undergraduate and postgraduate academic programs at National College Jayanagar — science, commerce, management, and arts streams with industry-aligned curricula.',
+  keywords: ['academics National College', 'undergraduate programs Bangalore', 'postgraduate programs Jayanagar', 'science courses Bangalore', 'commerce college Bangalore', 'arts programs Bangalore'],
+  alternates: { canonical: '/academics' },
+  openGraph: {
+    title: 'Academics | National College Jayanagar',
+    description: 'Explore UG and PG programs across Science, Commerce, Management & Arts at National College Jayanagar, Bangalore.',
+    url: 'https://nationalcollege.edu.in/academics',
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'National College Academic Programs' }],
+  },
+}
 
 export default function AcademicsPage() {
   return (

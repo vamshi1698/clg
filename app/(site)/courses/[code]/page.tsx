@@ -6,7 +6,7 @@ import { CourseDetailPage } from '@/components/courses/course-detail'
 export async function generateStaticParams() {
   const courses = await getCourses()
   return courses.map((course) => ({
-    code: course.code.toLowerCase(),
+    code: (course.code || '').toLowerCase(),
   }))
 }
 

@@ -87,9 +87,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Lato', 'system-ui', '-apple-system', 'sans-serif'],
-        serif: ['Lato', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Abolition', 'Bebas Neue', 'sans-serif'],
+        sans: ['var(--font-lato)', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['var(--font-lato)', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Abolition', 'var(--font-bebas-neue)', 'sans-serif'],
       },
       spacing: {
         '18': '4.5rem',

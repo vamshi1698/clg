@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Mail, Award, BookOpen, User, GraduationCap, Info } from 'lucide-react'
 import type { Faculty, Department } from '@/types/database'
+import { FacultyDetailModal } from '@/components/faculty/faculty-detail-modal'
 
 interface FacultyPageProps {
   faculty: Faculty[]
@@ -23,6 +24,7 @@ const staggerContainer = {
 export function FacultyPage({ faculty, departments }: FacultyPageProps) {
   const [search, setSearch] = useState('')
   const [selectedDept, setSelectedDept] = useState('all')
+  const [selectedFaculty, setSelectedFaculty] = useState<any | null>(null)
 
   // Map over faculty to attach department objects for rendering HOD/department names correctly
   const facultyWithDept = useMemo(() => {
@@ -197,7 +199,10 @@ export function FacultyPage({ faculty, departments }: FacultyPageProps) {
                       >
                         {group.faculty.map((member) => (
                           <motion.div key={member.id} variants={fadeIn} className="group">
-                            <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:border-gold-300/40 transition-all duration-300 h-full flex flex-col justify-between">
+                            <div 
+                              onClick={() => setSelectedFaculty(member)}
+                              className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:border-gold-300/40 transition-all duration-300 h-full flex flex-col justify-between cursor-pointer"
+                            >
                               <div>
                                 
                                 {/* Profile Photo */}
@@ -251,6 +256,7 @@ export function FacultyPage({ faculty, departments }: FacultyPageProps) {
                                   {member.email ? (
                                     <a 
                                       href={`mailto:${member.email}`} 
+                                      onClick={(e) => e.stopPropagation()}
                                       className="inline-flex items-center gap-1.5 font-bold text-slate-400 hover:text-blue-600 transition-colors"
                                       title={`Email ${member.name}`}
                                     >
@@ -297,6 +303,11 @@ export function FacultyPage({ faculty, departments }: FacultyPageProps) {
         </div>
       </section>
 
+      <FacultyDetailModal
+        faculty={selectedFaculty}
+        isOpen={!!selectedFaculty}
+        onClose={() => setSelectedFaculty(null)}
+      />
     </div>
   )
 }

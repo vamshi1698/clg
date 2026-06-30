@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, Clock, Users, IndianRupee, BookOpen, GraduationCap, X, Calendar, FileText } from 'lucide-react'
 import type { Course } from '@/types/database'
 
@@ -77,6 +78,7 @@ const syllabusMap: Record<string, string[]> = {
 }
 
 export function CourseDetailPage({ course }: CourseDetailPageProps) {
+  const router = useRouter()
   const [isSyllabusOpen, setIsSyllabusOpen] = useState(false)
 
   const subjects = (course.core_subjects && course.core_subjects.length > 0)
@@ -94,12 +96,12 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
       <div className="container-wide">
 
         {/* Back Link */}
-        <Link
-          href="/courses"
-          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm mb-8 transition-colors font-medium"
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 text-sm mb-8 transition-colors font-medium cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Programs
-        </Link>
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">

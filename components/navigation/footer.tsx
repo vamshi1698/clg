@@ -6,7 +6,7 @@ import logoImage from '@/components/brand/channels4_profile.jpg'
 const quickLinks = [
   { name: 'About Us', href: '/about' },
   { name: 'Departments', href: '/departments' },
-  { name: 'Courses', href: '/courses' },
+  { name: 'Courses', href: '/academics/undergraduate' },
   { name: 'Faculty', href: '/faculty' },
   { name: 'Admissions', href: '/admissions' },
   { name: 'Results', href: '/results' },

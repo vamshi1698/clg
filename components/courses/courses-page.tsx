@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -22,23 +23,36 @@ const staggerContainer = {
   animate: { transition: { staggerChildren: 0.05 } }
 }
 
-function getCourseGradient(code: string): string {
-  const cleanCode = code.toLowerCase();
-  if (cleanCode.includes('b.a') || cleanCode === 'ba') return 'from-purple-700 to-indigo-700';
-  if (cleanCode.includes('b.sc') || cleanCode === 'bsc') return 'from-emerald-700 to-teal-700';
-  if (cleanCode.includes('b.com') || cleanCode === 'bcom') return 'from-blue-700 to-cyan-700';
+export function getCourseGradient(code: string | null | undefined): string {
+  const cleanCode = (code || '').toLowerCase();
+  if (cleanCode.includes('b.a') || cleanCode.includes('ba')) return 'from-purple-700 to-indigo-700';
+  if (cleanCode.includes('b.sc') || cleanCode.includes('bsc')) return 'from-emerald-700 to-teal-700';
+  if (cleanCode.includes('b.com') || cleanCode.includes('bcom')) return 'from-blue-700 to-cyan-700';
   if (cleanCode.includes('bca')) return 'from-academic-800 to-slate-900';
   if (cleanCode.includes('bba')) return 'from-gold-600 to-amber-700';
-  if (cleanCode.includes('m.a') || cleanCode === 'ma') return 'from-violet-700 to-fuchsia-700';
-  if (cleanCode.includes('m.sc') || cleanCode === 'msc') return 'from-teal-700 to-emerald-800';
-  if (cleanCode.includes('m.com') || cleanCode === 'mcom') return 'from-sky-700 to-indigo-800';
+  if (cleanCode.includes('m.a') || cleanCode.includes('ma')) return 'from-violet-700 to-fuchsia-700';
+  if (cleanCode.includes('m.sc') || cleanCode.includes('msc')) return 'from-teal-700 to-emerald-800';
+  if (cleanCode.includes('m.com') || cleanCode.includes('mcom')) return 'from-sky-700 to-indigo-800';
+  if (cleanCode.includes('mba')) return 'from-amber-700 to-orange-800';
   return 'from-slate-700 to-slate-800';
 }
 
 export function CoursesPage({ courses, departments }: CoursesPageProps) {
-  const [selectedLevel, setSelectedLevel] = useState<string>('all')
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('all')
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchParams = useSearchParams()
+  const levelParam = searchParams.get('level') || 'all'
+  const deptParam = searchParams.get('department') || 'all'
+  const searchParam = searchParams.get('search') || ''
+
+  const [selectedLevel, setSelectedLevel] = useState<string>(levelParam)
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(deptParam)
+  const [searchQuery, setSearchQuery] = useState(searchParam)
+
+  // Sync state if query params change
+  useEffect(() => {
+    setSelectedLevel(levelParam)
+    setSelectedDepartment(deptParam)
+    setSearchQuery(searchParam)
+  }, [levelParam, deptParam, searchParam])
 
   // Map courses to include full department object to resolve filtering issues
   const coursesWithDept = useMemo(() => {
@@ -56,15 +70,15 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
     return coursesWithDept.filter(course => {
       // 1. Level Filter
       if (selectedLevel !== 'all' && course.level !== selectedLevel) return false
-      
+
       // 2. Department Filter (Code match)
       if (selectedDepartment !== 'all' && course.department?.code !== selectedDepartment) return false
-      
+
       // 3. Search query
       if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase()
-        const matchName = course.name.toLowerCase().includes(query)
-        const matchCode = course.code.toLowerCase().includes(query)
+        const matchName = (course.name || '').toLowerCase().includes(query)
+        const matchCode = (course.code || '').toLowerCase().includes(query)
         const matchOverview = course.overview?.toLowerCase().includes(query) || false
         if (!matchName && !matchCode && !matchOverview) return false
       }
@@ -77,7 +91,7 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
 
   return (
     <div className="bg-slate-50/30 min-h-screen">
-      
+
       {/* Hero Section */}
       <section className="relative bg-academic-900 py-16 lg:py-20 text-white overflow-hidden border-b border-slate-800">
         <div className="absolute inset-0 opacity-10">
@@ -85,7 +99,7 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
         </div>
         <div className="relative container-wide text-center">
           <motion.div initial="initial" animate="animate" variants={staggerContainer}>
-            <motion.span 
+            <motion.span
               variants={fadeIn}
               className="inline-flex items-center gap-2 px-4 py-1.5 bg-gold-500/20 border border-gold-500/35 rounded-full text-gold-500 text-xs font-semibold mb-5 tracking-wide"
             >
@@ -106,7 +120,7 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
       <section className="py-6 bg-white border-b sticky top-[72px] md:top-[120px] z-40 shadow-sm">
         <div className="container-wide">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            
+
             {/* Level selection buttons */}
             <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-2">Level:</span>
@@ -114,11 +128,10 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
                 <button
                   key={level}
                   onClick={() => setSelectedLevel(level)}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all border ${
-                    selectedLevel === level
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                      : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all border ${selectedLevel === level
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white text-slate-600 border-slate-100 hover:bg-slate-50'
+                    }`}
                 >
                   {level === 'all' ? 'All Programs' : level.toUpperCase()}
                 </button>
@@ -127,7 +140,7 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
 
             {/* Right side: search & department select */}
             <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto shrink-0">
-              
+
               {/* Search */}
               <div className="relative w-full sm:w-60">
                 <Search className="absolute left-3 top-2.5 h-4.5 w-4.5 text-slate-400" />
@@ -161,7 +174,7 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
       {/* Programs grid */}
       <section className="py-12">
         <div className="container-wide">
-          
+
           <div className="text-xs text-slate-400 font-bold tracking-wider uppercase mb-8">
             Showing {filteredCourses.length} Program{filteredCourses.length !== 1 ? 's' : ''}
           </div>
@@ -178,12 +191,12 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
                 {filteredCourses.map((course) => {
                   const gradient = getCourseGradient(course.code)
                   const hasStreams = course.core_subjects && course.core_subjects.length > 0
-                  
+
                   return (
                     <motion.div key={course.id} variants={fadeIn} className="group">
-                      <Link href={`/courses/${course.code.toLowerCase()}`} className="block h-full">
+                      <Link href={course?.code ? `/courses/${course.code.toLowerCase()}` : '#'} className="block h-full">
                         <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 h-full flex flex-col justify-between">
-                          
+
                           {/* Top Part: Gradient Header */}
                           <div className={`bg-gradient-to-br ${gradient} p-7 text-white relative`}>
                             <BookOpen className="h-9 w-9 mb-4 opacity-80" />
@@ -194,7 +207,7 @@ export function CoursesPage({ courses, departments }: CoursesPageProps) {
                                 <span className="flex items-center gap-1.5"><Users className="h-4 w-4" />{course.seats} Seats</span>
                               )}
                             </div>
-                            
+
                             <span className="absolute top-4 right-4 px-2.5 py-0.5 bg-white/20 backdrop-blur-md text-white border border-white/20 text-[9px] font-extrabold rounded-md uppercase tracking-wider shadow-sm z-10">
                               {course.level.toUpperCase()}
                             </span>

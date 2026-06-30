@@ -7,6 +7,17 @@ import { ArrowLeft, Save, Loader2, AlertCircle, Plus, Trash2, ChevronDown, Check
 import type { TableConfig, FieldConfig } from '@/lib/cms/tables'
 import { saveRow, deleteRow } from '@/lib/cms/actions'
 import { ResultsMultiForm } from './results-multi-form'
+import { toast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export interface FormProps {
   config: TableConfig
@@ -71,6 +82,7 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
   const [saved, setSaved] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const isEdit = !!rowId && !config.singleton
 
   function handleSubmit(e: React.FormEvent) {
@@ -113,15 +125,7 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
 
   function handleDelete() {
     if (!rowId) return
-    if (!confirm(`Delete this ${config.singular.toLowerCase()}? This cannot be undone.`)) return
-    startTransition(async () => {
-      const result = await deleteRow(config.table, rowId)
-      if (result.error) {
-        setError(result.error)
-      } else {
-        router.push(`/cms/${config.slug}`)
-      }
-    })
+    setShowDeleteConfirm(true)
   }
 
   // Group fields into sections (every 6 or by logical breaks)
@@ -260,6 +264,47 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
         data={values}
         config={config}
       />
+      {showDeleteConfirm && (
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this {config.singular.toLowerCase()}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  if (!rowId) return
+                  startTransition(async () => {
+                    const result = await deleteRow(config.table, rowId)
+                    if (result && result.error) {
+                      setError(result.error)
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete: ${result.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      toast({
+                        title: 'Success',
+                        description: `${config.singular} deleted successfully.`,
+                      })
+                      router.push(`/cms/${config.slug}`)
+                    }
+                  })
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   )
 }
@@ -300,8 +345,8 @@ function PreviewModal({
               <span>preview.nationalcollege.edu.in</span>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-900 p-1 rounded-md hover:bg-gray-200 transition-colors">
-            <X className="h-5 w-5" />
+          <button onClick={onClose} aria-label="Close preview" className="text-gray-500 hover:text-gray-900 p-1 rounded-md hover:bg-gray-200 transition-colors">
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         

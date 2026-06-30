@@ -84,12 +84,10 @@ export function GalleryPage({ items }: GalleryPageProps) {
                     className="group cursor-pointer aspect-video bg-gray-100 rounded-xl overflow-hidden relative"
                   >
                     {item.thumbnail_url || item.image_url ? (
-                      <Image
+                      <img
                         src={item.thumbnail_url || item.image_url || ''}
                         alt={item.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-academic-100">
@@ -125,12 +123,10 @@ export function GalleryPage({ items }: GalleryPageProps) {
                     index % 6 === 0 ? 'col-span-2 row-span-2' : 'aspect-video'
                   }`}
                 >
-                  <Image
+                  <img
                     src={item.image_url}
                     alt={item.title}
-                    fill
-                    sizes={index % 6 === 0 ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 50vw, 25vw"}
-                    className="object-cover group-hover:scale-105 transition-transform"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-academic-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform">

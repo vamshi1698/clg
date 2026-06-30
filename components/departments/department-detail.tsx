@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { User, Award, BookOpen, Eye, Target, Beaker, Lightbulb } from 'lucide-react'
 import type { Department, Faculty, Course } from '@/types/database'
+import { FacultyDetailModal } from '@/components/faculty/faculty-detail-modal'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -23,6 +25,7 @@ interface DepartmentDetailPageProps {
 
 export function DepartmentDetailPage({ department, faculty, courses }: DepartmentDetailPageProps) {
   const hod = faculty.find(f => f.is_hod) || faculty[0]
+  const [selectedFaculty, setSelectedFaculty] = useState<Faculty | null>(null)
 
   return (
     <div className="bg-white">
@@ -268,7 +271,10 @@ export function DepartmentDetailPage({ department, faculty, courses }: Departmen
               >
                 {faculty.slice(0, 8).map((member) => (
                   <motion.div key={member.id} variants={fadeIn}>
-                    <div className="text-center p-6 bg-white border border-gray-100 rounded-xl hover:shadow-lg transition-shadow">
+                    <div 
+                      onClick={() => setSelectedFaculty(member)}
+                      className="text-center p-6 bg-white border border-gray-100 rounded-xl hover:shadow-lg transition-shadow cursor-pointer"
+                    >
                       <div className="w-20 h-20 bg-academic-100 rounded-full mx-auto flex items-center justify-center overflow-hidden mb-4">
                         {member.image_url ? (
                           <img src={member.image_url} alt={member.name} className="w-full h-full object-cover" />
@@ -311,7 +317,7 @@ export function DepartmentDetailPage({ department, faculty, courses }: Departmen
               >
                 {courses.map((course) => (
                   <motion.div key={course.id} variants={fadeIn}>
-                    <Link href={`/courses/${course.code.toLowerCase()}`} className="block group h-full">
+                    <Link href={course?.code ? `/courses/${course.code.toLowerCase()}` : '#'} className="block group h-full">
                       <div className="bg-white p-6 rounded-xl border border-gray-100 hover:shadow-lg hover:border-gold-300 transition-all h-full flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between mb-3">
@@ -346,6 +352,11 @@ export function DepartmentDetailPage({ department, faculty, courses }: Departmen
           </div>
         </section>
       )}
+      <FacultyDetailModal
+        faculty={selectedFaculty ? { ...selectedFaculty, department } : null}
+        isOpen={!!selectedFaculty}
+        onClose={() => setSelectedFaculty(null)}
+      />
     </div>
   )
 }

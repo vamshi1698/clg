@@ -170,7 +170,7 @@ export function NewsPage({ news }: NewsPageProps) {
                                   </span>
                                 </div>
                                 <h3 className="font-display font-extrabold text-slate-900 text-base sm:text-lg leading-snug hover:text-blue-600 transition-colors">
-                                  <Link href={`/news/${item.slug}`}>{item.title}</Link>
+                                  <Link href={item?.slug ? `/news/${item.slug}` : '#'}>{item.title}</Link>
                                 </h3>
                                 {item.excerpt && (
                                   <p className="text-slate-500 text-xs sm:text-sm leading-relaxed line-clamp-2">
@@ -179,7 +179,7 @@ export function NewsPage({ news }: NewsPageProps) {
                                 )}
                                 <div className="pt-2">
                                   <Link 
-                                    href={`/news/${item.slug}`} 
+                                    href={item?.slug ? `/news/${item.slug}` : '#'} 
                                     className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
                                   >
                                     Read details <ArrowRight className="w-3.5 h-3.5" />
@@ -189,7 +189,7 @@ export function NewsPage({ news }: NewsPageProps) {
 
                               <div className="flex-shrink-0 flex items-center justify-end sm:pl-4">
                                 <Link
-                                  href={`/news/${item.slug}`}
+                                  href={item?.slug ? `/news/${item.slug}` : '#'}
                                   className="flex items-center justify-center p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-2xl transition-all shadow-sm group"
                                   title="Download announcement Document"
                                 >
@@ -240,7 +240,7 @@ export function NewsPage({ news }: NewsPageProps) {
                           }) : 'Recent'}
                         </span>
                         <h4 className="font-bold text-slate-800 text-xs sm:text-sm group-hover:text-blue-600 transition-colors line-clamp-2">
-                          <Link href={`/news/${item.slug}`}>{item.title}</Link>
+                           <Link href={item?.slug ? `/news/${item.slug}` : '#'}>{item.title}</Link>
                         </h4>
                       </div>
                     ))}

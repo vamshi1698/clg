@@ -26,6 +26,17 @@ import {
   getImportedExcelDatasets, 
   deleteImportedExcelDataset 
 } from '@/lib/actions/results-actions'
+import { toast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface PdfRecord {
   id: string
@@ -49,6 +60,8 @@ export default function ResultsUploadPage() {
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [pdfMessage, setPdfMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
+  const [pdfToDeleteId, setPdfToDeleteId] = useState<string | null>(null)
+  const [datasetToDelete, setDatasetToDelete] = useState<{ academicYear: string; semester: number; examType: string } | null>(null)
 
   // Excel Form state
   const [excelFile, setExcelFile] = useState<File | null>(null)
@@ -278,36 +291,11 @@ export default function ResultsUploadPage() {
   }
 
   const handleDeletePdf = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this results PDF announcement? This will remove the file from the server.')) return
-    
-    startPdfTransition(async () => {
-      const res = await deleteResultsPdf(id)
-      if (res.error) {
-        setPdfMessage({ type: 'error', text: res.error })
-      } else {
-        setPdfMessage({ type: 'success', text: 'PDF announcement deleted successfully.' })
-        loadPdfs()
-      }
-    })
+    setPdfToDeleteId(id)
   }
 
   const handleDeleteDataset = async (academicYear: string, semester: number, examType: string) => {
-    if (!confirm(`Are you sure you want to delete all detailed results for Semester ${semester} ${examType} (${academicYear})? This will permanently delete all student marks and summaries for this exam.`)) return
-
-    startExcelTransition(async () => {
-      const res = await deleteImportedExcelDataset(academicYear, semester, examType)
-      if (res.error) {
-        setExcelError(res.error)
-      } else {
-        setExcelError(null)
-        setExcelResult({
-          studentsImported: 0,
-          marksImported: 0,
-          errors: ['Dataset deleted successfully.']
-        })
-        loadDatasets()
-      }
-    })
+    setDatasetToDelete({ academicYear, semester, examType })
   }
 
   return (
@@ -652,6 +640,96 @@ export default function ResultsUploadPage() {
         </div>
 
       </div>
+      {pdfToDeleteId && (
+        <AlertDialog open={!!pdfToDeleteId} onOpenChange={(open) => { if (!open) setPdfToDeleteId(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete PDF Announcement?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this results PDF announcement? This will remove the file from the server. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  const id = pdfToDeleteId
+                  setPdfToDeleteId(null)
+                  startPdfTransition(async () => {
+                    const res = await deleteResultsPdf(id)
+                    if (res.error) {
+                      setPdfMessage({ type: 'error', text: res.error })
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete PDF: ${res.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      setPdfMessage({ type: 'success', text: 'PDF announcement deleted successfully.' })
+                      toast({
+                        title: 'Success',
+                        description: 'PDF announcement deleted successfully.',
+                      })
+                      loadPdfs()
+                    }
+                  })
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {datasetToDelete && (
+        <AlertDialog open={!!datasetToDelete} onOpenChange={(open) => { if (!open) setDatasetToDelete(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Detailed Dataset?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete all detailed results for Semester {datasetToDelete.semester} {datasetToDelete.examType} ({datasetToDelete.academicYear})? This will permanently delete all student marks and summaries for this exam.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  const { academicYear, semester, examType } = datasetToDelete
+                  setDatasetToDelete(null)
+                  startExcelTransition(async () => {
+                    const res = await deleteImportedExcelDataset(academicYear, semester, examType)
+                    if (res.error) {
+                      setExcelError(res.error)
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete dataset: ${res.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      setExcelError(null)
+                      setExcelResult({
+                        studentsImported: 0,
+                        marksImported: 0,
+                        errors: ['Dataset deleted successfully.']
+                      })
+                      toast({
+                        title: 'Success',
+                        description: 'Spreadsheet dataset deleted successfully.',
+                      })
+                      loadDatasets()
+                    }
+                  })
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   )
 }

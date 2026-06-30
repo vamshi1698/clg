@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const fileId = crypto.randomUUID()
     const extension = path.extname(file.name) || '.pdf'
     const pdfFilename = `${fileId}${extension}`
-    const filePath = path.join(uploadDir, pdfFilename)
+    const filePath = path.join(/*turbopackIgnore: true*/ uploadDir, pdfFilename)
 
     // Convert file buffer to write it to disk
     const bytes = await file.arrayBuffer()

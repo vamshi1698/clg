@@ -18,6 +18,9 @@ import type {
   Result,
   ResultSummary,
   ImportantDate,
+  Faq,
+  AlumniStat,
+  AlumniWay,
 } from '@/types/database'
 
 function logDataError(label: string, error: any) {
@@ -427,3 +430,49 @@ export async function getImportantDates(): Promise<ImportantDate[]> {
   }
   return data || []
 }
+
+// Get active FAQs
+export async function getFaqs(): Promise<Faq[]> {
+  const { data, error } = await postgresClient
+    .from('faqs')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    logDataError('Error fetching FAQs:', error)
+    return []
+  }
+  return data || []
+}
+
+// Get active alumni stats
+export async function getAlumniStats(): Promise<AlumniStat[]> {
+  const { data, error } = await postgresClient
+    .from('alumni_stats')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    logDataError('Error fetching alumni stats:', error)
+    return []
+  }
+  return data || []
+}
+
+// Get active alumni engagement ways
+export async function getAlumniWays(): Promise<AlumniWay[]> {
+  const { data, error } = await postgresClient
+    .from('alumni_ways')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    logDataError('Error fetching alumni ways:', error)
+    return []
+  }
+  return data || []
+}
+

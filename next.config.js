@@ -22,6 +22,10 @@ const nextConfig = {
   },
   allowedDevOrigins: ['192.168.0.107'],
   transpilePackages: ['@react-three/fiber', '@react-three/drei', 'three', '@react-three/rapier', 'meshline'],
+  experimental: {
+    // Tree-shake large icon/animation libraries to reduce unused CSS and JS
+    optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-icons'],
+  },
 };
 
-module.exports = nextConfig;
+module.exports = nextConfig;

@@ -15,11 +15,7 @@ const globalNavigation = [
 ]
 
 const mainNavigation = [
-  { name: 'Admissions', href: '/admissions', hasDropdown: true, items: [
-    { name: 'Undergraduate', href: '/admissions/undergraduate' },
-    { name: 'Graduate', href: '/admissions/graduate' },
-    { name: 'Financial Aid', href: '/admissions/financial-aid' },
-  ]},
+  { name: 'Admissions', href: '/admissions' },
   { name: 'Academics', href: '/academics', hasDropdown: true, items: [
     { name: 'Departments', href: '/departments' },
     { name: 'Undergraduate Programs', href: '/academics/undergraduate' },
@@ -132,15 +128,18 @@ export function Header() {
             type="button"
             className="lg:hidden p-2 text-academic-900"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
           >
-            {mobileMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
+            {mobileMenuOpen ? <X className="h-7 w-7" aria-hidden="true" /> : <Menu className="h-7 w-7" aria-hidden="true" />}
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white h-screen overflow-y-auto pb-24">
+        <div id="mobile-menu" className="lg:hidden border-t border-slate-200 bg-white h-screen overflow-y-auto pb-24">
           <div className="container-wide py-4 space-y-2">
             {mainNavigation.map((item) => (
               <div key={item.name} className="border-b border-slate-100 pb-2">

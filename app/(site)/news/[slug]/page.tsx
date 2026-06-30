@@ -12,10 +12,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params
 
   const article = await getNewsBySlug(slug)
-  if (!article) return { title: 'Not Found' }
+  if (!article) return { title: 'Article Not Found | National College' }
+
+  const description = article.excerpt || `Read the latest news and announcements from National College Jayanagar.`
+  const imageUrl = article.image_url || '/og-image.jpg'
+
   return {
     title: article.title,
-    description: article.excerpt || undefined,
+    description,
+    alternates: { canonical: `/news/${slug}` },
+    openGraph: {
+      title: article.title,
+      description,
+      url: `https://nationalcollege.edu.in/news/${slug}`,
+      type: 'article',
+      publishedTime: article.published_at || undefined,
+      modifiedTime: article.updated_at || undefined,
+      authors: ['National College Jayanagar'],
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: article.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description,
+      images: [imageUrl],
+    },
   }
 }
 

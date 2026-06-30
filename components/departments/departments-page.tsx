@@ -209,7 +209,7 @@ export function DepartmentsPage({ departments }: DepartmentsPageProps) {
                           stream.subDepartments.map((dept) => (
                             <Link
                               key={dept.id}
-                              href={`/departments/${dept.code.toLowerCase()}`}
+                              href={dept?.code ? `/departments/${dept.code.toLowerCase()}` : '#'}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 hover:bg-blue-50 hover:border-blue-200 text-slate-600 hover:text-blue-600 rounded-xl text-xs font-bold transition-all"
                             >
                               <span>{dept.name}</span>

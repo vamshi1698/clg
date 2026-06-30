@@ -31,6 +31,8 @@ import {
   ExternalLink,
   Upload,
   ChevronRight,
+  HelpCircle,
+  Heart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TABLE_CONFIGS } from '@/lib/cms/tables'
@@ -56,6 +58,8 @@ const iconMap: Record<string, any> = {
   TrendingUp,
   Mail,
   Upload,
+  HelpCircle,
+  Heart,
 }
 
 const NAV_SECTIONS = [
@@ -78,7 +82,7 @@ const NAV_SECTIONS = [
   {
     title: 'Content',
     items: TABLE_CONFIGS.filter((t) =>
-      ['news', 'events', 'gallery', 'testimonials', 'achievements', 'recruiters', 'milestones', 'accreditations'].includes(t.slug)
+      ['news', 'events', 'gallery', 'testimonials', 'achievements', 'recruiters', 'milestones', 'accreditations', 'faqs', 'alumni-stats', 'alumni-ways'].includes(t.slug)
     ).map((t) => ({ slug: t.slug, label: t.label, icon: t.icon })),
   },
   {

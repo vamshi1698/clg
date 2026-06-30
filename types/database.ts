@@ -365,3 +365,35 @@ export interface ImportantDate {
   updated_at: string
 }
 
+export interface Faq {
+  id: string
+  question: string
+  answer: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AlumniStat {
+  id: string
+  value: string
+  label: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface AlumniWay {
+  id: string
+  title: string
+  description: string
+  icon: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+

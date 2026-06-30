@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { getImportantDates, getCourses } from '@/lib/data/public'
+import { getImportantDates, getCourses, getFaqs } from '@/lib/data/public'
 import { AdmissionsPage } from '@/components/admissions/admissions-page'
 
 export const metadata: Metadata = {
@@ -8,9 +8,10 @@ export const metadata: Metadata = {
 }
 
 export default async function Admissions() {
-  const [importantDates, courses] = await Promise.all([
+  const [importantDates, courses, faqs] = await Promise.all([
     getImportantDates(),
-    getCourses()
+    getCourses(),
+    getFaqs()
   ])
-  return <AdmissionsPage importantDates={importantDates} courses={courses} />
+  return <AdmissionsPage importantDates={importantDates} courses={courses} faqs={faqs} />
 }

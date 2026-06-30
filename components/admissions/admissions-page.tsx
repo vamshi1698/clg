@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle2, ChevronDown, GraduationCap, FileText, Calenda
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useMemo } from 'react'
-import type { ImportantDate, Course } from '@/types/database'
+import type { ImportantDate, Course, Faq } from '@/types/database'
 import { submitAdmissionEnquiry } from '@/lib/actions/public-actions'
 
 const fadeUp = {
@@ -15,20 +15,15 @@ const fadeUp = {
   transition: { duration: 0.7 }
 }
 
-const faqs = [
-  { q: 'What is the minimum eligibility for UG programs?', a: 'Candidates must have passed their 10+2 (PUC) from a recognized board with at least 45% aggregate marks. SC/ST candidates have a 5% relaxation.' },
-  { q: 'Is there an entrance exam?', a: 'Most UG programs offer merit-based admissions. However, specific PG programs like MBA and MCA may require entrance examinations as specified in their prospectus.' },
-  { q: 'Are there scholarships available?', a: 'Yes. We offer Government Post-Matric Scholarships, Merit-based fee waivers, sports scholarships, and several privately funded scholarships. Visit the Financial Aid office for details.' },
-  { q: 'Can I apply for hostel accommodation along with admission?', a: 'Yes, hostel applications are processed alongside admission. Seats are limited and allotted on a first-come-first-served basis.' },
-  { q: 'What is the refund policy if I withdraw?', a: 'Fees are refundable as per the Bangalore University norms. A nominal administrative charge may be deducted. Contact the accounts office for details.' },
-]
+
 
 interface AdmissionsPageProps {
   importantDates: ImportantDate[]
   courses: Course[]
+  faqs: Faq[]
 }
 
-export function AdmissionsPage({ importantDates, courses }: AdmissionsPageProps) {
+export function AdmissionsPage({ importantDates, courses, faqs }: AdmissionsPageProps) {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   
   const [formData, setFormData] = useState({
@@ -82,26 +77,43 @@ export function AdmissionsPage({ importantDates, courses }: AdmissionsPageProps)
     { icon: CreditCard, title: 'Pay Fees & Confirm', desc: 'Once selected, pay the enrollment fees to confirm your seat before the deadline.' },
   ]
 
-  const programs = [
-    {
-      level: 'Undergraduate',
-      duration: '3 Years',
-      color: 'from-blue-600 to-indigo-700',
-      courses: ['B.A. (Humanities)', 'B.Sc. (Science)', 'B.Com (Commerce)', 'BCA (Computer Applications)', 'B.Com (Professional)'],
-    },
-    {
-      level: 'Postgraduate',
-      duration: '2 Years',
-      color: 'from-academic-800 to-academic-950',
-      courses: ['M.A. (History / English)', 'M.Sc. (Mathematics / Physics)', 'M.Com', 'MCA', 'MBA'],
-    },
-    {
-      level: 'Certificate Programs',
-      duration: '3-6 Months',
-      color: 'from-gold-600 to-amber-700',
-      courses: ['Digital Marketing', 'Financial Accounting', 'Tally ERP', 'Spoken English', 'Photography & Media'],
-    },
-  ]
+  const programs = useMemo(() => {
+    if (!courses) return []
+    const ugFromDb = courses.filter(c => c.level === 'ug')
+    const pgFromDb = courses.filter(c => c.level === 'pg')
+    const diplomaFromDb = courses.filter(c => c.level === 'diploma')
+    const certFromDb = courses.filter(c => c.level === 'certificate')
+
+    return [
+      {
+        level: 'Undergraduate',
+        duration: ugFromDb.length > 0 && ugFromDb[0].duration ? ugFromDb[0].duration : '3 Years',
+        color: 'from-blue-600 to-indigo-700',
+        courses: ugFromDb.length > 0 
+          ? ugFromDb.map(c => c.name) 
+          : ['B.A. (Humanities)', 'B.Sc. (Science)', 'B.Com (Commerce)', 'BCA (Computer Applications)', 'B.Com (Professional)'],
+        href: '/academics/undergraduate',
+      },
+      {
+        level: 'Postgraduate',
+        duration: pgFromDb.length > 0 && pgFromDb[0].duration ? pgFromDb[0].duration : '2 Years',
+        color: 'from-academic-800 to-academic-950',
+        courses: pgFromDb.length > 0 
+          ? pgFromDb.map(c => c.name) 
+          : ['M.A. (History / English)', 'M.Sc. (Mathematics / Physics)', 'M.Com', 'MCA', 'MBA'],
+        href: '/courses',
+      },
+      {
+        level: 'Certificate Programs',
+        duration: '3-6 Months',
+        color: 'from-gold-600 to-amber-700',
+        courses: (diplomaFromDb.length + certFromDb.length) > 0 
+          ? [...diplomaFromDb, ...certFromDb].map(c => c.name) 
+          : ['Digital Marketing', 'Financial Accounting', 'Tally ERP', 'Spoken English', 'Photography & Media'],
+        href: '/academics/undergraduate',
+      },
+    ]
+  }, [courses])
 
   const displayDates = importantDates && importantDates.length > 0 ? importantDates.map(d => ({
     event: d.event,
@@ -160,7 +172,7 @@ export function AdmissionsPage({ importantDates, courses }: AdmissionsPageProps)
       </section>
 
       {/* Process & Enquiry Split Section */}
-      <section id="apply-enquiry" className="section-padding bg-slate-50 border-b border-slate-100">
+      <section id="process" className="section-padding bg-slate-50 border-b border-slate-100">
         <div className="container-wide">
           <div className="grid lg:grid-cols-12 gap-12 items-start">
             
@@ -378,7 +390,7 @@ export function AdmissionsPage({ importantDates, courses }: AdmissionsPageProps)
                       </li>
                     ))}
                   </ul>
-                  <Link href="/courses" className="inline-flex items-center gap-2 mt-6 text-academic-700 font-semibold text-sm hover:text-gold-600 transition-colors">
+                  <Link href={prog.href} className="inline-flex items-center gap-2 mt-6 text-academic-700 font-semibold text-sm hover:text-gold-600 transition-colors">
                     View all courses <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -424,12 +436,12 @@ export function AdmissionsPage({ importantDates, courses }: AdmissionsPageProps)
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   className="w-full flex items-center justify-between text-left p-6 hover:bg-slate-50 transition-colors"
                 >
-                  <span className="font-semibold text-academic-950 text-base pr-4">{faq.q}</span>
+                  <span className="font-semibold text-academic-950 text-base pr-4">{faq.question}</span>
                   <ChevronDown className={`h-5 w-5 text-slate-400 shrink-0 transition-transform ${openFaq === i ? 'rotate-180' : ''}`} />
                 </button>
                 {openFaq === i && (
                   <div className="px-6 pb-6 text-slate-600 leading-relaxed border-t border-slate-100 pt-4">
-                    {faq.a}
+                    {faq.answer}
                   </div>
                 )}
               </motion.div>

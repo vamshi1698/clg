@@ -51,7 +51,7 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
       excerpt: n.excerpt || '',
       image_url: n.image_url || null,
       date: new Date(n.published_at || n.created_at),
-      href: `/news/${n.slug}`,
+      href: n.slug ? `/news/${n.slug}` : '#',
       isExternal: false,
     })),
     ...events.map((e) => ({
@@ -112,15 +112,18 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 flex-wrap mb-8">
+        <div className="flex gap-2 flex-wrap mb-8" role="tablist" aria-label="Notice categories">
           {tabs.map((tab) => (
             <button
               key={tab}
+              role="tab"
               onClick={() => setActive(tab)}
+              aria-selected={active === tab}
+              aria-label={`Filter notices: ${tab}`}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 ${
                 active === tab
                   ? 'bg-[#03152c] text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
               {tab}
@@ -153,12 +156,10 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
                     {/* Image */}
                     <div className="relative w-full aspect-[16/10] overflow-hidden flex-shrink-0">
                       {featured.image_url ? (
-                        <Image
+                        <img
                           src={featured.image_url}
                           alt={featured.title}
-                          fill
-                          sizes="(max-width: 1024px) 100vw, 42vw"
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                       ) : (
                         <div className={`w-full h-full bg-gradient-to-br ${typeConfig[featured.type].placeholder} flex items-center justify-center`}>
@@ -218,12 +219,10 @@ export function NoticeBoard({ news, events, resultPdfs }: NoticeBoardProps) {
                         {/* Thumbnail */}
                         <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
                           {item.image_url ? (
-                            <Image
+                            <img
                               src={item.image_url}
                               alt={item.title}
-                              fill
-                              sizes="80px"
-                              className="object-cover transition-transform duration-300 group-hover:scale-110"
+                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                             />
                           ) : (
                             <div className={`w-full h-full bg-gradient-to-br ${cfg.placeholder} flex items-center justify-center`}>

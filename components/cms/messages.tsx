@@ -4,6 +4,17 @@ import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { Mail, Phone, Calendar, Trash2, CheckCircle, Reply } from 'lucide-react'
 import { updateMessageStatus, deleteMessage } from '@/lib/cms/actions'
+import { toast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface MessageRow {
   id: string
@@ -36,20 +47,16 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
     })
   }
 
+  const [messageToDelete, setMessageToDelete] = useState<MessageRow | null>(null)
+
   function remove(m: MessageRow) {
-    if (!confirm('Delete this message?')) return
-    startTransition(async () => {
-      const result = await deleteMessage(m.id)
-      if (!('error' in result)) {
-        setSelected(null)
-        setList((prev) => prev.filter((row) => row.id !== m.id))
-      }
-    })
+    setMessageToDelete(m)
   }
 
   // Detail view
   if (selected) {
     return (
+      <>
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6">
           <div className="flex items-start justify-between gap-4 mb-6">
@@ -126,6 +133,48 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
           </div>
         </div>
       </div>
+      {messageToDelete && (
+        <AlertDialog open={!!messageToDelete} onOpenChange={(open) => { if (!open) setMessageToDelete(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the message from &quot;{messageToDelete.name}&quot;.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  const m = messageToDelete
+                  setMessageToDelete(null)
+                  startTransition(async () => {
+                    const result = await deleteMessage(m.id)
+                    if (result && 'error' in result) {
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete message: ${result.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      toast({
+                        title: 'Success',
+                        description: 'Message deleted successfully.',
+                      })
+                      setSelected(null)
+                      setList((prev) => prev.filter((row) => row.id !== m.id))
+                    }
+                  })
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+      </>
     )
   }
 
@@ -187,6 +236,47 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
             </button>
           ))}
         </div>
+      )}
+      {messageToDelete && (
+        <AlertDialog open={!!messageToDelete} onOpenChange={(open) => { if (!open) setMessageToDelete(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the message from &quot;{messageToDelete.name}&quot;.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  const m = messageToDelete
+                  setMessageToDelete(null)
+                  startTransition(async () => {
+                    const result = await deleteMessage(m.id)
+                    if (result && 'error' in result) {
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete message: ${result.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      toast({
+                        title: 'Success',
+                        description: 'Message deleted successfully.',
+                      })
+                      setSelected(null)
+                      setList((prev) => prev.filter((row) => row.id !== m.id))
+                    }
+                  })
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </div>
   )

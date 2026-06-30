@@ -16,7 +16,7 @@ export default function NotFound() {
     },
     {
       name: 'Explore Courses',
-      href: '/courses',
+      href: '/academics/undergraduate',
       description: 'Browse our undergraduate and postgraduate degree programs.',
       icon: BookOpen,
     },
@@ -115,7 +115,7 @@ export default function NotFound() {
               <h3 className="font-display text-xl font-bold text-academic-900 mb-6 text-center sm:text-left">
                 Suggested Resources
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {links.map((link) => (
                   <Link

@@ -6,7 +6,7 @@ import { DepartmentDetailPage } from '@/components/departments/department-detail
 export async function generateStaticParams() {
   const departments = await getDepartments()
   return departments.map((dept) => ({
-    code: dept.code.toLowerCase(),
+    code: (dept.code || '').toLowerCase(),
   }))
 }
 

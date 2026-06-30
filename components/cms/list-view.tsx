@@ -1,9 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useTransition, Fragment } from 'react'
+import { useState, useTransition, Fragment, useMemo } from 'react'
 import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUpDown, Save, X, GraduationCap, Search, ChevronDown, ChevronUp } from 'lucide-react'
 import { deleteRow, toggleActive, updateSortOrder } from '@/lib/cms/actions'
+import { toast } from '@/hooks/use-toast'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface Row {
   id: string
@@ -56,14 +67,17 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   const [sortValue, setSortValue] = useState('')
   const [isPending, startTransition] = useTransition()
   const [selectedCourseId, setSelectedCourseId] = useState('')
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('')
   const [groupByCourse, setGroupByCourse] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null)
 
   const titleField = config.titleField
   const subtitleField = config.subtitleField
 
   const isCourseGroupable = config.slug === 'students' || config.slug === 'results'
   const isResults = config.slug === 'results'
+  const isDepartmentFilterable = config.slug === 'faculty' || config.slug === 'courses'
 
   let processedRows = rows
   if (isResults) {
@@ -129,6 +143,17 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   ).map(([id, name]) => ({ id, name }))
    .sort((a, b) => a.name.localeCompare(b.name))
 
+  const departmentsList = useMemo(() => {
+    return Array.from(
+      new Map(
+        processedRows
+          .filter((r) => r.department_id && r.departments?.name)
+          .map((r) => [r.department_id, r.departments.name])
+      ).entries()
+    ).map(([id, name]) => ({ id, name }))
+     .sort((a, b) => a.name.localeCompare(b.name))
+  }, [processedRows])
+
   const filtered = processedRows.filter((r) => {
     const matchesSearch = !search || (() => {
       const s = search.toLowerCase()
@@ -142,7 +167,8 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     })()
 
     const matchesCourse = !selectedCourseId || r.course_id === selectedCourseId
-    return matchesSearch && matchesCourse
+    const matchesDepartment = !selectedDepartmentId || r.department_id === selectedDepartmentId
+    return matchesSearch && matchesCourse && matchesDepartment
   })
 
   if (isCourseGroupable) {
@@ -258,15 +284,24 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   }).length + (config.sortable ? 1 : 0)
 
   function onDelete(id: string, title: string) {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return
-    startTransition(async () => {
-      await deleteRow(config.table, id)
-    })
+    setConfirmDelete({ id, title })
   }
 
   function onToggle(id: string, value: boolean) {
     startTransition(async () => {
-      await toggleActive(config.table, id, !value)
+      const res = await toggleActive(config.table, id, !value)
+      if (res && res.error) {
+        toast({
+          title: 'Error',
+          description: `Failed to update status: ${res.error}`,
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Record status has been toggled successfully.',
+        })
+      }
     })
   }
 
@@ -277,7 +312,19 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       return
     }
     startTransition(async () => {
-      await updateSortOrder(config.table, id, val)
+      const res = await updateSortOrder(config.table, id, val)
+      if (res && res.error) {
+        toast({
+          title: 'Error',
+          description: `Failed to update sort order: ${res.error}`,
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Sort order has been updated successfully.',
+        })
+      }
       setEditingSort(null)
     })
   }
@@ -330,11 +377,21 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                   className="w-16 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/40"
                   autoFocus
                 />
-                <button onClick={() => saveSort(row.id)} className="p-1 text-emerald-500 hover:text-emerald-600">
-                  <Save className="h-3.5 w-3.5" />
+                <button 
+                  onClick={() => saveSort(row.id)} 
+                  disabled={isPending}
+                  aria-label="Save sort order"
+                  className="p-1 text-emerald-500 hover:text-emerald-600 disabled:opacity-50"
+                >
+                  <Save className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
-                <button onClick={() => setEditingSort(null)} className="p-1 text-gray-300 hover:text-gray-500">
-                  <X className="h-3.5 w-3.5" />
+                <button 
+                  onClick={() => setEditingSort(null)} 
+                  disabled={isPending}
+                  aria-label="Cancel sort edit"
+                  className="p-1 text-gray-300 hover:text-gray-500 disabled:opacity-50"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </div>
             ) : (
@@ -352,15 +409,16 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           </td>
         )}
         <td className="px-5 py-4">
-          <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center justify-end gap-1.5">
             {processedRows.some((r) => 'is_active' in r) && (
               <button
                 onClick={() => onToggle(row.id, Boolean(row.is_active))}
                 disabled={isPending}
                 title={row.is_active ? 'Deactivate' : 'Activate'}
+                aria-label={row.is_active ? 'Deactivate this item' : 'Activate this item'}
                 className={`p-1.5 rounded-lg transition-colors ${row.is_active ? 'text-emerald-500 hover:bg-emerald-50' : 'text-gray-400 hover:bg-gray-100'}`}
               >
-                {row.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                {row.is_active ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
               </button>
             )}
             <Link
@@ -375,8 +433,9 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
               disabled={isPending}
               className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
               title="Delete"
+              aria-label={`Delete ${String(row[titleField] ?? 'this item')}`}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         </td>
@@ -400,6 +459,19 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {isDepartmentFilterable && (
+            <select
+              value={selectedDepartmentId}
+              onChange={(e) => setSelectedDepartmentId(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400/40 bg-white text-gray-700 min-w-[160px] cursor-pointer font-medium"
+            >
+              <option value="">All Departments</option>
+              {departmentsList.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+          )}
+
           {isCourseGroupable && (
             <>
               <select
@@ -508,6 +580,8 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                         <td colSpan={colSpanCount} className="px-4 py-2.5">
                           <button
                             onClick={() => toggleGroupCollapse(group.courseId)}
+                            aria-label={isCollapsed ? `Expand ${group.courseName}` : `Collapse ${group.courseName}`}
+                            aria-expanded={!isCollapsed}
                             className="flex items-center gap-2.5 w-full text-left hover:opacity-70 transition-opacity"
                           >
                             <GraduationCap className="h-4 w-4 text-[#0e1726] flex-shrink-0" />
@@ -535,6 +609,45 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           </table>
         </div>
       </div>
+      {confirmDelete && (
+        <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the item &quot;{confirmDelete.title}&quot;.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  const { id, title } = confirmDelete
+                  setConfirmDelete(null)
+                  startTransition(async () => {
+                    const res = await deleteRow(config.table, id)
+                    if (res && res.error) {
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete: ${res.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      toast({
+                        title: 'Deleted Successfully',
+                        description: `"${title}" has been deleted.`,
+                      })
+                    }
+                  })
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   )
 }
