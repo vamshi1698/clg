@@ -71,7 +71,7 @@ export default async function HomePage() {
           <div className="min-w-0 flex-1 overflow-hidden">
             <div className="marquee-track flex w-[400%] md:w-[200%] items-center gap-10 whitespace-nowrap text-white/90">
               {[
-                ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
+                ...news.map(n => ({ title: n.title, href: n.category === 'examination' ? '/results' : `/news/${n.slug}` })),
                 ...events.map(e => ({ title: e.title, href: '/events' })),
                 ...resultPdfs.map(r => ({ title: r.title, href: `/results` }))
               ].slice(0, 10).map((item, idx) => (
@@ -88,7 +88,7 @@ export default async function HomePage() {
               ))}
               {/* Duplicate track for seamless infinite scroll */}
               {[
-                ...news.map(n => ({ title: n.title, href: `/news/${n.slug}` })),
+                ...news.map(n => ({ title: n.title, href: n.category === 'examination' ? '/results' : `/news/${n.slug}` })),
                 ...events.map(e => ({ title: e.title, href: '/events' })),
                 ...resultPdfs.map(r => ({ title: r.title, href: `/results` }))
               ].slice(0, 10).map((item, idx) => (
