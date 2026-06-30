@@ -3,27 +3,11 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
-  Mail, Plus, ArrowRight, Inbox, Newspaper, Calendar, BookOpen,
-  Users, Image as ImageIcon, BarChart3, FileText, TrendingUp,
-  GraduationCap, Building2, Settings, Upload,
+  ArrowRight
 } from 'lucide-react'
 import { TABLE_CONFIGS } from '@/lib/cms/tables'
 
-const iconComponents: Record<string, any> = {
-  Newspaper,
-  Calendar,
-  BookOpen,
-  Users,
-  Image: ImageIcon,
-  BarChart3,
-  FileText,
-  TrendingUp,
-  GraduationCap,
-  Building2,
-  Settings,
-  Upload,
-  Mail,
-}
+const iconComponents: Record<string, any> = {}
 
 // Sleek SaaS accents for cards instead of full pastel backgrounds
 const cardAccents = [
@@ -42,12 +26,12 @@ const cardAccents = [
 ]
 
 const quickActions = [
-  { label: 'Add News Article', desc: 'Publish a news or announcement', href: '/cms/news/new', icon: Newspaper, color: 'text-blue-500' },
-  { label: 'Add Event', desc: 'Schedule an upcoming event', href: '/cms/events/new', icon: Calendar, color: 'text-violet-500' },
-  { label: 'Add Course', desc: 'Create a new program offering', href: '/cms/courses/new', icon: BookOpen, color: 'text-emerald-500' },
-  { label: 'Add Faculty', desc: 'Add a faculty member profile', href: '/cms/faculty/new', icon: Users, color: 'text-amber-500' },
-  { label: 'Add Gallery Item', desc: 'Upload a campus photo', href: '/cms/gallery/new', icon: ImageIcon, color: 'text-rose-500' },
-  { label: 'Upload Results', desc: 'Bulk upload exam results PDF', href: '/cms/results-upload', icon: Upload, color: 'text-sky-500' },
+  { label: 'Add News Article', desc: 'Publish a news or announcement', href: '/cms/news/new', color: 'text-blue-500' },
+  { label: 'Add Event', desc: 'Schedule an upcoming event', href: '/cms/events/new', color: 'text-violet-500' },
+  { label: 'Add Course', desc: 'Create a new program offering', href: '/cms/courses/new', color: 'text-emerald-500' },
+  { label: 'Add Faculty', desc: 'Add a faculty member profile', href: '/cms/faculty/new', color: 'text-amber-500' },
+  { label: 'Add Gallery Item', desc: 'Upload a campus photo', href: '/cms/gallery/new', color: 'text-rose-500' },
+  { label: 'Upload Results', desc: 'Bulk upload exam results PDF', href: '/cms/results-upload', color: 'text-sky-500' },
 ]
 
 interface Message {
@@ -115,10 +99,7 @@ export function CmsDashboard({
                   href={`/cms/${item.slug}`}
                   className="group relative flex flex-col bg-white rounded-xl border border-gray-200 p-5 shadow-sm transition-all hover:shadow-md hover:border-gray-300"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`p-2.5 rounded-lg ring-1 ${color.bg} ${color.ring} ${color.text}`}>
-                      <IconComp className="h-4 w-4" />
-                    </div>
+                  <div className="flex items-start justify-end mb-4">
                     <ArrowRight className="h-4 w-4 text-gray-300 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                   </div>
                   <div>
@@ -141,9 +122,6 @@ export function CmsDashboard({
         <div className="lg:col-span-3 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 bg-gray-50/50">
             <div className="flex items-center gap-3">
-              <div className="p-1.5 rounded-md bg-blue-50 border border-blue-100 shadow-sm">
-                <Inbox className="h-4 w-4 text-blue-600" />
-              </div>
               <h2 className="font-semibold text-gray-900">Recent Messages</h2>
               {unreadCount > 0 && (
                 <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 text-[10px] font-bold tracking-wider uppercase rounded-full">
@@ -162,9 +140,6 @@ export function CmsDashboard({
           <div className="divide-y divide-gray-100 flex-1">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full py-16 text-center px-4">
-                <div className="w-12 h-12 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mb-4 shadow-sm">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
                 <p className="text-sm font-semibold text-gray-600">No new messages</p>
                 <p className="text-xs text-gray-500 mt-1">Your inbox is completely clear.</p>
               </div>
@@ -208,9 +183,6 @@ export function CmsDashboard({
         {/* Quick actions */}
         <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm p-6">
           <div className="flex items-center gap-3 mb-5">
-            <div className="p-1.5 rounded-md bg-amber-50 border border-amber-100 shadow-sm">
-              <Plus className="h-4 w-4 text-amber-600" />
-            </div>
             <h2 className="font-semibold text-gray-900">Quick Actions</h2>
           </div>
           <div className="space-y-2">
@@ -220,9 +192,6 @@ export function CmsDashboard({
                 href={action.href}
                 className="flex items-center gap-3.5 p-3 rounded-lg border border-gray-100 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm transition-all group"
               >
-                <div className="p-2 rounded-md bg-white border border-gray-200 shadow-sm group-hover:border-gray-300 transition-colors">
-                  <action.icon className={`h-4 w-4 ${action.color}`} />
-                </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold text-gray-900">{action.label}</div>
                   <div className="text-[11px] font-medium text-gray-500 mt-0.5 truncate">{action.desc}</div>

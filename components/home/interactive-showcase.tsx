@@ -96,16 +96,50 @@ export function SchoolsAndDepartments({ items }: { items: {title: string, text: 
         >
           {items.map((item) => (
             <motion.div key={item.title} variants={fadeUp} className="h-full">
-              <TiltCard>
-                <div className="bg-academic-50 w-14 h-14 rounded-full flex items-center justify-center mb-6">
-                  <BookOpen className="h-7 w-7 text-academic-700" />
+              <motion.div
+                whileHover={{ y: -8 }}
+                className="group relative h-full rounded-3xl overflow-hidden cursor-pointer"
+              >
+                {/* Dynamic Background */}
+                <div className="absolute inset-0 bg-academic-950 transition-colors duration-500" />
+                
+                {/* Subtle Image/Pattern Overlay (using radial gradients for a glowing effect) */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gold-500/20 via-transparent to-transparent" />
+                
+                {/* Border */}
+                <div className="absolute inset-0 border border-white/10 group-hover:border-gold-500/30 rounded-3xl transition-colors duration-500 z-10" />
+
+                <div className="relative z-20 h-full p-8 flex flex-col justify-between">
+                  <div>
+                    {/* Glowing Icon Container */}
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-8 group-hover:bg-gold-500/20 group-hover:border-gold-500/40 transition-all duration-500 backdrop-blur-sm">
+                      <BookOpen className="h-8 w-8 text-gold-400 group-hover:scale-110 transition-transform duration-500" />
+                    </div>
+                    
+                    <h3 className="font-display text-2xl font-bold tracking-wide text-white mb-4 group-hover:text-gold-400 transition-colors duration-300">
+                      {item.title}
+                    </h3>
+                    
+                    <p className="text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors duration-300 line-clamp-3">
+                      {item.text}
+                    </p>
+                  </div>
+                  
+                  {/* Hover Reveal Action */}
+                  <div className="mt-8 overflow-hidden">
+                    <div className="flex items-center gap-3 text-sm font-bold text-gold-400 transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                      <span className="tracking-wider uppercase">Explore Department</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                    {/* Default state line */}
+                    <div className="h-[2px] w-12 bg-white/20 mt-4 group-hover:w-full group-hover:bg-gold-500/50 transition-all duration-700 ease-in-out" />
+                  </div>
+                  
+                  <Link href={item.href} className="absolute inset-0 z-30">
+                    <span className="sr-only">Explore {item.title}</span>
+                  </Link>
                 </div>
-                <h3 className="font-sans text-2xl font-bold tracking-wide text-academic-950">{item.title}</h3>
-                <p className="mt-4 text-sm leading-7 text-slate-600">{item.text}</p>
-                <Link href={item.href} className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-academic-700 hover:text-gold-600 transition-colors">
-                  Explore <ArrowRight className="h-4 w-4" />
-                </Link>
-              </TiltCard>
+              </motion.div>
             </motion.div>
           ))}
         </motion.div>

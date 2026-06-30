@@ -6,61 +6,16 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import logoImage from '@/components/brand/channels4_profile.jpg'
 import {
-  LayoutDashboard,
-  Settings,
-  BarChart3,
-  Building2,
-  BookOpen,
-  Users,
-  Newspaper,
-  Calendar,
-  Image as ImageIcon,
-  Quote,
-  Award,
-  Briefcase,
-  History,
-  Medal,
-  UserCog,
-  GraduationCap,
-  FileText,
-  TrendingUp,
-  Mail,
   Menu,
   X,
   LogOut,
   ExternalLink,
-  Upload,
   ChevronRight,
-  HelpCircle,
-  Heart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TABLE_CONFIGS } from '@/lib/cms/tables'
 
-const iconMap: Record<string, any> = {
-  LayoutDashboard,
-  Settings,
-  BarChart3,
-  Building2,
-  BookOpen,
-  Users,
-  Newspaper,
-  Calendar,
-  Image: ImageIcon,
-  Quote,
-  Award,
-  Briefcase,
-  History,
-  Medal,
-  UserCog,
-  GraduationCap,
-  FileText,
-  TrendingUp,
-  Mail,
-  Upload,
-  HelpCircle,
-  Heart,
-}
+const iconMap: Record<string, any> = {}
 
 const NAV_SECTIONS = [
   {
@@ -97,7 +52,7 @@ const NAV_SECTIONS = [
 ]
 
 function fixItem(raw: { slug: string; label: string; icon: string }) {
-  return { slug: raw.slug, label: raw.label, Icon: iconMap[raw.icon] || FileText }
+  return { slug: raw.slug, label: raw.label }
 }
 
 const NAV = NAV_SECTIONS.map((s) => ({
@@ -199,7 +154,6 @@ export function CmsShell({
                         {active && (
                           <span className="absolute left-0 top-0 bottom-0 w-1 bg-gold-400 rounded-r-full" />
                         )}
-                        <item.Icon className={cn('h-4 w-4 flex-shrink-0 transition-colors', active ? 'text-gold-400' : 'text-white/40 group-hover:text-white/70')} />
                         <span className="truncate">{item.label}</span>
                       </Link>
                     </li>

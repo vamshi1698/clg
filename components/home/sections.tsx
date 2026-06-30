@@ -232,17 +232,32 @@ export function ProgramsSection({ courses }: ProgramsSectionProps) {
               <motion.div key={course.id} variants={fadeIn}>
                 <Link
                   href={course?.code ? `/courses/${course.code.toLowerCase()}` : '#'}
-                  className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-academic-950 hover:border-academic-950 hover:text-white group transition-all duration-200"
+                  className="relative flex items-center justify-between gap-4 p-6 rounded-2xl overflow-hidden group transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-academic-900/20"
                 >
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-600 group-hover:text-slate-400 mb-0.5">
-                      {course.level} · {course.duration}
+                  {/* Card Background & Gradients */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-academic-950 to-academic-900 opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-gold-500/0 via-gold-500/10 to-gold-500/0 opacity-0 group-hover:opacity-100 transform -translate-x-full group-hover:translate-x-full transition-all duration-1000 ease-in-out" />
+                  <div className="absolute inset-0 border border-white/10 group-hover:border-gold-500/50 rounded-2xl transition-colors duration-500" />
+                  
+                  {/* Content */}
+                  <div className="relative min-w-0 flex-1 z-10 pr-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2.5 py-1 rounded-md bg-gold-500/20 text-gold-400 text-[10px] font-bold uppercase tracking-widest border border-gold-500/20">
+                        {course.level}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        {course.duration}
+                      </span>
                     </div>
-                    <div className="font-semibold text-academic-950 group-hover:text-white text-sm truncate transition-colors">
+                    <div className="font-display font-bold text-white text-lg sm:text-xl group-hover:text-gold-400 transition-colors duration-300">
                       {course.name}
                     </div>
                   </div>
-                  <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-gold-400 shrink-0 transition-colors" />
+                  
+                  {/* Action Icon */}
+                  <div className="relative z-10 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-gold-500 group-hover:border-gold-500 group-hover:scale-110 transition-all duration-300 shrink-0">
+                    <ArrowRight className="h-4 w-4 text-white group-hover:text-academic-950 transition-colors" />
+                  </div>
                 </Link>
               </motion.div>
             ))}
