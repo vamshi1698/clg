@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
+import logoImage from '@/components/brand/channels4_profile.jpg'
 
 export function CmsLoginPage({ from }: { from: string }) {
   const router = useRouter()
@@ -61,8 +63,14 @@ export function CmsLoginPage({ from }: { from: string }) {
       >
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-academic-900 rounded-2xl flex items-center justify-center mb-4">
-              <span className="text-gold-500 font-display font-bold text-3xl">N</span>
+            <div className="relative w-16 h-16 rounded-2xl overflow-hidden mb-4 shadow-sm ring-1 ring-gray-900/10">
+              <Image 
+                src={logoImage} 
+                alt="National College Logo" 
+                fill 
+                sizes="64px" 
+                className="object-cover" 
+              />
             </div>
             <h1 className="font-display text-2xl font-bold text-academic-900 text-center">
               CMS Login

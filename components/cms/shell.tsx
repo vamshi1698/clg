@@ -138,22 +138,22 @@ export function CmsShell({
   return (
     <div className="h-screen bg-[#f5f6fa] flex overflow-hidden">
       {/* Sidebar */}
-      <aside
-        className={cn(
-          'fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300 h-full flex-shrink-0',
-          'bg-[#0e1726] text-white',
-          open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        )}
-      >
+        <aside
+          className={cn(
+            'fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300 h-full flex-shrink-0',
+            'bg-academic-950 text-white shadow-xl lg:shadow-none',
+            open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          )}
+        >
         {/* Logo */}
-        <div className="flex items-center justify-between gap-3 px-5 h-16 border-b border-white/8 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3 px-5 h-16 border-b border-white/10 flex-shrink-0 bg-academic-950/50 backdrop-blur-sm">
           <Link href="/cms" className="flex items-center gap-3">
-            <div className="relative h-8 w-8 overflow-hidden rounded-full shadow-sm ring-1 ring-gold-400/40 flex-shrink-0">
+            <div className="relative h-8 w-8 overflow-hidden rounded-xl shadow-sm ring-1 ring-white/20 flex-shrink-0">
               <Image src={logoImage} alt="National College logo" fill sizes="32px" className="object-cover" />
             </div>
             <div>
-              <div className="font-display font-bold text-sm text-white leading-tight">National CMS</div>
-              <div className="text-[10px] text-white/40 leading-tight">Content Management</div>
+              <div className="font-display font-bold text-sm text-white leading-tight tracking-wide">National CMS</div>
+              <div className="text-[10px] text-white/50 leading-tight uppercase tracking-wider mt-0.5">Content Management</div>
             </div>
           </Link>
           <button
@@ -169,7 +169,7 @@ export function CmsShell({
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
           {NAV.map((section) => (
             <div key={section.title}>
-              <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white/35 select-none">
+              <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-widest text-white/40 select-none">
                 {section.title}
               </p>
               <ul className="space-y-1">
@@ -185,9 +185,9 @@ export function CmsShell({
                         href={href}
                         onClick={() => setOpen(false)}
                         className={cn(
-                          'relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 overflow-hidden group',
+                          'relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 overflow-hidden group font-medium',
                           active
-                            ? 'bg-white/10 text-white font-semibold shadow-sm'
+                            ? 'bg-academic-800 text-white shadow-sm ring-1 ring-white/10'
                             : 'text-white/60 hover:bg-white/5 hover:text-white/90'
                         )}
                       >
@@ -207,14 +207,14 @@ export function CmsShell({
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-white/8 p-4 flex-shrink-0">
+        <div className="border-t border-white/10 p-4 flex-shrink-0 bg-academic-950/50">
           <div className="flex items-center gap-3 mb-3 px-1">
-            <div className="w-8 h-8 bg-gold-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-              <span className="text-[#0e1726] font-bold text-xs">{initials}</span>
+            <div className="w-9 h-9 bg-gradient-to-br from-gold-400 to-gold-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ring-1 ring-gold-400/20">
+              <span className="text-academic-950 font-bold text-xs">{initials}</span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-white truncate leading-tight">{session.name}</p>
-              <p className="text-[11px] text-white/40 truncate leading-tight">{session.email}</p>
+              <p className="text-sm font-semibold text-white truncate leading-tight tracking-tight">{session.name}</p>
+              <p className="text-[11px] text-white/50 truncate leading-tight mt-0.5">{session.email}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -278,8 +278,8 @@ export function CmsShell({
             <span className="hidden sm:inline-flex text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 bg-gray-100 text-gray-600 rounded-full border border-gray-200">
               {session.role.replace('_', ' ')}
             </span>
-            <div className="w-8 h-8 bg-gradient-to-br from-gold-400 to-gold-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm border border-gold-500/20">
-              <span className="text-[#0e1726] font-bold text-xs">{initials}</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-gold-400 to-gold-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm border border-gold-500/20">
+              <span className="text-academic-950 font-bold text-xs">{initials}</span>
             </div>
           </div>
         </header>

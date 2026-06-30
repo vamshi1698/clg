@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Loader2, AlertCircle, Plus, Trash2, ChevronDown, Check, X } from 'lucide-react'
+import { ArrowLeft, Save, Loader2, AlertCircle, Plus, Trash2, ChevronDown, Check, X, Eye, Lock } from 'lucide-react'
 import type { TableConfig, FieldConfig } from '@/lib/cms/tables'
 import { saveRow, deleteRow } from '@/lib/cms/actions'
 import { ResultsMultiForm } from './results-multi-form'
@@ -69,6 +69,7 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
   const [values, setValues] = useState<Record<string, unknown>>(initial || {})
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const [isPending, startTransition] = useTransition()
   const isEdit = !!rowId && !config.singleton
 
@@ -218,6 +219,14 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
               )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowPreview(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all border border-gray-200 shadow-sm bg-white"
+              >
+                <Eye className="h-4 w-4" />
+                Preview
+              </button>
               <Link
                 href={config.singleton ? '/cms' : `/cms/${config.slug}`}
                 className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
@@ -245,6 +254,115 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
           </div>
         </div>
       </form>
+      <PreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        data={values}
+        config={config}
+      />
+    </div>
+  )
+}
+
+function PreviewModal({
+  isOpen,
+  onClose,
+  data,
+  config,
+}: {
+  isOpen: boolean
+  onClose: () => void
+  data: Record<string, unknown>
+  config: TableConfig
+}) {
+  if (!isOpen) return null
+
+  // Extract common fields for a generic preview
+  const title = data.title || data.name || data.heading || 'Untitled'
+  const description = data.description || data.summary || data.content || ''
+  const image = data.image || data.imageUrl || data.coverImage || null
+  const date = data.date || data.publishedAt || null
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-12">
+      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex flex-col bg-white w-full max-w-5xl max-h-full rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Browser-like window header */}
+        <div className="h-12 bg-gray-100 border-b border-gray-200 flex items-center px-4 gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-400" />
+            <div className="w-3 h-3 rounded-full bg-amber-400" />
+            <div className="w-3 h-3 rounded-full bg-green-400" />
+          </div>
+          <div className="flex-1 flex justify-center">
+            <div className="bg-white border border-gray-200 text-xs text-gray-500 px-4 py-1.5 rounded-md flex items-center gap-2 max-w-sm w-full shadow-sm">
+              <Lock className="h-3 w-3 text-gray-400" />
+              <span>preview.nationalcollege.edu.in</span>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-900 p-1 rounded-md hover:bg-gray-200 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        
+        {/* Preview Content */}
+        <div className="flex-1 overflow-y-auto bg-gray-50 p-6 md:p-12">
+          <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {image && (
+              <div className="w-full h-64 md:h-96 relative bg-gray-100">
+                <img src={String(image)} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="p-8 md:p-12">
+              <div className="inline-flex px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider rounded-full mb-6">
+                {config.singular} Preview
+              </div>
+              <h1 className="font-display text-3xl md:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                {String(title)}
+              </h1>
+              {date && (
+                <p className="text-sm text-gray-500 mb-8 font-medium">
+                  {new Date(String(date)).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              )}
+              <div className="prose prose-lg max-w-none text-gray-600">
+                {typeof description === 'string' ? (
+                   description.split('\n').map((line, i) => (
+                     <p key={i} className="min-h-[1.5rem]">{line}</p>
+                   ))
+                ) : (
+                  <pre className="text-sm bg-gray-100 p-4 rounded-lg overflow-auto">
+                    {JSON.stringify(data, null, 2)}
+                  </pre>
+                )}
+              </div>
+              
+              {/* Other Data Fields */}
+              <div className="mt-12 pt-8 border-t border-gray-100">
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Other Data</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {config.fields.map(f => {
+                    if (['title', 'name', 'heading', 'description', 'summary', 'content', 'image', 'imageUrl', 'coverImage', 'date', 'publishedAt'].includes(f.name)) return null;
+                    if (data[f.name] == null || data[f.name] === '') return null;
+                    return (
+                      <div key={f.name} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <span className="block text-xs font-semibold text-gray-500 mb-1">{f.label}</span>
+                        <span className="block text-sm text-gray-900 break-all">
+                          {Array.isArray(data[f.name]) ? (data[f.name] as any[]).join(', ') : String(data[f.name])}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
