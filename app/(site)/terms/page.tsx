@@ -49,7 +49,7 @@ export default function TermsOfUsePage() {
   return (
     <article className="min-h-screen bg-slate-50 font-sans">
       {/* Header Banner */}
-      <header className="relative bg-academic-950 text-white overflow-hidden py-16 md:py-20 border-b border-slate-200">
+      <header className="relative bg-academic-950 text-white overflow-hidden pt-36 md:pt-44 pb-16 md:pb-20 border-b border-slate-200">
         <div className="absolute inset-0 opacity-15">
           <div className="absolute top-0 right-0 h-96 w-96 rounded-full bg-gold-500 blur-3xl" />
           <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-academic-500 blur-3xl" />

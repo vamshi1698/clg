@@ -115,7 +115,7 @@ export function DepartmentsPage({ departments }: DepartmentsPageProps) {
   return (
     <div className="bg-slate-50/30 min-h-screen pb-16">
       {/* Hero Section */}
-      <section className="relative bg-academic-900 py-20 lg:py-24 text-white overflow-hidden border-b border-slate-800">
+      <section className="relative bg-academic-900 pt-36 md:pt-44 pb-16 lg:pb-20 text-white overflow-hidden border-b border-slate-800">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl" />
         </div>

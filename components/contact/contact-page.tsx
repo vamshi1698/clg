@@ -62,7 +62,7 @@ export function ContactPage({ settings, departments }: ContactPageProps) {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="relative bg-academic-900 py-20 lg:py-28">
+      <section className="relative bg-academic-900 pt-44 md:pt-52 pb-16">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl" />
         </div>
@@ -99,7 +99,7 @@ export function ContactPage({ settings, departments }: ContactPageProps) {
                   <div>
                     <h3 className="font-semibold text-academic-900 mb-1">Address</h3>
                     <p className="text-gray-600 text-sm leading-relaxed">
-                      {settings?.address || 'National College, Jayanagar, Bangalore - 560070, Karnataka, India'}
+                      {settings?.address || 'No. 36th B Cross, 2nd Main Road, 7th Block, Jayanagar, Bengaluru - 560070, Karnataka, India'}
                     </p>
                   </div>
                 </div>
@@ -149,7 +149,7 @@ export function ContactPage({ settings, departments }: ContactPageProps) {
               {/* Map */}
               <div className="mt-8 h-64 bg-gray-100 rounded-xl overflow-hidden">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3888.8186!2d77.5833!3d12.9301!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDU1JzQ4LjQiTiA3N8KwMzUnMDAuMCJF!5e0!3m2!1sen!2sin!4v1234567890"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3888.738232351398!2d77.57617987484056!3d12.924538687386468!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae15bdb2750e53%3A0x7098fbc027b4bfe!2sThe%20National%20Degree%20College%20Jayanagar!5e0!3m2!1sen!2sin!4v1783014049556!5m2!1sen!2sin"
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}

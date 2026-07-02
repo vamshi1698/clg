@@ -4,19 +4,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
+        hostname: '**',
       },
       {
-        protocol: 'https',
-        hostname: 'images.pexels.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.gstatic.com',
+        protocol: 'http',
+        hostname: '**',
       },
     ],
   },
@@ -26,6 +18,21 @@ const nextConfig = {
     // Tree-shake large icon/animation libraries to reduce unused CSS and JS
     optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-icons'],
   },
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
+        ],
+      },
+    ]
+  },
 };
 
-module.exports = nextConfig;
+module.exports = nextConfig;
+

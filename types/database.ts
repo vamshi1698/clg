@@ -150,6 +150,7 @@ export interface News {
   content: string | null
   category: 'academic' | 'examination' | 'admission' | 'placement' | 'events' | 'general'
   image_url: string | null
+  attachment_url: string | null
   author: string | null
   is_featured: boolean
   published_at: string | null

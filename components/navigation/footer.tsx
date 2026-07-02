@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook, Twitter, Linkedin, Instagram, Youtube, Mail, Phone, MapPin, Clock } from 'lucide-react'
-import logoImage from '@/components/brand/channels4_profile.jpg'
+import logoImage from '@/public/icon.png'
 
 const quickLinks = [
   { name: 'About Us', href: '/about' },
@@ -114,8 +114,8 @@ export function Footer() {
               <li className="flex items-start gap-3 text-sm">
                 <MapPin className="h-5 w-5 text-gold-500 flex-shrink-0 mt-0.5" />
                 <span className="text-gray-400">
-                  National College, Jayanagar,<br />
-                  Bangalore - 560070,<br />
+                  No. 36th B Cross, 2nd Main Road, 7th Block, Jayanagar,<br />
+                  Bengaluru - 560070,<br />
                   Karnataka, India
                 </span>
               </li>

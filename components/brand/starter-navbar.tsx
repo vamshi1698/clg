@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Menu, ChevronDown, ShieldCheck } from 'lucide-react'
-import logoImage from './channels4_profile.jpg'
+import logoImage from '@/public/icon.png'
 
 const links = [
   { name: 'Home', href: '/' },

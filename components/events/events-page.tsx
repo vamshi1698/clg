@@ -25,7 +25,7 @@ export function EventsPage({ events }: EventsPageProps) {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="relative bg-academic-900 py-20 lg:py-28">
+      <section className="relative bg-academic-900 pt-44 md:pt-52 pb-16">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl" />
         </div>

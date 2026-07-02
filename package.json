@@ -80,5 +80,9 @@
 		"eslint": "^10.5.0",
 		"eslint-config-next": "^16.2.9",
 		"jsrepo": "^3.8.0"
+	},
+	"overrides": {
+		"react": "$react",
+		"react-dom": "$react-dom"
 	}
 }

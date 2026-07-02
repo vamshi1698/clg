@@ -102,7 +102,12 @@
     color: hsl(var(--primary-foreground));
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
     line-height: 1.2;
   }
@@ -188,6 +193,7 @@
     from {
       transform: translateX(0);
     }
+
     to {
       transform: translateX(-50%);
     }
@@ -195,17 +201,25 @@
 }
 
 @media print {
-  header, footer, nav, aside, .fixed, .z-50, .cookie-banner {
+
+  header,
+  footer,
+  nav,
+  aside,
+  .fixed,
+  .z-50,
+  .cookie-banner {
     display: none !important;
   }
+
   body {
     background: white !important;
     color: black !important;
     background-image: none !important;
   }
+
   main {
     padding-top: 0 !important;
     margin-top: 0 !important;
   }
 }
-

@@ -22,6 +22,7 @@ interface MessageRow {
   email: string
   phone: string | null
   subject: string | null
+  message: string
   created_at: string
   status: string
 }
@@ -38,6 +39,7 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
   const [selected, setSelected] = useState<MessageRow | null>(null)
 
   function updateStatus(m: MessageRow, status: 'read' | 'replied') {
+    if (m.status === status || isPending) return
     startTransition(async () => {
       const result = await updateMessageStatus(m.id, status)
       if (!('error' in result)) {
@@ -100,6 +102,14 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
             </div>
           </div>
 
+          {/* Message Body */}
+          <div className="mt-6 border-t border-gray-100 pt-6">
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Message Content</h4>
+            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">
+              {selected.message}
+            </div>
+          </div>
+
           <div className="mt-8 flex items-center gap-2 pt-6 border-t border-gray-100">
             {selected.status === 'unread' && (
               <button
@@ -118,8 +128,8 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
             </a>
             <button
               onClick={() => updateStatus(selected, 'replied')}
-              disabled={isPending}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+              disabled={isPending || selected.status === 'replied'}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle className="h-4 w-4" /> Mark Replied
             </button>
@@ -193,12 +203,17 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
               key={m.id}
               onClick={() => {
                 setSelected(m)
-                if (m.status === 'unread') {
+                if (m.status === 'unread' && !isPending) {
+                  setList((prev) =>
+                    prev.map((row) => (row.id === m.id ? { ...row, status: 'read' } : row))
+                  )
                   startTransition(async () => {
-                    await updateMessageStatus(m.id, 'read')
-                    setList((prev) =>
-                      prev.map((row) => (row.id === m.id ? { ...row, status: 'read' } : row))
-                    )
+                    const result = await updateMessageStatus(m.id, 'read')
+                    if (result && 'error' in result) {
+                      setList((prev) =>
+                        prev.map((row) => (row.id === m.id ? { ...row, status: 'unread' } : row))
+                      )
+                    }
                   })
                 }
               }}

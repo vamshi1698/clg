@@ -25,6 +25,13 @@ export async function getResultsPdfs() {
 
 export async function deleteResultsPdf(id: string) {
   try {
+    const { getSession } = await import('@/lib/cms/auth')
+    const { canAccessTable } = await import('@/lib/cms/roles')
+    const session = await getSession()
+    if (!session || !canAccessTable(session.role, 'results_pdfs')) {
+      return { error: 'Unauthorized' }
+    }
+
     // 1. Get filename from DB
     const { data: record, error: fetchErr } = await postgresClient
       .from('results_pdfs')
@@ -56,6 +63,13 @@ export async function deleteResultsPdf(id: string) {
       throw deleteErr
     }
 
+    try {
+      const { logCmsActivity } = await import('@/lib/cms/actions')
+      await logCmsActivity('DELETE_PDF', 'results_pdfs', `Deleted results PDF ID: ${id} (Title: ${record.title})`)
+    } catch (logErr) {
+      console.error('Audit logging error:', logErr)
+    }
+
     revalidatePath('/results')
     return { ok: true }
   } catch (err: any) {
@@ -66,7 +80,7 @@ export async function deleteResultsPdf(id: string) {
 
 // Helper to create a news announcement when a result PDF is uploaded
 export async function createResultNewsAnnouncement(pdfRecord: any) {
-  const title = `Result Bulletin: ${pdfRecord.title}`
+  const title = `Result Announcement: ${pdfRecord.title}`
   const slug = title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -77,6 +91,7 @@ export async function createResultNewsAnnouncement(pdfRecord: any) {
     id: crypto.randomUUID(),
     excerpt: `Official result PDF titled "${pdfRecord.title}" is now available.`,
     content: '', // can be extended later
+    attachment_url: `/api/results/pdf/${pdfRecord.id}`,
     category: 'examination',
     is_featured: false,
     is_active: true,
@@ -139,6 +154,13 @@ export async function getImportedExcelDatasets() {
 
 export async function deleteImportedExcelDataset(academicYear: string, semester: number, examType: string) {
   try {
+    const { getSession } = await import('@/lib/cms/auth')
+    const { canAccessTable } = await import('@/lib/cms/roles')
+    const session = await getSession()
+    if (!session || !canAccessTable(session.role, 'results')) {
+      return { error: 'Unauthorized' }
+    }
+
     // 1. Delete results
     await postgresClient.query(
       'DELETE FROM results WHERE academic_year = $1 AND semester = $2 AND examination_type = $3',
@@ -158,6 +180,13 @@ export async function deleteImportedExcelDataset(academicYear: string, semester:
       [title]
     )
 
+    try {
+      const { logCmsActivity } = await import('@/lib/cms/actions')
+      await logCmsActivity('DELETE_EXCEL_DATASET', 'results', `Deleted Excel dataset for Sem ${semester} ${examType} (${academicYear})`)
+    } catch (logErr) {
+      console.error('Audit logging error:', logErr)
+    }
+
     revalidatePath('/results')
     revalidatePath('/news')
     revalidatePath('/')
@@ -166,4 +195,14 @@ export async function deleteImportedExcelDataset(academicYear: string, semester:
     console.error('Error deleting excel dataset:', err)
     return { error: err.message || 'Failed to delete results dataset.' }
   }
+}
+
+export async function checkUploadAccess() {
+  const { getSession } = await import('@/lib/cms/auth')
+  const { canAccess } = await import('@/lib/cms/roles')
+  const session = await getSession()
+  if (!session || !canAccess(session.role, 'results-upload')) {
+    return { allowed: false }
+  }
+  return { allowed: true }
 }

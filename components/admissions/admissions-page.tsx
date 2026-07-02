@@ -137,7 +137,7 @@ export function AdmissionsPage({ importantDates, courses, faqs }: AdmissionsPage
     <div className="bg-white text-academic-950">
 
       {/* Hero */}
-      <section className="relative min-h-[65vh] flex items-center overflow-hidden">
+      <section className="relative pt-44 md:pt-52 pb-16 overflow-hidden">
         <div className="absolute inset-0">
           <Image
             src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
@@ -149,7 +149,7 @@ export function AdmissionsPage({ importantDates, courses, faqs }: AdmissionsPage
           />
           <div className="absolute inset-0 bg-gradient-to-r from-academic-950/90 via-academic-950/70 to-transparent" />
         </div>
-        <div className="relative container-wide pt-36 pb-16 text-white">
+        <div className="relative container-wide text-white">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
             <span className="inline-block bg-gold-500/20 border border-gold-500/40 text-gold-300 text-xs font-bold uppercase tracking-[0.25em] px-4 py-2 rounded-full mb-6">
               Admissions Open
@@ -175,18 +175,18 @@ export function AdmissionsPage({ importantDates, courses, faqs }: AdmissionsPage
       {/* Process & Enquiry Split Section */}
       <section id="process" className="section-padding bg-slate-50 border-b border-slate-100">
         <div className="container-wide">
-          <div className="grid lg:grid-cols-12 gap-12 items-start">
+          <div className="grid lg:grid-cols-2 gap-8 items-stretch">
             
             {/* Left Column: ID Card Tag */}
-            <div className="lg:col-span-7 h-full flex flex-col">
-              <div className="rounded-3xl overflow-hidden shadow-2xl flex-1 relative min-h-[600px]">
+            <div className="flex flex-col">
+              <div className="rounded-3xl overflow-hidden shadow-xl flex-1 relative min-h-[550px] h-full">
                 <ImmersiveIdCard />
               </div>
             </div>
 
             {/* Right Column: Admission Enquiry Form Card */}
-            <div className="lg:col-span-5">
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-md hover:shadow-lg transition-all duration-300">
+            <div className="flex flex-col">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 md:p-8 shadow-md hover:shadow-lg transition-all duration-300 h-full flex flex-col justify-between">
                 <h3 className="font-display text-2xl font-bold text-academic-950">Admission Enquiry</h3>
                 <p className="text-slate-500 text-xs sm:text-sm mt-2 leading-relaxed mb-6">
                   Submit your details to check course eligibility. Our admissions officer will get in touch with you shortly.

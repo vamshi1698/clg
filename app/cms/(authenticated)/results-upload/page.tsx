@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useTransition, useEffect, useRef } from 'react'
-import { 
-  UploadCloud, 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
-  Trash2, 
-  Loader2, 
-  Info, 
+import {
+  UploadCloud,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Trash2,
+  Loader2,
+  Info,
   ArrowRight,
   Database,
   Calendar,
@@ -20,11 +20,12 @@ import * as XLSX from 'xlsx'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { 
-  getResultsPdfs, 
-  deleteResultsPdf, 
-  getImportedExcelDatasets, 
-  deleteImportedExcelDataset 
+import {
+  getResultsPdfs,
+  deleteResultsPdf,
+  getImportedExcelDatasets,
+  deleteImportedExcelDataset,
+  checkUploadAccess
 } from '@/lib/actions/results-actions'
 import { toast } from '@/hooks/use-toast'
 import {
@@ -48,6 +49,7 @@ interface PdfRecord {
 }
 
 export default function ResultsUploadPage() {
+  const [allowed, setAllowed] = useState<boolean | null>(null)
   const [pdfs, setPdfs] = useState<PdfRecord[]>([])
   const [datasets, setDatasets] = useState<{ academic_year: string, semester: number, examination_type: string }[]>([])
   const [pdfPending, startPdfTransition] = useTransition()
@@ -73,11 +75,26 @@ export default function ResultsUploadPage() {
   const [excelError, setExcelError] = useState<string | null>(null)
   const excelInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch PDFs and datasets on mount
+  // Verify access on mount
   useEffect(() => {
-    loadPdfs()
-    loadDatasets()
+    async function verify() {
+      const res = await checkUploadAccess()
+      if (!res.allowed) {
+        window.location.href = '/cms'
+      } else {
+        setAllowed(true)
+      }
+    }
+    verify()
   }, [])
+
+  // Fetch PDFs and datasets when allowed
+  useEffect(() => {
+    if (allowed) {
+      loadPdfs()
+      loadDatasets()
+    }
+  }, [allowed])
 
   async function loadPdfs() {
     const res = await getResultsPdfs()
@@ -298,6 +315,14 @@ export default function ResultsUploadPage() {
     setDatasetToDelete({ academicYear, semester, examType })
   }
 
+  if (allowed === null) {
+    return (
+      <div className="h-48 flex items-center justify-center text-sm text-gray-500 font-medium bg-white rounded-xl border border-gray-150 shadow-sm max-w-6xl mx-auto">
+        Verifying permissions...
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
       {/* Header */}
@@ -312,7 +337,7 @@ export default function ResultsUploadPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
+
         {/* Card 1: PDF Results Announcements */}
         <div className="space-y-6">
           <Card className="border border-gray-200 shadow-md">
@@ -322,7 +347,7 @@ export default function ResultsUploadPage() {
                 PDF Results Announcer
               </CardTitle>
               <CardDescription>
-                Upload official results bulletins (saved outside the codebase securely).
+                Upload official results notifications (saved outside the codebase securely).
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -343,7 +368,7 @@ export default function ResultsUploadPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" /> Academic Year
                     </label>
                     <Input
@@ -356,7 +381,7 @@ export default function ResultsUploadPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                    <label className="text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                       <Layers className="h-3.5 w-3.5" /> Semester
                     </label>
                     <Input
@@ -396,11 +421,10 @@ export default function ResultsUploadPage() {
                 </div>
 
                 {pdfMessage && (
-                  <div className={`flex items-start gap-2 p-3 rounded-lg text-sm border ${
-                    pdfMessage.type === 'success' 
-                      ? 'bg-green-50 border-green-200 text-green-800' 
+                  <div className={`flex items-start gap-2 p-3 rounded-lg text-sm border ${pdfMessage.type === 'success'
+                      ? 'bg-green-50 border-green-200 text-green-800'
                       : 'bg-red-50 border-red-200 text-red-800'
-                  }`}>
+                    }`}>
                     {pdfMessage.type === 'success' ? (
                       <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                     ) : (
@@ -410,9 +434,9 @@ export default function ResultsUploadPage() {
                   </div>
                 )}
 
-                <Button 
-                  type="submit" 
-                  className="w-full bg-academic-900 text-white hover:bg-academic-800" 
+                <Button
+                  type="submit"
+                  className="w-full bg-academic-900 text-white hover:bg-academic-800"
                   disabled={pdfPending}
                 >
                   {pdfPending ? (
@@ -432,7 +456,7 @@ export default function ResultsUploadPage() {
           <Card className="border border-gray-200 shadow-md">
             <CardHeader className="bg-gray-50/70 border-b border-gray-200/60 py-4">
               <CardTitle className="font-display text-base text-academic-900">
-                Uploaded Bulletins ({pdfs.length})
+                Uploaded Notifications ({pdfs.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -480,7 +504,7 @@ export default function ResultsUploadPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 flex-1 flex flex-col justify-between space-y-6">
-              
+
               <form onSubmit={handleExcelSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -512,9 +536,9 @@ export default function ResultsUploadPage() {
                   </div>
                 )}
 
-                <Button 
-                  type="submit" 
-                  className="w-full bg-academic-900 text-white hover:bg-academic-800" 
+                <Button
+                  type="submit"
+                  className="w-full bg-academic-900 text-white hover:bg-academic-800"
                   disabled={excelPending}
                 >
                   {excelPending ? (

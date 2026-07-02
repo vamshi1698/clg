@@ -1,6 +1,9 @@
 import Link from 'next/link'
 import { postgresClient } from '@/lib/postgres/client'
 import { CmsMessageList } from '@/components/cms/messages'
+import { getSession } from '@/lib/cms/auth'
+import { canAccess } from '@/lib/cms/roles'
+import { notFound } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Messages' }
@@ -11,14 +14,20 @@ interface MessageRow {
   email: string
   phone: string | null
   subject: string | null
+  message: string
   created_at: string
   status: string
 }
 
 export default async function MessagesPage() {
+  const session = await getSession()
+  if (!session || !canAccess(session.role, 'messages')) {
+    notFound()
+  }
+
   const { data } = await postgresClient
     .from('contact_messages')
-    .select('id, name, email, phone, subject, created_at, status')
+    .select('id, name, email, phone, subject, message, created_at, status')
     .order('created_at', { ascending: false })
 
   const messages = ((data || []) as MessageRow[])

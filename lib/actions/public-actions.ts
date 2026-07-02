@@ -7,10 +7,21 @@ import {
 } from '@/lib/data/public'
 import { postgresClient } from '@/lib/postgres/client'
 import crypto from 'crypto'
+import {
+  sanitizeHtml,
+  stripTags,
+  validateInput,
+  resultLookupSchema,
+  contactMessageSchema,
+  admissionEnquirySchema,
+} from '@/lib/security'
 
 export async function lookupResults(registerNumber: string, dateOfBirth: string) {
   try {
-    const student = await getStudentByCredentials(registerNumber, dateOfBirth)
+    // Validate input
+    const validated = validateInput(resultLookupSchema, { registerNumber, dateOfBirth })
+
+    const student = await getStudentByCredentials(validated.registerNumber, validated.dateOfBirth)
     if (!student) {
       return { error: 'No student found with the provided details. Please check your Register Number and Date of Birth.' }
     }
@@ -80,14 +91,17 @@ export async function submitContactMessage(formData: {
   message: string
 }) {
   try {
+    // Validate input
+    const validated = validateInput(contactMessageSchema, formData)
+
     const id = crypto.randomUUID()
     const payload = {
       id,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone || null,
-      subject: formData.subject || null,
-      message: formData.message,
+      name: stripTags(validated.name),
+      email: validated.email,
+      phone: validated.phone ? stripTags(validated.phone) : null,
+      subject: validated.subject ? stripTags(validated.subject) : null,
+      message: stripTags(validated.message),
       status: 'unread',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -130,24 +144,32 @@ export async function submitAdmissionEnquiry(formData: {
   queries?: string
 }) {
   try {
+    // Validate input
+    const validated = validateInput(admissionEnquirySchema, formData)
+
     const { sendEmail } = await import('@/lib/mail')
     const id = crypto.randomUUID()
     const now = new Date().toISOString()
     
-    const percentageNum = parseFloat(formData.percentage)
+    const percentageNum = parseFloat(validated.percentage)
     if (isNaN(percentageNum)) {
       throw new Error('Invalid percentage value')
     }
 
+    // Sanitize all text fields before DB insert and email embedding
+    const safeName = stripTags(validated.name)
+    const safePhone = stripTags(validated.phone)
+    const safeQueries = validated.queries ? stripTags(validated.queries) : null
+
     const payload = {
       id,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      level: formData.level,
-      course_id: formData.courseId || null,
+      name: safeName,
+      email: validated.email,
+      phone: safePhone,
+      level: validated.level,
+      course_id: validated.courseId || null,
       percentage: percentageNum,
-      queries: formData.queries || null,
+      queries: safeQueries,
       status: 'pending',
       created_at: now,
       updated_at: now
@@ -159,50 +181,56 @@ export async function submitAdmissionEnquiry(formData: {
     }
 
     let courseName = 'Selected Course'
-    if (formData.courseId) {
+    if (validated.courseId) {
       const { data: courseData } = await postgresClient
         .from('courses')
         .select('name')
-        .eq('id', formData.courseId)
+        .eq('id', validated.courseId)
         .single()
       if (courseData && courseData.name) {
         courseName = courseData.name
       }
     }
 
+    // HTML-escape user content for email templates to prevent XSS
+    const htmlName = sanitizeHtml(safeName)
+    const htmlPhone = sanitizeHtml(safePhone)
+    const htmlCourseName = sanitizeHtml(courseName)
+    const htmlQueries = safeQueries ? sanitizeHtml(safeQueries).replace(/\n/g, '<br/>') : '—'
+
     // 1. Send confirmation email to applicant
     const applicantSubject = `Admissions Enquiry Received - National College`
     const applicantHtml = `
       <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #0f2d52; margin-top: 0;">Dear ${formData.name},</h2>
-        <p>Thank you for submitting your admission enquiry for the <strong>${courseName}</strong> program at National College.</p>
+        <h2 style="color: #0f2d52; margin-top: 0;">Dear ${htmlName},</h2>
+        <p>Thank you for submitting your admission enquiry for the <strong>${htmlCourseName}</strong> program at National College.</p>
         <p>Our admissions counseling panel is currently reviewing your academic details (Marks obtained: <strong>${percentageNum}%</strong>).</p>
-        <p>One of our officers will reach out to you at <strong>${formData.phone}</strong> or via this email address shortly.</p>
+        <p>One of our officers will reach out to you at <strong>${htmlPhone}</strong> or via this email address shortly.</p>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
         <p style="font-size: 12px; color: #888; margin-bottom: 0;">Best Regards,<br/><strong>Admissions Team</strong><br/>National College</p>
       </div>
     `
     await sendEmail({
-      to: formData.email,
+      to: validated.email,
       subject: applicantSubject,
       html: applicantHtml,
     })
 
     // 2. Send alert email to college administrator
     const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'admissions@nationalcollege.edu'
-    const adminSubject = `[Admissions Lead] New Enquiry: ${formData.name}`
+    const adminSubject = `[Admissions Lead] New Enquiry: ${htmlName}`
     const adminHtml = `
       <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 650px; margin: 0 auto; border: 1px solid #f0f0f0; padding: 20px; border-radius: 8px;">
         <h2 style="color: #0f2d52; margin-top: 0; border-bottom: 2px solid #0f2d52; padding-bottom: 10px;">New Admission Enquiry</h2>
         <p>A new admission enquiry lead has been submitted on the college portal. Details below:</p>
         <table border="0" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <tr style="background-color: #fcfcfc;"><td style="width: 180px; font-weight: bold; border-bottom: 1px solid #eee;">Name:</td><td style="border-bottom: 1px solid #eee;">${formData.name}</td></tr>
-          <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Email:</td><td style="border-bottom: 1px solid #eee;"><a href="mailto:${formData.email}">${formData.email}</a></td></tr>
-          <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; border-bottom: 1px solid #eee;">Phone:</td><td style="border-bottom: 1px solid #eee;">${formData.phone}</td></tr>
-          <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Program Level:</td><td style="border-bottom: 1px solid #eee; text-transform: uppercase;">${formData.level}</td></tr>
-          <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; border-bottom: 1px solid #eee;">Desired Course:</td><td style="border-bottom: 1px solid #eee;">${courseName}</td></tr>
+          <tr style="background-color: #fcfcfc;"><td style="width: 180px; font-weight: bold; border-bottom: 1px solid #eee;">Name:</td><td style="border-bottom: 1px solid #eee;">${htmlName}</td></tr>
+          <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Email:</td><td style="border-bottom: 1px solid #eee;"><a href="mailto:${sanitizeHtml(validated.email)}">${sanitizeHtml(validated.email)}</a></td></tr>
+          <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; border-bottom: 1px solid #eee;">Phone:</td><td style="border-bottom: 1px solid #eee;">${htmlPhone}</td></tr>
+          <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Program Level:</td><td style="border-bottom: 1px solid #eee; text-transform: uppercase;">${sanitizeHtml(validated.level)}</td></tr>
+          <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; border-bottom: 1px solid #eee;">Desired Course:</td><td style="border-bottom: 1px solid #eee;">${htmlCourseName}</td></tr>
           <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Marks Obtained:</td><td style="border-bottom: 1px solid #eee; font-weight: bold; color: #10b981;">${percentageNum}%</td></tr>
-          <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; vertical-align: top;">Queries / Notes:</td><td>${formData.queries ? formData.queries.replace(/\n/g, '<br/>') : '—'}</td></tr>
+          <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; vertical-align: top;">Queries / Notes:</td><td>${htmlQueries}</td></tr>
         </table>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
         <p style="font-size: 12px; color: #888; margin-bottom: 0;">This lead has been saved in the CMS dashboard. You can manage their status under "Admission Enquiries".</p>
@@ -220,4 +248,3 @@ export async function submitAdmissionEnquiry(formData: {
     return { error: err.message || 'Failed to submit enquiry. Please try again.' }
   }
 }
-

@@ -49,7 +49,7 @@ export default function PrivacyPolicyPage() {
   return (
     <article className="min-h-screen bg-slate-50 font-sans">
       {/* Header Banner */}
-      <header className="relative bg-academic-950 text-white overflow-hidden py-16 md:py-20 border-b border-slate-200">
+      <header className="relative bg-academic-950 text-white overflow-hidden pt-36 md:pt-44 pb-16 md:pb-20 border-b border-slate-200">
         <div className="absolute inset-0 opacity-15">
           <div className="absolute top-0 right-0 h-96 w-96 rounded-full bg-gold-500 blur-3xl" />
           <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-academic-500 blur-3xl" />
@@ -98,7 +98,7 @@ export default function PrivacyPolicyPage() {
               <h3 className="font-bold text-slate-800 text-sm md:text-base">Contact Information</h3>
               <p className="text-xs md:text-sm text-gray-500 mt-1 leading-relaxed">
                 National College Jayanagar Campus Administration Office<br/>
-                Jayanagar, Bangalore, Karnataka - 560011<br/>
+                No. 36th B Cross, 2nd Main Road, 7th Block, Jayanagar, Bengaluru, Karnataka - 560070<br/>
                 Email: admissions@nationalcollege.edu
               </p>
             </div>

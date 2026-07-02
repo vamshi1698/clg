@@ -46,7 +46,7 @@ export async function POST(req: Request) {
           <p style="font-weight: bold; color: #d92727;">We highly recommend resetting your password immediately to secure your account.</p>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="http://localhost:3000/cms/login" style="background-color: #d92727; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">
+            <a href="${process.env.APP_URL || 'http://localhost:3000'}/cms/login" style="background-color: #d92727; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; display: inline-block;">
               Go to CMS Portal
             </a>
           </div>
@@ -87,10 +87,10 @@ export async function POST(req: Request) {
 
     console.log('[CMS Login Flow] Verification SUCCESSFUL. Creating session cookie...')
     await createSession(session)
-    
+
     console.log('[CMS Login Flow] Revalidating path layout...')
     revalidatePath('/', 'layout')
-    
+
     console.log('[CMS Login Flow] Login process complete, returning success response')
     return NextResponse.json({ ok: true, session })
   }
@@ -108,10 +108,11 @@ export async function POST(req: Request) {
   }
 
   console.log('[CMS Login Flow] Authentication SUCCESSFUL. Generating OTP code...')
-  
+
   const otpCode = crypto.randomInt(100000, 1000000).toString()
+  console.log(`[CMS Login Flow] 🔐 DEVELOPMENT OVERRIDE: Generated OTP for ${email} is [ ${otpCode} ]`)
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes expiration
-  
+
   const otpId = crypto.randomUUID()
   const { error: otpInsertErr } = await postgresClient.insert('otp_verifications', {
     id: otpId,
@@ -136,75 +137,20 @@ export async function POST(req: Request) {
       <div style="background-color: #f7f9fc; border: 1px solid #e1e8f0; font-size: 28px; font-weight: bold; text-align: center; padding: 15px; border-radius: 6px; letter-spacing: 5px; color: #0f2d52; margin: 20px 0;">
         ${otpCode}
       </div>
-      <p style="font-size: 12px; color: #888; margin-bottom: 0;">If you did not attempt this login, please ignore this email or change your password immediately.</p>
+      <p style="font-size: 12px; color: #888; margin-bottom: 0;">If you did not attempt this login, please ignore this email.</p>
     </div>
   `
-  await sendEmail({
+  const emailResult = await sendEmail({
     to: email,
     subject: emailSubject,
     html: emailHtml
   })
 
+  if (!emailResult.success) {
+    console.error('[CMS Login Flow] Email failed to send. Aborting login.')
+    // Optionally, we could delete the OTP record here, but it will expire anyway.
+    return NextResponse.json({ error: 'Failed to send verification email: ' + emailResult.error }, { status: 500 })
+  }
+
   return NextResponse.json({ requireOtp: true, email })
-}
-
-// Helper route to create an admin (used for bootstrapping; protected by secret)
-export async function PUT(req: Request) {
-  const body = await req.json().catch(() => ({}))
-  const secret = process.env.CMS_SETUP_SECRET
-  if (!secret || body.setup_secret !== secret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
-  }
-  const email = String(body.email || '').trim().toLowerCase()
-  const password = String(body.password || '')
-  const name = String(body.name || '')
-  const role = body.role === 'content_admin' || body.role === 'exam_admin' ? body.role : 'super_admin'
-
-  if (!email || !password || !name) {
-    return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
-  }
-
-  const hash = await hashPassword(password)
-  
-  // Find if user already exists
-  const { data: existing, error: findError } = await postgresClient
-    .from('admin_users')
-    .select('id, email')
-    .eq('email', email)
-    .single()
-
-  if (findError && findError.code !== 'PG_NOT_FOUND' && findError.message !== 'Row not found') {
-    // If it's a real database error (not just not found), handle it
-    // Wait, the postgresClient single query builder returns error: null and data: null when row isn't found. Let's make sure.
-  }
-
-  let userResult
-  if (existing) {
-    const { data: updatedUser, error: updateError } = await postgresClient.update('admin_users', existing.id, {
-      password_hash: hash,
-      role,
-      name,
-      updated_at: new Date().toISOString()
-    })
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
-    }
-    userResult = updatedUser
-  } else {
-    const { data: insertedUser, error: insertError } = await postgresClient.insert('admin_users', {
-      id: crypto.randomUUID(),
-      email,
-      password_hash: hash,
-      role,
-      name,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 })
-    }
-    userResult = insertedUser
-  }
-
-  return NextResponse.json({ ok: true, user: { id: userResult.id, email: userResult.email, name: userResult.name, role: userResult.role } })
 }

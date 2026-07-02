@@ -1,9 +1,31 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useTransition, Fragment, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUpDown, Save, X, GraduationCap, Search, ChevronDown, ChevronUp } from 'lucide-react'
-import { deleteRow, toggleActive, updateSortOrder } from '@/lib/cms/actions'
+import { useState, useTransition, Fragment, useMemo, useEffect } from 'react'
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUpDown, Save, X, GraduationCap, Search, ChevronDown, ChevronUp, RotateCcw, TrendingUp, UploadCloud, Loader2, Info, AlertCircle, CheckCircle } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import { deleteRow, toggleActive, updateSortOrder, deleteRowPermanent, restoreRow, deleteRows, deleteRowsPermanent, restoreRows } from '@/lib/cms/actions'
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend as RechartsLegend
+} from 'recharts'
+
+const DynamicResponsiveContainer = ResponsiveContainer as any
+const DynamicComposedChart = ComposedChart as any
+const DynamicBar = Bar as any
+const DynamicLine = Line as any
+const DynamicXAxis = XAxis as any
+const DynamicYAxis = YAxis as any
+const DynamicCartesianGrid = CartesianGrid as any
+const DynamicRechartsTooltip = RechartsTooltip as any
+const DynamicRechartsLegend = RechartsLegend as any
 import { toast } from '@/hooks/use-toast'
 import {
   AlertDialog,
@@ -72,14 +94,162 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null)
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [viewTrash, setViewTrash] = useState(false)
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+  const [confirmBulkDeletePermanent, setConfirmBulkDeletePermanent] = useState(false)
+  const [confirmDeletePermanent, setConfirmDeletePermanent] = useState<{ id: string; title: string } | null>(null)
+
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [excelFile, setExcelFile] = useState<File | null>(null)
+  const [excelPending, setExcelPending] = useState(false)
+  const [excelError, setExcelError] = useState<string | null>(null)
+  const [excelResult, setExcelResult] = useState<{ importedCount: number; errors: string[] | null } | null>(null)
+
+  const downloadStudentTemplate = () => {
+    const headers = [
+      'register_number',
+      'name',
+      'dob',
+      'course_code',
+      'department_code',
+      'academic_year',
+      'semester'
+    ]
+
+    const sampleRows = [
+      {
+        register_number: 'NCJ23BCA001',
+        name: 'Arjun Kumar',
+        dob: '2004-05-15',
+        course_code: 'BCA',
+        department_code: 'CS',
+        academic_year: '2023-2024',
+        semester: 6
+      },
+      {
+        register_number: 'NCJ23BCA002',
+        name: 'Neha Sharma',
+        dob: '2004-08-22',
+        course_code: 'BCA',
+        department_code: 'CS',
+        academic_year: '2023-2024',
+        semester: 6
+      }
+    ]
+
+    const worksheet = XLSX.utils.json_to_sheet(sampleRows, { header: headers })
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Students Template')
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+    const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+
+    const url = window.URL.createObjectURL(data)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'students_bulk_import_template.xlsx'
+    link.click()
+    window.URL.revokeObjectURL(url)
+  }
+
+  const handleExcelSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setExcelError(null)
+    setExcelResult(null)
+
+    if (!excelFile) {
+      setExcelError('Please select an Excel or CSV file to import.')
+      return
+    }
+
+    const formData = new FormData()
+    formData.append('file', excelFile)
+
+    setExcelPending(true)
+    try {
+      const response = await fetch('/api/cms/students/upload-excel', {
+        method: 'POST',
+        body: formData,
+      })
+      const data = await response.json()
+
+      if (!response.ok || data.error) {
+        setExcelError(data.error || 'Failed to import students.')
+      } else {
+        setExcelResult(data)
+        setExcelFile(null)
+        toast({
+          title: 'Import Complete',
+          description: `Successfully imported ${data.importedCount} student(s).`,
+        })
+      }
+    } catch (err: any) {
+      setExcelError(err.message || 'An error occurred during import.')
+    } finally {
+      setExcelPending(false)
+    }
+  }
+
+  useEffect(() => {
+    setSelectedIds(new Set())
+  }, [selectedDepartmentId, selectedCourseId, search, viewTrash])
+
   const titleField = config.titleField
   const subtitleField = config.subtitleField
 
   const isCourseGroupable = config.slug === 'students' || config.slug === 'results'
   const isResults = config.slug === 'results'
-  const isDepartmentFilterable = config.slug === 'faculty' || config.slug === 'courses'
+  const isDepartmentFilterable = config.slug === 'faculty' || config.slug === 'courses' || config.slug === 'students'
 
-  let processedRows = rows
+  const activeRows = useMemo(() => {
+    if (config.slug !== 'students') return rows
+    return rows.filter((r) => !r.is_deleted)
+  }, [rows, config.slug])
+
+  const deletedRows = useMemo(() => {
+    if (config.slug !== 'students') return []
+    return rows.filter((r) => !!r.is_deleted)
+  }, [rows, config.slug])
+
+  let processedRows = config.slug === 'students' && viewTrash ? deletedRows : activeRows
+
+  const semesterStats = useMemo(() => {
+    if (config.slug !== 'result-summaries') return []
+    const groups: Record<number, { sum: number; count: number; pass: number; fail: number }> = {}
+    rows.forEach((r) => {
+      const sem = Number(r.semester || 0)
+      if (!sem) return
+      if (!groups[sem]) {
+        groups[sem] = { sum: 0, count: 0, pass: 0, fail: 0 }
+      }
+      if (r.sgpa != null) {
+        groups[sem].sum += Number(r.sgpa)
+        groups[sem].count++
+      }
+      if (String(r.result_status || '').toUpperCase() === 'PASS') {
+        groups[sem].pass++
+      } else if (String(r.result_status || '').toUpperCase() === 'FAIL') {
+        groups[sem].fail++
+      }
+    })
+    return Object.keys(groups)
+      .map((semKey) => {
+        const sem = Number(semKey)
+        const g = groups[sem]
+        const avgSgpa = g.count > 0 ? Number((g.sum / g.count).toFixed(2)) : 0
+        const totalStatus = g.pass + g.fail
+        const passRate = totalStatus > 0 ? Number(((g.pass / totalStatus) * 100).toFixed(1)) : 0
+        return {
+          semester: `Sem ${sem}`,
+          avgSgpa,
+          passRate,
+          passCount: g.pass,
+          failCount: g.fail,
+        }
+      })
+      .sort((a, b) => a.semester.localeCompare(b.semester))
+  }, [rows, config.slug])
   if (isResults) {
     const mergedMap = new Map<string, {
       id: string
@@ -281,10 +451,32 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   const colSpanCount = 2 + config.listFields.filter((f) => {
     if (isResults) return f !== 'students' && f !== 'semester'
     return f !== config.titleField && f !== subtitleField && f !== 'id'
-  }).length + (config.sortable ? 1 : 0)
+  }).length + (config.sortable ? 1 : 0) + (config.slug === 'students' ? 1 : 0)
 
   function onDelete(id: string, title: string) {
     setConfirmDelete({ id, title })
+  }
+
+  function onRestore(id: string, title: string) {
+    startTransition(async () => {
+      const res = await restoreRow(config.table, id)
+      if (res && res.error) {
+        toast({
+          title: 'Error',
+          description: `Failed to restore: ${res.error}`,
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Restored Successfully',
+          description: `"${title}" has been restored.`,
+        })
+      }
+    })
+  }
+
+  function onDeletePermanent(id: string, title: string) {
+    setConfirmDeletePermanent({ id, title })
   }
 
   function onToggle(id: string, value: boolean) {
@@ -344,14 +536,38 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
 
     return (
       <tr key={row.id} className="hover:bg-gray-50 transition-colors group">
+        {config.slug === 'students' && (
+          <td className="px-5 py-4 w-10">
+            <input
+              type="checkbox"
+              checked={selectedIds.has(row.id)}
+              onChange={(e) => {
+                setSelectedIds((prev) => {
+                  const next = new Set(prev)
+                  if (e.target.checked) {
+                    next.add(row.id)
+                  } else {
+                    next.delete(row.id)
+                  }
+                  return next
+                })
+              }}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+            />
+          </td>
+        )}
         <td className="px-5 py-4 text-gray-400 text-xs font-mono">{index + 1}</td>
         <td className="px-5 py-4">
-          <Link
-            href={`/cms/${config.slug}/${row.id}`}
-            className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-sm"
-          >
-            {displayTitle}
-          </Link>
+          {config.table === 'activity_logs' ? (
+            <span className="font-semibold text-gray-900 text-sm">{displayTitle}</span>
+          ) : (
+            <Link
+              href={`/cms/${config.slug}/${row.id}`}
+              className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-sm"
+            >
+              {displayTitle}
+            </Link>
+          )}
           {displaySubtitle && (
             <div className="text-xs text-gray-400 mt-0.5">{displaySubtitle}</div>
           )}
@@ -410,7 +626,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
         )}
         <td className="px-5 py-4">
           <div className="flex items-center justify-end gap-1.5">
-            {processedRows.some((r) => 'is_active' in r) && (
+            {processedRows.some((r) => 'is_active' in r) && !viewTrash && (
               <button
                 onClick={() => onToggle(row.id, Boolean(row.is_active))}
                 disabled={isPending}
@@ -421,22 +637,47 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                 {row.is_active ? <Eye className="h-4 w-4" aria-hidden="true" /> : <EyeOff className="h-4 w-4" aria-hidden="true" />}
               </button>
             )}
-            <Link
-              href={`/cms/${config.slug}/${row.id}`}
-              className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-              title="Edit"
-            >
-              <Pencil className="h-4 w-4" />
-            </Link>
-            <button
-              onClick={() => onDelete(row.id, String(row[titleField] ?? 'this'))}
-              disabled={isPending}
-              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-              title="Delete"
-              aria-label={`Delete ${String(row[titleField] ?? 'this item')}`}
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-            </button>
+            {!viewTrash && config.table !== 'activity_logs' ? (
+              <>
+                <Link
+                  href={`/cms/${config.slug}/${row.id}`}
+                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Edit"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Link>
+                <button
+                  onClick={() => onDelete(row.id, String(row[titleField] ?? 'this'))}
+                  disabled={isPending}
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Delete"
+                  aria-label={`Delete ${String(row[titleField] ?? 'this item')}`}
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </>
+            ) : !viewTrash ? null : (
+              <>
+                <button
+                  onClick={() => onRestore(row.id, String(row[titleField] ?? 'this'))}
+                  disabled={isPending}
+                  className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                  title="Restore"
+                  aria-label={`Restore ${String(row[titleField] ?? 'this item')}`}
+                >
+                  <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                </button>
+                <button
+                  onClick={() => onDeletePermanent(row.id, String(row[titleField] ?? 'this'))}
+                  disabled={isPending}
+                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Permanently Delete"
+                  aria-label={`Permanently Delete ${String(row[titleField] ?? 'this item')}`}
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </>
+            )}
           </div>
         </td>
       </tr>
@@ -508,14 +749,249 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
             />
           </div>
 
-          <Link
-            href={`/cms/${config.slug}/new`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors flex-shrink-0 shadow-sm border border-gray-900"
-          >
-            <Plus className="h-4 w-4" /> Add New
-          </Link>
+          {selectedIds.size > 0 && (
+            <>
+              {!viewTrash ? (
+                <button
+                  onClick={() => setConfirmBulkDelete(true)}
+                  disabled={isPending}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors flex-shrink-0 shadow-sm border border-red-600"
+                >
+                  <Trash2 className="h-4 w-4" /> Delete Selected ({selectedIds.size})
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      startTransition(async () => {
+                        const res = await restoreRows(config.table, Array.from(selectedIds))
+                        if (res && res.error) {
+                          toast({
+                            title: 'Error',
+                            description: `Failed to restore selected: ${res.error}`,
+                            variant: 'destructive',
+                          })
+                        } else {
+                          toast({
+                            title: 'Restored Successfully',
+                            description: `${selectedIds.size} student(s) have been restored.`,
+                          })
+                          setSelectedIds(new Set())
+                        }
+                      })
+                    }}
+                    disabled={isPending}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors flex-shrink-0 shadow-sm border border-emerald-600"
+                  >
+                    <RotateCcw className="h-4 w-4" /> Restore Selected ({selectedIds.size})
+                  </button>
+                  <button
+                    onClick={() => setConfirmBulkDeletePermanent(true)}
+                    disabled={isPending}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-red-650 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors flex-shrink-0 shadow-sm border border-red-650"
+                  >
+                    <Trash2 className="h-4 w-4" /> Delete Permanently ({selectedIds.size})
+                  </button>
+                </>
+              )}
+            </>
+          )}
+
+          {config.slug === 'students' && !viewTrash && (
+            <button
+              onClick={() => {
+                setExcelError(null)
+                setExcelResult(null)
+                setExcelFile(null)
+                setShowImportModal(true)
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-200 transition-colors flex-shrink-0 shadow-sm"
+            >
+              <UploadCloud className="h-4 w-4" /> Bulk Import
+            </button>
+          )}
+
+          {!viewTrash && config.table !== 'activity_logs' && (
+            <Link
+              href={`/cms/${config.slug}/new`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors flex-shrink-0 shadow-sm border border-gray-900"
+            >
+              <Plus className="h-4 w-4" /> Add New
+            </Link>
+          )}
         </div>
       </div>
+
+      {/* Tabs specifically for Students soft-delete tracking */}
+      {config.slug === 'students' && (
+        <div className="flex border-b border-gray-200">
+          <button
+            onClick={() => {
+              setViewTrash(false)
+              setSelectedIds(new Set())
+            }}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              !viewTrash
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Active ({rows.filter(r => !r.is_deleted).length})
+          </button>
+          <button
+            onClick={() => {
+              setViewTrash(true)
+              setSelectedIds(new Set())
+            }}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              viewTrash
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Trash / Recycle Bin ({rows.filter(r => r.is_deleted).length})
+          </button>
+        </div>
+      )}
+
+      {/* Result Summaries Analytics Dashboard */}
+      {config.slug === 'result-summaries' && semesterStats.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          {/* Chart column */}
+          <div className="lg:col-span-2 space-y-3">
+            <div>
+              <h3 className="font-semibold text-gray-900 text-base">Academic Performance Trends</h3>
+              <p className="text-xs text-gray-400">Comparing average SGPA and overall pass percentage across semesters.</p>
+            </div>
+            <div className="h-64 w-full">
+              <DynamicResponsiveContainer width="100%" height="100%">
+                <DynamicComposedChart
+                  data={semesterStats}
+                  margin={{ top: 10, right: -5, left: -20, bottom: 0 }}
+                >
+                  <DynamicCartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                  <DynamicXAxis
+                    dataKey="semester"
+                    tick={{ fill: '#9ca3af', fontSize: 10 }}
+                    axisLine={{ stroke: '#f3f4f6' }}
+                    tickLine={{ stroke: '#f3f4f6' }}
+                  />
+                  <DynamicYAxis
+                    yAxisId="left"
+                    domain={[0, 10]}
+                    tick={{ fill: '#9ca3af', fontSize: 10 }}
+                    axisLine={{ stroke: '#f3f4f6' }}
+                    tickLine={{ stroke: '#f3f4f6' }}
+                  />
+                  <DynamicYAxis
+                    yAxisId="right"
+                    orientation="right"
+                    domain={[0, 100]}
+                    tick={{ fill: '#9ca3af', fontSize: 10 }}
+                    axisLine={{ stroke: '#f3f4f6' }}
+                    tickLine={{ stroke: '#f3f4f6' }}
+                  />
+                  <DynamicRechartsTooltip
+                    content={({ active, payload }: any) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload
+                        return (
+                          <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-md text-xs space-y-1.5 font-sans">
+                            <p className="font-bold text-gray-800">{data.semester}</p>
+                            <div className="grid grid-cols-2 gap-x-4 text-gray-600">
+                              <span>Avg SGPA:</span>
+                              <span className="font-semibold text-blue-600 text-right">{data.avgSgpa} / 10.0</span>
+                              <span>Pass Rate:</span>
+                              <span className="font-semibold text-emerald-600 text-right">{data.passRate}%</span>
+                              <span>Pass Count:</span>
+                              <span className="font-medium text-gray-800 text-right">{data.passCount}</span>
+                              <span>Fail Count:</span>
+                              <span className="font-medium text-gray-800 text-right">{data.failCount}</span>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <DynamicRechartsLegend
+                    verticalAlign="top"
+                    height={36}
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: '11px', fontWeight: 500 }}
+                  />
+                  <DynamicBar
+                    yAxisId="left"
+                    name="Average SGPA"
+                    dataKey="avgSgpa"
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
+                    barSize={32}
+                  />
+                  <DynamicLine
+                    yAxisId="right"
+                    type="monotone"
+                    name="Pass Percentage (%)"
+                    dataKey="passRate"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    dot={{ fill: '#10b981', r: 4 }}
+                  />
+                </DynamicComposedChart>
+              </DynamicResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Quick Metrics Cards */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-gray-900 text-base mb-1">Quick Metrics</h3>
+            <div className="grid grid-cols-1 gap-3.5">
+              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Overall Average SGPA</p>
+                  <p className="text-2xl font-bold text-blue-900 mt-1">
+                    {(semesterStats.reduce((acc, curr) => acc + curr.avgSgpa, 0) / semesterStats.length).toFixed(2)}
+                  </p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-blue-400 opacity-60" />
+              </div>
+
+              <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Average Pass Rate</p>
+                  <p className="text-2xl font-bold text-emerald-900 mt-1">
+                    {(semesterStats.reduce((acc, curr) => acc + curr.passRate, 0) / semesterStats.length).toFixed(1)}%
+                  </p>
+                </div>
+                <GraduationCap className="h-8 w-8 text-emerald-400 opacity-60" />
+              </div>
+
+              <div className="p-4 bg-gray-50/60 rounded-xl border border-gray-100">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Distribution Summary</p>
+                <div className="mt-2.5 space-y-1 text-xs">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Total Semesters:</span>
+                    <span className="font-semibold text-gray-900">{semesterStats.length}</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Total Passed Records:</span>
+                    <span className="font-semibold text-emerald-600">
+                      {semesterStats.reduce((acc, curr) => acc + curr.passCount, 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Total Failed Records:</span>
+                    <span className="font-semibold text-red-600">
+                      {semesterStats.reduce((acc, curr) => acc + curr.failCount, 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -523,6 +999,22 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           <table className="w-full text-sm">
             <thead className="bg-gray-50/50 border-b border-gray-200">
               <tr>
+                {config.slug === 'students' && (
+                  <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-10">
+                    <input
+                      type="checkbox"
+                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(new Set(filtered.map((r) => r.id)))
+                        } else {
+                          setSelectedIds(new Set())
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+                    />
+                  </th>
+                )}
                 <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
                 <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider min-w-[200px]">
                   {isResults ? 'Student' : config.titleField.replace(/_/g, ' ')}
@@ -559,7 +1051,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                           {search ? 'Try a different search term.' : `Add your first ${config.singular.toLowerCase()} to get started.`}
                         </p>
                       </div>
-                      {!search && (
+                      {!search && !viewTrash && (
                         <Link
                           href={`/cms/${config.slug}/new`}
                           className="inline-flex items-center gap-2 px-4 py-2 bg-[#0e1726] text-white text-xs font-semibold rounded-xl hover:bg-[#1a2d47] transition-colors mt-1"
@@ -609,13 +1101,17 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           </table>
         </div>
       </div>
+
       {confirmDelete && (
         <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null) }}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the item &quot;{confirmDelete.title}&quot;.
+                {config.slug === 'students' 
+                  ? `This will move the student "${confirmDelete.title}" to the Trash/Recycle Bin.`
+                  : `This action cannot be undone. This will permanently delete the item "${confirmDelete.title}".`
+                }
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -635,16 +1131,263 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                       })
                     } else {
                       toast({
-                        title: 'Deleted Successfully',
-                        description: `"${title}" has been deleted.`,
+                        title: config.slug === 'students' ? 'Moved to Trash' : 'Deleted Successfully',
+                        description: config.slug === 'students'
+                          ? `"${title}" has been moved to Trash.`
+                          : `"${title}" has been deleted.`,
                       })
                     }
                   })
                 }}
               >
-                Delete
+                {config.slug === 'students' ? 'Move to Trash' : 'Delete'}
               </AlertDialogAction>
             </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {confirmBulkDelete && (
+        <AlertDialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to delete these students?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will move the {selectedIds.size} selected student(s) to the Trash/Recycle Bin. You can restore them later.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-650 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  setConfirmBulkDelete(false)
+                  startTransition(async () => {
+                    const res = await deleteRows(config.table, Array.from(selectedIds))
+                    if (res && res.error) {
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete selected students: ${res.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      toast({
+                        title: 'Moved to Trash',
+                        description: `${selectedIds.size} student(s) have been moved to Trash.`,
+                      })
+                      setSelectedIds(new Set())
+                    }
+                  })
+                }}
+              >
+                Move to Trash
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {confirmBulkDeletePermanent && (
+        <AlertDialog open={confirmBulkDeletePermanent} onOpenChange={setConfirmBulkDeletePermanent}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the {selectedIds.size} selected student(s) from the database.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  setConfirmBulkDeletePermanent(false)
+                  startTransition(async () => {
+                    const res = await deleteRowsPermanent(config.table, Array.from(selectedIds))
+                    if (res && res.error) {
+                      toast({
+                        title: 'Error',
+                        description: `Failed to permanently delete selected students: ${res.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      toast({
+                        title: 'Permanently Deleted',
+                        description: `${selectedIds.size} student(s) have been permanently deleted.`,
+                      })
+                      setSelectedIds(new Set())
+                    }
+                  })
+                }}
+              >
+                Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {confirmDeletePermanent && (
+        <AlertDialog open={!!confirmDeletePermanent} onOpenChange={(open) => { if (!open) setConfirmDeletePermanent(null) }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the student &quot;{confirmDeletePermanent.title}&quot; from the database.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 hover:bg-red-700 text-white font-bold"
+                onClick={() => {
+                  const { id, title } = confirmDeletePermanent
+                  setConfirmDeletePermanent(null)
+                  startTransition(async () => {
+                    const res = await deleteRowPermanent(config.table, id)
+                    if (res && res.error) {
+                      toast({
+                        title: 'Error',
+                        description: `Failed to delete: ${res.error}`,
+                        variant: 'destructive',
+                      })
+                    } else {
+                      toast({
+                        title: 'Permanently Deleted',
+                        description: `"${title}" has been permanently deleted.`,
+                      })
+                    }
+                  })
+                }}
+              >
+                Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+      {showImportModal && (
+        <AlertDialog open={showImportModal} onOpenChange={setShowImportModal}>
+          <AlertDialogContent className="max-w-xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2 text-academic-900 font-display">
+                <UploadCloud className="h-5 w-5 text-blue-600" />
+                Bulk Import Students
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Upload an Excel (.xlsx, .xls) or CSV spreadsheet containing student records. If a student's registration number already exists, their profile details will be updated.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <form onSubmit={handleExcelSubmit} className="space-y-4 py-2">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Spreadsheet File
+                </label>
+                <div className="border-2 border-dashed border-gray-200 hover:border-academic-500 rounded-lg p-6 text-center cursor-pointer transition-colors bg-gray-50/50">
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls, .csv"
+                    onChange={(e) => setExcelFile(e.target.files?.[0] || null)}
+                    className="hidden"
+                    id="student-excel-selector"
+                  />
+                  <label htmlFor="student-excel-selector" className="cursor-pointer space-y-2 block">
+                    <UploadCloud className="h-8 w-8 mx-auto text-gray-400" />
+                    <div className="text-sm font-medium text-academic-900">
+                      {excelFile ? excelFile.name : 'Select or drop Excel/CSV file'}
+                    </div>
+                    <div className="text-xs text-gray-400">Spreadsheet file matching the required template</div>
+                  </label>
+                </div>
+              </div>
+
+              {excelError && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800">
+                  <AlertCircle className="h-4.5 w-4.5 flex-shrink-0 mt-0.5" />
+                  <span>{excelError}</span>
+                </div>
+              )}
+
+              {excelResult && (
+                <div className="border border-green-200 bg-green-50/50 rounded-lg p-4 space-y-2 text-xs">
+                  <h4 className="font-semibold text-green-900 flex items-center gap-1.5 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Import Complete
+                  </h4>
+                  <div className="bg-white p-2.5 rounded border border-green-150 text-center font-bold text-lg text-academic-900">
+                    {excelResult.importedCount} student(s) imported
+                  </div>
+                  {excelResult.errors && (
+                    <div className="mt-2">
+                      <p className="font-semibold text-red-700 flex items-center gap-1 mb-1">
+                        Warnings ({excelResult.errors.length}):
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1 text-red-600 max-h-32 overflow-y-auto bg-red-50/40 p-2 rounded border border-red-100 font-mono text-[10px]">
+                        {excelResult.errors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="bg-gray-50 border border-gray-150 rounded-lg p-3 text-xs space-y-2">
+                <h4 className="font-semibold flex items-center gap-1.5 text-gray-700">
+                  <Info className="h-3.5 w-3.5 text-gray-500" />
+                  Required Columns
+                </h4>
+                <p className="text-gray-500">The file must have the following header columns:</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-[10px] bg-white p-2 rounded border border-gray-150">
+                  <div>• register_number (Unique)</div>
+                  <div>• name</div>
+                  <div>• dob (YYYY-MM-DD)</div>
+                  <div>• course_code</div>
+                  <div>• department_code</div>
+                  <div>• academic_year (Optional)</div>
+                  <div>• semester (Optional)</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-2">
+                <button
+                  type="button"
+                  onClick={downloadStudentTemplate}
+                  className="inline-flex items-center gap-1 px-3 py-2 border border-gray-200 text-xs font-semibold rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+                >
+                  Download Template
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowImportModal(false)
+                      if (excelResult) {
+                        window.location.reload()
+                      }
+                    }}
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 font-medium"
+                  >
+                    {excelResult ? 'Close & Refresh' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    disabled={excelPending}
+                  >
+                    {excelPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      'Upload and Import'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </form>
           </AlertDialogContent>
         </AlertDialog>
       )}

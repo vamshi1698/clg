@@ -45,9 +45,9 @@ export function ImmersiveIdCard() {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-screen min-h-[600px] flex justify-center items-center overflow-hidden bg-academic-950 perspective-[1000px]"
+      className="relative w-full h-full min-h-[550px] flex justify-center items-center overflow-hidden bg-academic-950 perspective-[1000px]"
     >
-      <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10 text-center w-full px-4">
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-10 text-center w-full px-4">
         <motion.h2 
           initial={{ opacity: 0, y: -20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
@@ -65,16 +65,16 @@ export function ImmersiveIdCard() {
           Your potential student ID awaits.
         </motion.p>
       </div>
-
+ 
       {/* The Lanyard String */}
       <motion.div 
         className="absolute top-0 w-1 bg-gradient-to-b from-academic-800 to-academic-600 rounded-b-full shadow-xl"
         initial={{ height: 0 }}
-        animate={isInView ? { height: '35%' } : { height: 0 }}
+        animate={isInView ? { height: '100px' } : { height: 0 }}
         transition={{ duration: 1.5, type: 'spring', bounce: 0.4 }}
         style={{ left: '50%', transform: 'translateX(-50%)', transformOrigin: 'top' }}
       />
-
+ 
       {/* The ID Card */}
       <motion.div
         variants={{
@@ -96,7 +96,7 @@ export function ImmersiveIdCard() {
         initial="hidden"
         animate={controls}
         style={{
-          marginTop: '15vh',
+          marginTop: '100px',
           transformStyle: 'preserve-3d'
         }}
         className="relative z-20 cursor-pointer"

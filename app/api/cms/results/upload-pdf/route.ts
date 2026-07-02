@@ -3,11 +3,19 @@ import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
 import crypto from 'crypto'
 import { postgresClient } from '@/lib/postgres/client'
+import { getSession } from '@/lib/cms/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
   try {
+    // Authentication guard — require valid CMS admin session
+    const session = await getSession()
+    const { canAccess } = await import('@/lib/cms/roles')
+    if (!session || !canAccess(session.role, 'results-upload')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await req.formData()
     const file = formData.get('file') as File | null
     const title = formData.get('title') as string | null
@@ -59,6 +67,12 @@ export async function POST(req: Request) {
     const { error } = await postgresClient.insert('results_pdfs', payload)
     if (error) {
       return NextResponse.json({ error: error.message || 'Database error' }, { status: 500 })
+    }
+    try {
+      const { logCmsActivity } = await import('@/lib/cms/actions')
+      await logCmsActivity('UPLOAD_PDF', 'results_pdfs', `Uploaded results PDF "${title}" for Semester ${semester} (${academicYear})`)
+    } catch (logErr) {
+      console.error('Audit logging error:', logErr)
     }
     // Create news announcement for the newly uploaded result PDF
     try {

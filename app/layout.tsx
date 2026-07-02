@@ -73,9 +73,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
   },
   manifest: '/site.webmanifest',
   verification: {
@@ -90,16 +90,16 @@ const organizationSchema = {
   name: 'National College Jayanagar',
   alternateName: 'National College (Autonomous)',
   url: 'https://nationalcollege.edu.in',
-  logo: 'https://nationalcollege.edu.in/logo.png',
+  logo: 'https://nationalcollege.edu.in/icon.png',
   image: 'https://nationalcollege.edu.in/og-image.jpg',
   description: 'National College Jayanagar is a premier NAAC A++ autonomous institution offering UG and PG programs in Science, Commerce, Management and Arts, established in 1965.',
   foundingDate: '1965',
   address: {
     '@type': 'PostalAddress',
-    streetAddress: '18th Cross, Jayanagar 4th Block',
+    streetAddress: 'No. 36th B Cross, 2nd Main Road, 7th Block, Jayanagar',
     addressLocality: 'Bengaluru',
     addressRegion: 'Karnataka',
-    postalCode: '560011',
+    postalCode: '560070',
     addressCountry: 'IN',
   },
   telephone: '+91-80-12345678',
@@ -111,7 +111,7 @@ const organizationSchema = {
     'https://twitter.com/NationalColl',
   ],
   hasCredential: [
-    { '@type': 'EducationalOccupationalCredential', credentialCategory: 'NAAC A++ Accredited' },
+    { '@type': 'EducationalOccupationalCredential', credentialCategory: 'NAAC A Accredited' },
     { '@type': 'EducationalOccupationalCredential', credentialCategory: 'UGC Recognized' },
     { '@type': 'EducationalOccupationalCredential', credentialCategory: 'Autonomous Institution' },
   ],
@@ -125,7 +125,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`scroll-smooth ${lato.variable} ${bebasNeue.variable}`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`scroll-smooth ${lato.variable} ${bebasNeue.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

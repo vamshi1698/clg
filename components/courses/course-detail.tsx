@@ -92,7 +92,7 @@ export function CourseDetailPage({ course }: CourseDetailPageProps) {
     ])
 
   return (
-    <div className="bg-slate-50/30 min-h-screen py-10">
+    <div className="bg-slate-50/30 min-h-screen pt-36 md:pt-44 pb-16">
       <div className="container-wide">
 
         {/* Back Link */}

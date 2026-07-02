@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Clock, Download, ChevronRight } from 'lucide-react'
+import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Clock, Download, ChevronRight, ShieldCheck, HeartHandshake } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Statistics, News, Event, Course, Testimonial, Recruiter, Achievement, GalleryItem } from '@/types/database'
@@ -493,9 +493,9 @@ export function GalleryPreview({ items }: GalleryPreviewProps) {
               <motion.div
                 key={item.id}
                 variants={fadeIn}
-                className={`relative overflow-hidden rounded-lg ${index === 0 ? 'col-span-2 row-span-2' : ''}`}
+                className={`relative overflow-hidden rounded-lg ${index === 0 ? 'col-span-2' : ''}`}
               >
-                <div className={`bg-gray-100 relative overflow-hidden ${index === 0 ? 'aspect-square' : 'aspect-video'}`}>
+                <div className={`bg-gray-100 relative overflow-hidden aspect-video`}>
                   <Image
                     src={item.image_url}
                     alt={item.title}
@@ -964,15 +964,19 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                           <Link href={item.category === 'examination' ? '/results' : (item?.slug ? `/news/${item.slug}` : '#')}>{item.title}</Link>
                         </h4>
                       </div>
-                      <div className="flex-shrink-0">
-                        <Link 
-                          href={item.category === 'examination' ? '/results' : (item?.slug ? `/news/${item.slug}` : '#')}
-                          className="flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-xl transition-all shadow-sm"
-                          title="Download document"
-                        >
-                          <Download className="w-4 h-4" />
-                        </Link>
-                      </div>
+                      {item.attachment_url ? (
+                        <div className="flex-shrink-0">
+                          <a 
+                            href={item.attachment_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-xl transition-all shadow-sm"
+                            title="Download document"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
                   )
                 })}
@@ -1017,6 +1021,106 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
           </div>
 
         </div>
+      </div>
+    </section>
+  )
+}
+
+// Youth Empowerment Section (NCC & NSS)
+export function YouthUnitsSection() {
+  return (
+    <section className="section-padding bg-white border-b border-slate-100">
+      <div className="container-wide">
+        <motion.div
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          variants={staggerContainer}
+        >
+          <motion.div variants={fadeIn} className="text-center mb-10">
+            <span className="text-gold-600 font-semibold text-sm uppercase tracking-wide">
+              Youth Empowerment
+            </span>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-academic-900 mt-2 mb-4">
+              NCC & NSS Units
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Active student bodies fostering leadership, discipline, and community impact.
+            </p>
+          </motion.div>
+
+          <motion.div variants={staggerContainer} className="grid md:grid-cols-2 gap-4">
+            {/* NCC Card */}
+            <motion.div variants={fadeIn}>
+              <Link href="/campus-life/ncc" className="block group">
+                <div className="relative rounded-2xl overflow-hidden bg-slate-100">
+                  <div className="relative h-36 w-full">
+                    <Image
+                      src="https://images.unsplash.com/photo-1590079019458-0eb5b40a3371?w=800&auto=format&fit=crop&q=80"
+                      alt="NCC Cadets training"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-academic-950/70 to-transparent" />
+                    <div className="absolute top-3 left-3 bg-academic-900/90 text-gold-400 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full backdrop-blur-sm border border-gold-500/20 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3 h-3" /> NCC
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <h3 className="font-display text-lg font-bold group-hover:text-gold-400 transition-colors">
+                        National Cadet Corps
+                      </h3>
+                      <p className="text-slate-300 text-xs mt-0.5">Unity and Discipline</p>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-white">
+                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                      Military training, adventure camps, firing practice, and leadership development for aspiring cadets.
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 mt-3 text-academic-900 text-sm font-semibold group-hover:text-gold-600 group-hover:gap-2.5 transition-all">
+                      Explore NCC <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+
+            {/* NSS Card */}
+            <motion.div variants={fadeIn}>
+              <Link href="/campus-life/nss" className="block group">
+                <div className="relative rounded-2xl overflow-hidden bg-slate-100">
+                  <div className="relative h-36 w-full">
+                    <Image
+                      src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=800&auto=format&fit=crop&q=80"
+                      alt="NSS volunteering activities"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-academic-950/70 to-transparent" />
+                    <div className="absolute top-3 left-3 bg-academic-900/90 text-gold-400 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full backdrop-blur-sm border border-gold-500/20 flex items-center gap-1.5">
+                      <HeartHandshake className="w-3 h-3" /> NSS
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <h3 className="font-display text-lg font-bold group-hover:text-gold-400 transition-colors">
+                        National Service Scheme
+                      </h3>
+                      <p className="text-slate-300 text-xs mt-0.5">Not Me But You</p>
+                    </div>
+                  </div>
+                  <div className="p-5 bg-white">
+                    <p className="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                      Community service, health drives, environmental campaigns, and social responsibility programs.
+                    </p>
+                    <span className="inline-flex items-center gap-1.5 mt-3 text-academic-900 text-sm font-semibold group-hover:text-gold-600 group-hover:gap-2.5 transition-all">
+                      Explore NSS <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   )

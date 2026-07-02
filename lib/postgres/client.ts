@@ -7,7 +7,15 @@ import { Pool } from 'pg'
 
 const DATABASE_URL = process.env.DATABASE_URL
 
-const pool = DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null
+const globalForPg = globalThis as unknown as {
+  pgPool: Pool | undefined
+}
+
+const pool = globalForPg.pgPool ?? (DATABASE_URL ? new Pool({ connectionString: DATABASE_URL }) : null)
+
+if (process.env.NODE_ENV !== 'production' && pool) {
+  globalForPg.pgPool = pool as Pool
+}
 
 type QueryResult = Record<string, any>
 
@@ -127,7 +135,11 @@ class PostgresQuery {
         data: null,
         error: {
           message: error.message,
-          code: error.code
+          code: error.code,
+          detail: error.detail,
+          constraint: error.constraint,
+          table: error.table,
+          column: error.column
         }
       }
     }

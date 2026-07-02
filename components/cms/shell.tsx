@@ -4,18 +4,66 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import logoImage from '@/components/brand/channels4_profile.jpg'
+import logoImage from '@/public/icon.png'
 import {
   Menu,
   X,
   LogOut,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  LayoutDashboard,
+  Settings,
+  BarChart3,
+  Mail,
+  FileText,
+  Building2,
+  BookOpen,
+  Users,
+  UserCog,
+  Newspaper,
+  CalendarCheck,
+  Image as ImageIcon,
+  Quote,
+  Award,
+  Briefcase,
+  Medal,
+  HelpCircle,
+  Heart,
+  TrendingUp,
+  GraduationCap,
+  Upload,
+  Activity
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TABLE_CONFIGS } from '@/lib/cms/tables'
+import { canAccess } from '@/lib/cms/roles'
 
-const iconMap: Record<string, any> = {}
+const iconMap: Record<string, any> = {
+  LayoutDashboard,
+  Settings,
+  BarChart3,
+  Mail,
+  FileText,
+  Building2,
+  BookOpen,
+  Users,
+  UserCog,
+  Newspaper,
+  CalendarCheck,
+  Image: ImageIcon,
+  Quote,
+  Award,
+  Briefcase,
+  Medal,
+  HelpCircle,
+  Heart,
+  TrendingUp,
+  GraduationCap,
+  Upload,
+  Activity
+}
 
 const NAV_SECTIONS = [
   {
@@ -26,6 +74,7 @@ const NAV_SECTIONS = [
       { slug: 'statistics', label: 'Statistics', icon: 'BarChart3' },
       { slug: 'messages', label: 'Messages', icon: 'Mail' },
       { slug: 'admission-enquiries', label: 'Admission Enquiries', icon: 'FileText' },
+      { slug: 'activity-logs', label: 'Activity Monitor', icon: 'Activity' },
     ],
   },
   {
@@ -52,7 +101,7 @@ const NAV_SECTIONS = [
 ]
 
 function fixItem(raw: { slug: string; label: string; icon: string }) {
-  return { slug: raw.slug, label: raw.label }
+  return { slug: raw.slug, label: raw.label, icon: raw.icon }
 }
 
 const NAV = NAV_SECTIONS.map((s) => ({
@@ -80,7 +129,32 @@ export function CmsShell({
 }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    Site: true,
+    Academics: true,
+    Content: false,
+    Examinations: true,
+  })
+
+  // Filter navigation sections and items based on role
+  const filteredNav = NAV.map((section) => {
+    const filteredItems = section.items.filter((item) => {
+      if (item.slug === '') return true
+      return canAccess(session.role, item.slug)
+    })
+    return {
+      title: section.title,
+      items: filteredItems,
+    }
+  }).filter((section) => section.items.length > 0)
   const breadcrumbs = useBreadcrumb(pathname)
+
+  function toggleSection(title: string) {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [title]: !prev[title],
+    }))
+  }
 
   async function handleLogout() {
     await fetch('/api/cms/logout', { method: 'POST' })
@@ -125,43 +199,63 @@ export function CmsShell({
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-          {NAV.map((section) => (
-            <div key={section.title}>
-              <p className="px-4 mb-2 text-[10px] font-bold uppercase tracking-widest text-white/40 select-none">
-                {section.title}
-              </p>
-              <ul className="space-y-1">
-                {section.items.map((item) => {
-                  const href = item.slug ? `/cms/${item.slug}` : '/cms'
-                  const active =
-                    item.slug === ''
-                      ? pathname === '/cms'
-                      : pathname.startsWith(href)
-                  return (
-                    <li key={item.slug || 'dashboard'}>
-                      <Link
-                        href={href}
-                        onClick={() => setOpen(false)}
-                        className={cn(
-                          'relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 overflow-hidden group font-medium',
-                          active
-                            ? 'bg-academic-800 text-white shadow-sm ring-1 ring-white/10'
-                            : 'text-white/60 hover:bg-white/5 hover:text-white/90'
-                        )}
-                      >
-                        {/* Active indicator */}
-                        {active && (
-                          <span className="absolute left-0 top-0 bottom-0 w-1 bg-gold-400 rounded-r-full" />
-                        )}
-                        <span className="truncate">{item.label}</span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ))}
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4">
+          {filteredNav.map((section) => {
+            const isExpanded = expandedSections[section.title] !== false
+            return (
+              <div key={section.title} className="space-y-1">
+                <button
+                  onClick={() => toggleSection(section.title)}
+                  className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white/80 transition-colors select-none"
+                >
+                  <span>{section.title}</span>
+                  {isExpanded ? (
+                    <ChevronUp className="h-3 w-3 opacity-60" />
+                  ) : (
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  )}
+                </button>
+                {isExpanded && (
+                  <ul className="space-y-1.5 transition-all duration-300">
+                    {section.items.map((item) => {
+                      const href = item.slug ? `/cms/${item.slug}` : '/cms'
+                      const active =
+                        item.slug === ''
+                          ? pathname === '/cms'
+                          : pathname.startsWith(href)
+                      const IconComponent = iconMap[item.icon || '']
+                      return (
+                        <li key={item.slug || 'dashboard'}>
+                          <Link
+                            href={href}
+                            onClick={() => setOpen(false)}
+                            className={cn(
+                              'relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 overflow-hidden group font-medium',
+                              active
+                                ? 'bg-academic-800 text-white shadow-sm ring-1 ring-white/10'
+                                : 'text-white/60 hover:bg-white/5 hover:text-white/90'
+                            )}
+                          >
+                            {/* Active indicator */}
+                            {active && (
+                              <span className="absolute left-0 top-0 bottom-0 w-1 bg-gold-400 rounded-r-full" />
+                            )}
+                            {IconComponent && (
+                              <IconComponent className={cn(
+                                "h-4 w-4 flex-shrink-0 transition-opacity",
+                                active ? "text-gold-400 opacity-100" : "text-white/40 group-hover:text-white/80 group-hover:opacity-100"
+                              )} />
+                            )}
+                            <span className="truncate">{item.label}</span>
+                          </Link>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
         </nav>
 
         {/* User footer */}

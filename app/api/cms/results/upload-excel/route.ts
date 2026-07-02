@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 import crypto from 'crypto'
 import { postgresClient } from '@/lib/postgres/client'
+import { getSession } from '@/lib/cms/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -93,6 +94,13 @@ function findIndexedValue(row: any, options: string[], index: number): any {
 
 export async function POST(req: Request) {
   try {
+    // Authentication guard — require valid CMS admin session
+    const session = await getSession()
+    const { canAccess } = await import('@/lib/cms/roles')
+    if (!session || !canAccess(session.role, 'results-upload')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const formData = await req.formData()
     const file = formData.get('file') as File | null
 
@@ -444,6 +452,16 @@ export async function POST(req: Request) {
         }
       } catch (newsErr) {
         console.error('Failed to create excel news announcements:', newsErr)
+      }
+      try {
+        const { logCmsActivity } = await import('@/lib/cms/actions')
+        const examSummary = Array.from(studentGroups.values())[0]
+        const year = examSummary?.academicYear || 'N/A'
+        const sem = examSummary?.semester || 'N/A'
+        const examType = examSummary?.examType || 'Semester End Examination'
+        await logCmsActivity('IMPORT_EXCEL', 'results', `Imported ${studentsImported} student marks for Sem ${sem} ${examType} (${year})`)
+      } catch (logErr) {
+        console.error('Audit logging error:', logErr)
       }
     }
 

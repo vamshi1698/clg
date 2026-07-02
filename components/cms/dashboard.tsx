@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
-  ArrowRight
+  ArrowRight,
+  FileText
 } from 'lucide-react'
 import { TABLE_CONFIGS } from '@/lib/cms/tables'
 

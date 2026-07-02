@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import crypto from 'crypto'
 import { postgresClient } from '../postgres/client'
 
-export const SESSION_COOKIE = 'nc_cms_session'
+export const SESSION_COOKIE = process.env.SESSION_COOKIE || 'nc_cms_session'
 
 export interface CmsSession {
   uid: string

@@ -25,7 +25,7 @@ export function UndergraduatePageClient({ courses }: { courses: Course[] }) {
     <div className="bg-white text-academic-950">
 
       {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center overflow-hidden">
+      <section className="relative pt-44 md:pt-52 pb-16 overflow-hidden">
         <div className="absolute inset-0">
           <img
             src="https://images.unsplash.com/photo-1529390079861-591de354faf5?auto=format&fit=crop&w=2000&q=80"
@@ -34,7 +34,7 @@ export function UndergraduatePageClient({ courses }: { courses: Course[] }) {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-academic-950/90 via-academic-950/70 to-transparent" />
         </div>
-        <div className="relative container-wide pt-36 pb-16 text-white">
+        <div className="relative container-wide text-white">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="max-w-2xl">
             <span className="inline-block bg-gold-500/20 border border-gold-500/40 text-gold-300 text-xs font-bold uppercase tracking-[0.25em] px-4 py-2 rounded-full mb-6">
               Undergraduate Programs

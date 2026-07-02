@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { motion } from 'framer-motion'
 import { Search, FileText, Award, TrendingUp, AlertCircle, Download, Printer, X, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { lookupResults, getActiveResultsPdfs } from '@/lib/actions/public-actions'
+import { lookupResults } from '@/lib/actions/public-actions'
 import Image from 'next/image'
-import logoImage from '@/components/brand/channels4_profile.jpg'
+import logoImage from '@/public/icon.png'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -57,7 +57,11 @@ interface PdfRecord {
   created_at: string
 }
 
-export function ResultsPage() {
+interface ResultsPageProps {
+  initialPdfs?: PdfRecord[]
+}
+
+export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
   const [registerNumber, setRegisterNumber] = useState('')
   const [dobDay, setDobDay] = useState('')
   const [dobMonth, setDobMonth] = useState('')
@@ -65,18 +69,7 @@ export function ResultsPage() {
   const [result, setResult] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
-  const [pdfAnnouncements, setPdfAnnouncements] = useState<PdfRecord[]>([])
-
-  // Fetch active result PDFs on mount
-  useEffect(() => {
-    async function loadPdfs() {
-      const res = await getActiveResultsPdfs()
-      if (res.data) {
-        setPdfAnnouncements(res.data as PdfRecord[])
-      }
-    }
-    loadPdfs()
-  }, [])
+  const [pdfAnnouncements, setPdfAnnouncements] = useState<PdfRecord[]>(initialPdfs)
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -105,19 +98,30 @@ export function ResultsPage() {
   }
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-slate-50/50 min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-academic-900 py-16 lg:py-24 overflow-hidden print:hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500 rounded-full blur-3xl" />
+      <section className="relative pt-44 md:pt-52 pb-16 overflow-hidden print:hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
+            alt="Library studying"
+            fill
+            sizes="100vw"
+            priority
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-academic-950/75 to-transparent" />
         </div>
-        <div className="relative container-wide text-center">
-          <motion.div initial="initial" animate="animate" variants={fadeIn}>
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-white mb-6">
-              Examination Results
+        <div className="relative container-wide text-white">
+          <motion.div initial="initial" animate="animate" variants={fadeIn} className="max-w-2xl">
+            <span className="inline-block bg-gold-500/20 border border-gold-500/40 text-gold-300 text-xs font-bold uppercase tracking-[0.25em] px-4 py-2 rounded-full mb-6">
+              Online Portal
+            </span>
+            <h1 className="font-display text-5xl md:text-6xl font-bold leading-tight mb-6">
+              Examination <span className="text-gold-400">Results</span>
             </h1>
-            <p className="text-gray-300 text-lg max-w-3xl mx-auto">
-              Check your semester marks online or download the official announced results notifications.
+            <p className="text-xl text-slate-300 leading-relaxed">
+              Check your semester-wise grades and academic statements online, or download official results PDF announcements.
             </p>
           </motion.div>
         </div>
@@ -127,19 +131,19 @@ export function ResultsPage() {
       <section className="section-padding py-12 lg:py-16 print:py-0 print:my-0">
         <div className="container-wide max-w-6xl print:max-w-none print:p-0 print:m-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start print:block">
-            
+
             {/* Left/Main Column: Search and Result Viewer */}
             <div className="lg:col-span-2 print:w-full space-y-8 print:space-y-0">
-              
-              <Card className="border border-gray-200 shadow-md print:hidden">
-                <CardHeader className="bg-gray-50/70 border-b px-6 py-4">
-                  <h2 className="font-display text-xl font-semibold text-academic-900">Check Individual Results</h2>
+
+              <Card className="border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white print:hidden">
+                <CardHeader className="bg-slate-50/70 border-b border-slate-200/60 px-6 py-4 rounded-t-2xl">
+                  <h2 className="font-display text-lg font-bold text-academic-950">Check Individual Results</h2>
                 </CardHeader>
                 <CardContent className="p-6">
                   <form onSubmit={handleSearch} className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
                           Register Number
                         </label>
                         <Input
@@ -147,12 +151,12 @@ export function ResultsPage() {
                           value={registerNumber}
                           onChange={(e) => setRegisterNumber(e.target.value)}
                           placeholder="Enter your register number"
-                          className="w-full border-gray-200"
+                          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 transition-shadow"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
                           Date of Birth
                         </label>
                         <div className="grid grid-cols-3 gap-2">
@@ -160,7 +164,7 @@ export function ResultsPage() {
                           <select
                             value={dobDay}
                             onChange={(e) => setDobDay(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-gray-250 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-academic-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-gray-700 shadow-sm"
+                            className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
                           >
                             <option value="">Day</option>
                             {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
@@ -172,7 +176,7 @@ export function ResultsPage() {
                           <select
                             value={dobMonth}
                             onChange={(e) => setDobMonth(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-gray-250 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-academic-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-gray-700 shadow-sm"
+                            className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
                           >
                             <option value="">Month</option>
                             {[
@@ -197,7 +201,7 @@ export function ResultsPage() {
                           <select
                             value={dobYear}
                             onChange={(e) => setDobYear(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-gray-250 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-academic-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 text-gray-700 shadow-sm"
+                            className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
                           >
                             <option value="">Year</option>
                             {Array.from({ length: 50 }, (_, i) => String(new Date().getFullYear() - 10 - i)).map((y) => (
@@ -209,13 +213,13 @@ export function ResultsPage() {
                     </div>
 
                     {error && (
-                      <div className="flex items-center gap-2 p-4 bg-red-50 text-red-700 border border-red-100 rounded-lg text-sm">
-                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                      <div className="flex items-center gap-2.5 p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-sm">
+                        <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
                         {error}
                       </div>
                     )}
 
-                    <Button type="submit" className="w-full bg-academic-900 text-white hover:bg-academic-800" disabled={isPending}>
+                    <Button type="submit" className="w-full py-3 bg-academic-950 text-white font-semibold rounded-xl hover:bg-academic-800 transition-colors shadow-sm disabled:opacity-50" disabled={isPending}>
                       {isPending ? (
                         <>Searching...</>
                       ) : (
@@ -237,15 +241,15 @@ export function ResultsPage() {
                   variants={fadeIn}
                   className="print:mt-0"
                 >
-                  <Card className="border border-gray-200 shadow-lg print:shadow-none print:border-4 print:border-double print:border-academic-900 print:rounded-none print:p-8" id="result-card">
-                    <CardHeader className="bg-academic-900 text-white px-6 py-4 print:hidden">
+                  <Card className="border border-slate-200/80 rounded-2xl shadow-lg print:shadow-none print:border-4 print:border-double print:border-academic-900 print:rounded-none print:p-8 bg-white" id="result-card">
+                    <CardHeader className="bg-academic-950 text-white px-6 py-4 rounded-t-2xl print:hidden">
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-display text-lg font-semibold">National College Jayanagar</h3>
                           <p className="text-gray-300 text-xs">Semester Examination Results</p>
                         </div>
                         <div className="print:hidden flex items-center gap-2">
-                          <Button onClick={handlePrint} variant="outline" size="sm" className="bg-white text-academic-900 hover:bg-gray-100 border-none">
+                          <Button onClick={handlePrint} variant="outline" size="sm" className="bg-white text-academic-950 hover:bg-gray-150 border-none font-semibold">
                             <Printer className="h-4 w-4 mr-1.5" />
                             Print
                           </Button>
@@ -262,7 +266,7 @@ export function ResultsPage() {
                             THE NATIONAL COLLEGE
                           </h1>
                         </div>
-                        <p className="text-[10px] text-gray-600 font-medium">Jayanagar, Bengaluru - 560070</p>
+                        <p className="text-[10px] text-gray-600 font-medium">No. 36th B Cross, 2nd Main Road, 7th Block, Jayanagar, Bengaluru - 560070</p>
                         <p className="text-[9px] text-gray-500 uppercase tracking-widest mt-0.5">Accredited "A++" Grade by NAAC</p>
                         <h2 className="font-display text-xs font-bold uppercase tracking-widest text-academic-900 mt-3 border border-academic-900 px-3 py-1 bg-gray-50/50">
                           PROVISIONAL STATEMENT OF MARKS: SEMESTER {result.summary?.semester} ({result.summary?.academic_year})
@@ -304,17 +308,15 @@ export function ResultsPage() {
                           </div>
                           <div className="p-4 bg-academic-50/50 print:bg-white border border-academic-100/60 print:border-gray-200 rounded-lg print:rounded-none text-center flex flex-col justify-center items-center print:py-2">
                             <p className="text-[10px] font-semibold text-academic-700 uppercase tracking-wider mb-1">Result Status</p>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold print:border-none print:p-0 ${
-                              result.summary.result_status === 'PASS' 
-                                ? 'bg-green-100 text-green-800 border border-green-200 print:text-green-800' 
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold print:border-none print:p-0 ${result.summary.result_status === 'PASS'
+                                ? 'bg-green-100 text-green-800 border border-green-200 print:text-green-800'
                                 : 'bg-red-100 text-red-800 border border-red-200 print:text-red-800'
-                            }`}>
+                              }`}>
                               {result.summary.result_status || '-'}
                             </span>
                           </div>
                         </div>
                       )}
-
                       {/* Results Table */}
                       {result.results.length > 0 ? (
                         <div className="overflow-x-auto border border-gray-150 rounded-lg print:border-gray-300 print:rounded-none print:my-4">
@@ -342,11 +344,10 @@ export function ResultsPage() {
                                   <td className="px-4 py-3 print:py-2 text-center text-gray-600 print:text-black">{r.max_marks ?? '-'}</td>
                                   <td className="px-4 py-3 print:py-2 text-center font-bold text-gold-600 print:text-black">{r.grade || '-'}</td>
                                   <td className="px-4 py-3 print:py-2 text-center">
-                                    <span className={`px-2 py-1 rounded text-xs font-semibold print:border-none print:p-0 ${
-                                      r.result_status === 'PASS' ? 'bg-green-50 text-green-700 border border-green-100 print:text-green-800' :
-                                      r.result_status === 'FAIL' ? 'bg-red-50 text-red-700 border border-red-100 print:text-red-800' :
-                                      'bg-gray-50 text-gray-600'
-                                    }`}>
+                                    <span className={`px-2 py-1 rounded text-xs font-semibold print:border-none print:p-0 ${r.result_status === 'PASS' ? 'bg-green-50 text-green-700 border border-green-100 print:text-green-800' :
+                                        r.result_status === 'FAIL' ? 'bg-red-50 text-red-700 border border-red-100 print:text-red-800' :
+                                          'bg-gray-50 text-gray-600'
+                                      }`}>
                                       {r.result_status || '-'}
                                     </span>
                                   </td>
@@ -381,7 +382,7 @@ export function ResultsPage() {
 
                       {/* Print Actions */}
                       <div className="flex justify-end gap-4 print:hidden">
-                        <Button onClick={handlePrint} className="bg-academic-900 text-white hover:bg-academic-800">
+                        <Button onClick={handlePrint} className="bg-academic-950 text-white hover:bg-academic-900 font-semibold rounded-xl">
                           <Printer className="h-4 w-4 mr-2" />
                           Print Result Sheet
                         </Button>
@@ -393,13 +394,13 @@ export function ResultsPage() {
 
             </div>
 
-            {/* Right Column: Downloadable Bulletins */}
+            {/* Right Column: Downloadable Announcements */}
             <div className="space-y-6 print:hidden">
-              <Card className="border border-gray-200 shadow-md">
-                <CardHeader className="bg-academic-900 text-white px-6 py-4">
-                  <CardTitle className="font-display text-lg font-semibold flex items-center gap-2">
+              <Card className="border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
+                <CardHeader className="bg-slate-50/70 border-b border-slate-200/60 px-6 py-4 rounded-t-2xl">
+                  <CardTitle className="font-display text-base font-bold text-academic-950 flex items-center gap-2">
                     <FileText className="h-5 w-5 text-gold-500" />
-                    Official Bulletins
+                    Official Announcements
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
@@ -412,7 +413,7 @@ export function ResultsPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           download={pdf.title.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'}
-                          className="flex items-start gap-3 p-3 rounded-lg border border-gray-150 hover:border-gold-500 hover:bg-academic-50/20 transition-all group"
+                          className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-slate-50 bg-white transition-all group shadow-sm hover:shadow"
                         >
                           <FileText className="h-8 w-8 text-academic-700 flex-shrink-0 mt-0.5" />
                           <div className="min-w-0 flex-1">
@@ -430,7 +431,7 @@ export function ResultsPage() {
                   ) : (
                     <div className="text-center py-8 text-gray-400 space-y-2">
                       <ShieldAlert className="h-8 w-8 mx-auto text-gray-300" />
-                      <p className="text-xs">No official bulletins posted at this time.</p>
+                      <p className="text-xs">No official announcements posted at this time.</p>
                     </div>
                   )}
                 </CardContent>

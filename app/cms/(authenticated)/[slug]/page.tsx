@@ -19,8 +19,16 @@ export async function generateMetadata({ params }: PageProps) {
   return { title: config.label }
 }
 
+import { getSession } from '@/lib/cms/auth'
+import { canAccess } from '@/lib/cms/roles'
+
 export default async function CmsSlugPage({ params }: PageProps) {
   const { slug } = await params
+
+  const session = await getSession()
+  if (!session || !canAccess(session.role, slug)) {
+    notFound()
+  }
 
   const config = getTableConfig(slug)
   if (!config) notFound()

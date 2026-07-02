@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import logoImage from '@/components/brand/channels4_profile.jpg'
+import logoImage from '@/public/icon.png'
 
 export function CmsLoginPage({ from }: { from: string }) {
   const router = useRouter()

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { ResultsPage as ResultsComponent } from '@/components/results/results-page'
 
+import { getActiveResultsPdfs } from '@/lib/actions/public-actions'
+
 export const metadata: Metadata = {
   title: 'Exam Results | National College Jayanagar',
   description: 'View and download semester exam results for National College Jayanagar students. Access UG and PG result PDFs and result summaries for all academic years.',
@@ -15,6 +17,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function ResultsPage() {
-  return <ResultsComponent />
+export default async function ResultsPage() {
+  const res = await getActiveResultsPdfs()
+  const initialPdfs = res.data || []
+  return <ResultsComponent initialPdfs={initialPdfs as any} />
 }
