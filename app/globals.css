@@ -121,7 +121,11 @@
 
 @layer components {
   .container-wide {
-    @apply max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full;
+  }
+
+  .container-narrow {
+    @apply max-w-4xl mx-auto px-4 sm:px-6 w-full;
   }
 
   .section-padding {

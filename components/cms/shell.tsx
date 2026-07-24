@@ -34,7 +34,10 @@ import {
   TrendingUp,
   GraduationCap,
   Upload,
-  Activity
+  Activity,
+  LayoutList,
+  ListTree,
+  List
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TABLE_CONFIGS } from '@/lib/cms/tables'
@@ -62,7 +65,10 @@ const iconMap: Record<string, any> = {
   TrendingUp,
   GraduationCap,
   Upload,
-  Activity
+  Activity,
+  LayoutList,
+  ListTree,
+  List
 }
 
 const NAV_SECTIONS = [
@@ -98,6 +104,13 @@ const NAV_SECTIONS = [
       { slug: 'results-upload', label: 'Upload Results', icon: 'Upload' },
     ],
   },
+  {
+    title: 'Site Structure',
+    items: [
+      { slug: 'navigation-links', label: 'Navigation Links', icon: 'List' },
+      { slug: 'custom-pages', label: 'Custom Pages', icon: 'FileText' },
+    ],
+  },
 ]
 
 function fixItem(raw: { slug: string; label: string; icon: string }) {
@@ -123,9 +136,11 @@ function useBreadcrumb(pathname: string) {
 export function CmsShell({
   session,
   children,
+  unreadCounts,
 }: {
   session: { name: string; email: string; role: string }
   children: React.ReactNode
+  unreadCounts?: { messages: number; admissionEnquiries: number }
 }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -134,6 +149,7 @@ export function CmsShell({
     Academics: true,
     Content: false,
     Examinations: true,
+    'Site Structure': true,
   })
 
   // Filter navigation sections and items based on role
@@ -171,13 +187,13 @@ export function CmsShell({
   return (
     <div className="h-screen bg-[#f5f6fa] flex overflow-hidden">
       {/* Sidebar */}
-        <aside
-          className={cn(
-            'fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300 h-full flex-shrink-0',
-            'bg-academic-950 text-white shadow-xl lg:shadow-none',
-            open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          )}
-        >
+      <aside
+        className={cn(
+          'fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300 h-full flex-shrink-0',
+          'bg-academic-950 text-white shadow-xl lg:shadow-none',
+          open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
         {/* Logo */}
         <div className="flex items-center justify-between gap-3 px-5 h-16 border-b border-white/10 flex-shrink-0 bg-academic-950/50 backdrop-blur-sm">
           <Link href="/cms" className="flex items-center gap-3">
@@ -222,7 +238,7 @@ export function CmsShell({
                       const active =
                         item.slug === ''
                           ? pathname === '/cms'
-                          : pathname.startsWith(href)
+                          : pathname === href || pathname.startsWith(href + '/')
                       const IconComponent = iconMap[item.icon || '']
                       return (
                         <li key={item.slug || 'dashboard'}>
@@ -246,7 +262,17 @@ export function CmsShell({
                                 active ? "text-gold-400 opacity-100" : "text-white/40 group-hover:text-white/80 group-hover:opacity-100"
                               )} />
                             )}
-                            <span className="truncate">{item.label}</span>
+                            <span className="truncate flex-1">{item.label}</span>
+                            {item.slug === 'messages' && unreadCounts && unreadCounts.messages > 0 && (
+                              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto leading-none">
+                                {unreadCounts.messages}
+                              </span>
+                            )}
+                            {item.slug === 'admission-enquiries' && unreadCounts && unreadCounts.admissionEnquiries > 0 && (
+                              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-auto leading-none">
+                                {unreadCounts.admissionEnquiries}
+                              </span>
+                            )}
                           </Link>
                         </li>
                       )

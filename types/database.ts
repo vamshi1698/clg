@@ -187,9 +187,11 @@ export interface GalleryItem {
   description: string | null
   category: string
   image_url: string
+  additional_images: string[] | null
   thumbnail_url: string | null
   is_video: boolean
   video_url: string | null
+  additional_videos: string[] | null
   event_id: string | null
   sort_order: number
   is_active: boolean
@@ -333,6 +335,18 @@ export interface ResultSummary {
   updated_at: string
 }
 
+export interface MediaLibrary {
+  id: string
+  file_name: string
+  file_path: string
+  mime_type: string
+  file_size: number
+  classification: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
 export interface ContactMessage {
   id: string
   name: string
@@ -391,6 +405,33 @@ export interface AlumniWay {
   title: string
   description: string
   icon: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CustomPage {
+  id: string
+  title: string
+  slug: string
+  featured_image: string | null
+  excerpt: string | null
+  meta_description: string | null
+  content: string | null
+  page_blocks?: any
+  show_in_nav: boolean
+  nav_order: number
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface NavigationLink {
+  id: string
+  name: string
+  href: string
+  parent_id: string | null
   sort_order: number
   is_active: boolean
   created_at: string

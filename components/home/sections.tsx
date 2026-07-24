@@ -8,6 +8,7 @@ import { ArrowRight, Users, Award, Building2, TrendingUp, Calendar, MapPin, Cloc
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Statistics, News, Event, Course, Testimonial, Recruiter, Achievement, GalleryItem } from '@/types/database'
+import { ReviewForm } from './review-form'
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -603,50 +604,59 @@ export function TestimonialsSection({ testimonials }: TestimonialsSectionProps) 
           variants={staggerContainer}
         >
           <motion.div variants={fadeIn} className="text-center mb-12">
-            <span className="text-gold-500 font-semibold text-sm uppercase tracking-wide">
-              Success Stories
-            </span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold text-white mt-2 mb-4">
-              What Our Alumni Say
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Our alumni are making waves across industries. Here are their stories.
-            </p>
+            <div className="flex flex-col items-center justify-center space-y-4">
+              <span className="text-gold-500 font-semibold text-sm uppercase tracking-wide">
+                Success Stories
+              </span>
+              <h2 className="font-display text-3xl md:text-4xl font-bold text-white mt-2 mb-4">
+                What Our Alumni Say
+              </h2>
+              <p className="text-gray-400 max-w-2xl mx-auto">
+                Our alumni are making waves across industries. Here are their stories.
+              </p>
+              <ReviewForm />
+            </div>
           </motion.div>
 
-          <motion.div
-            variants={staggerContainer}
-            className="grid md:grid-cols-3 gap-6"
-          >
-            {testimonialsToShow.map((testimonial) => (
-              <motion.div key={testimonial.id} variants={fadeIn}>
-                <Card className="bg-white/10 border-white/20 backdrop-blur-sm h-full">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-gold-500 rounded-full flex items-center justify-center">
-                        <span className="text-academic-900 font-display font-bold">
-                          {testimonial.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="font-semibold text-white">{testimonial.name}</div>
-                        <div className="text-sm text-gray-400">
-                          {testimonial.designation}, {testimonial.company}
+          {testimonialsToShow.length > 0 ? (
+            <motion.div
+              variants={staggerContainer}
+              className="grid md:grid-cols-3 gap-6"
+            >
+              {testimonialsToShow.map((testimonial) => (
+                <motion.div key={testimonial.id} variants={fadeIn}>
+                  <Card className="bg-white/10 border-white/20 backdrop-blur-sm h-full">
+                    <CardContent className="p-6">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-gold-500 rounded-full flex items-center justify-center">
+                          <span className="text-academic-900 font-display font-bold">
+                            {testimonial.name.charAt(0)}
+                          </span>
                         </div>
-                        {testimonial.batch_year && (
-                          <div className="text-xs text-gold-500">Batch of {testimonial.batch_year}</div>
-                        )}
+                        <div>
+                          <div className="font-semibold text-white">{testimonial.name}</div>
+                          <div className="text-sm text-gray-400">
+                            {testimonial.designation}, {testimonial.company}
+                          </div>
+                          {testimonial.batch_year && (
+                            <div className="text-xs text-gold-500">Batch of {testimonial.batch_year}</div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <blockquote className="text-gray-300 text-sm italic line-clamp-4">
-                      "{testimonial.content}"
-                    </blockquote>
+                      <blockquote className="text-gray-300 text-sm italic line-clamp-4">
+                        "{testimonial.content}"
+                      </blockquote>
 
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <motion.div variants={fadeIn} className="text-center py-8">
+              <p className="text-gray-400 text-sm">No reviews yet. Be the first to share your experience!</p>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </section>
@@ -828,7 +838,13 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
               <div className="absolute left-[7px] sm:left-[9px] top-2 bottom-2 w-[1px] bg-slate-200" />
               
               {displayEvents.map((event, index) => {
-                const isOngoing = index === 0
+                const now = new Date()
+                const eventDate = new Date(event.event_date)
+                const endDate = event.end_date ? new Date(event.end_date) : eventDate
+                endDate.setHours(23, 59, 59, 999)
+                const isOngoing = eventDate <= now && endDate >= now
+                const isPast = endDate < now
+                
                 const imageSrc = event.image_url || defaultEventImages[index % defaultEventImages.length]
                 
                 return (
@@ -836,10 +852,10 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                     {/* Timeline Dot */}
                     <div className="absolute -left-[29px] sm:-left-[31px] top-7 z-10 flex items-center justify-center">
                       <div className={`w-3.5 h-3.5 rounded-full border-2 bg-white shadow-sm flex items-center justify-center ${
-                        isOngoing ? 'border-orange-500' : 'border-blue-500'
+                        isOngoing ? 'border-orange-500' : isPast ? 'border-slate-400' : 'border-blue-500'
                       }`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${
-                          isOngoing ? 'bg-orange-500' : 'bg-blue-500'
+                          isOngoing ? 'bg-orange-500' : isPast ? 'bg-slate-400' : 'bg-blue-500'
                         }`} />
                       </div>
                     </div>
@@ -856,9 +872,9 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                           className="object-cover"
                         />
                         <span className={`absolute top-3 left-3 px-2 py-0.5 text-[9px] font-bold text-white rounded-md tracking-wider uppercase shadow-sm ${
-                          isOngoing ? 'bg-orange-500' : 'bg-blue-500'
+                          isOngoing ? 'bg-orange-500' : isPast ? 'bg-slate-400' : 'bg-blue-500'
                         }`}>
-                          {isOngoing ? 'ONGOING' : 'UPCOMING'}
+                          {isOngoing ? 'ONGOING' : isPast ? 'PAST' : 'UPCOMING'}
                         </span>
                       </div>
 

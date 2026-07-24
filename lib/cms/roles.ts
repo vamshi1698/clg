@@ -10,6 +10,7 @@ export const SLUG_SECTIONS: Record<string, string> = {
   'statistics': 'site',
   'messages': 'site',
   'admission-enquiries': 'site',
+  'navigation-links': 'site',
   
   'departments': 'academics',
   'courses': 'academics',
@@ -27,6 +28,7 @@ export const SLUG_SECTIONS: Record<string, string> = {
   'faqs': 'content',
   'alumni-stats': 'content',
   'alumni-ways': 'content',
+  'custom-pages': 'content',
   
   'students': 'examination',
   'results': 'examination',
@@ -41,6 +43,7 @@ export const TABLE_SLUGS: Record<string, string> = {
   'statistics': 'statistics',
   'contact_messages': 'messages',
   'admission_enquiries': 'admission-enquiries',
+  'navigation_links': 'navigation-links',
   
   'departments': 'departments',
   'courses': 'courses',
@@ -58,6 +61,7 @@ export const TABLE_SLUGS: Record<string, string> = {
   'faqs': 'faqs',
   'alumni_stats': 'alumni-stats',
   'alumni_ways': 'alumni-ways',
+  'custom_pages': 'custom-pages',
   
   'students': 'students',
   'results': 'results',

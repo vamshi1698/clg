@@ -1,4 +1,5 @@
 import { postgresClient } from '../postgres/client'
+import { unstable_cache } from 'next/cache'
 import type {
   SiteSettings,
   Statistics,
@@ -21,6 +22,8 @@ import type {
   Faq,
   AlumniStat,
   AlumniWay,
+  CustomPage,
+  NavigationLink,
 } from '@/types/database'
 
 function logDataError(label: string, error: any) {
@@ -205,7 +208,7 @@ export async function getEvents(options?: { limit?: number; upcoming?: boolean }
     .from('events')
     .select('*')
     .eq('is_active', true)
-    .order('event_date', { ascending: true })
+    .order('event_date', { ascending: false })
 
   if (options?.limit) {
     query = query.limit(options.limit)
@@ -476,3 +479,60 @@ export async function getAlumniWays(): Promise<AlumniWay[]> {
   return data || []
 }
 
+// Get active custom pages
+export async function getCustomPages(options?: { showInNav?: boolean }): Promise<CustomPage[]> {
+  let query = postgresClient
+    .from('custom_pages')
+    .select('*')
+    .eq('is_active', true)
+    .order('nav_order', { ascending: true })
+
+  if (options?.showInNav !== undefined) {
+    query = query.eq('show_in_nav', options.showInNav)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    logDataError('Error fetching custom pages:', error)
+    return []
+  }
+  return data || []
+}
+
+// Get custom page by slug
+export async function getCustomPageBySlug(slug: string): Promise<CustomPage | null> {
+  const { data, error } = await postgresClient
+    .from('custom_pages')
+    .select('*')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .single()
+
+  if (error) {
+    logDataError('Error fetching custom page by slug:', error)
+    return null
+  }
+  return data
+}
+
+// Get active navigation links (cached — invalidated via revalidateTag)
+async function _getNavigationLinks(): Promise<NavigationLink[]> {
+  const { data, error } = await postgresClient
+    .from('navigation_links')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error) {
+    logDataError('Error fetching navigation links:', error)
+    return []
+  }
+  return data || []
+}
+
+export const getNavigationLinks = unstable_cache(
+  _getNavigationLinks,
+  ['navigation-links'],
+  { tags: ['navigation-links'] }
+)

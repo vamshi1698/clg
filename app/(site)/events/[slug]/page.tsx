@@ -2,7 +2,14 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { ArrowLeft, Calendar, Clock, MapPin, ExternalLink } from 'lucide-react'
-import { getEventBySlug } from '@/lib/data/public'
+import { getEventBySlug, getEvents } from '@/lib/data/public'
+
+export const dynamicParams = true
+
+export async function generateStaticParams() {
+  const events = await getEvents({})
+  return events.map((e) => ({ slug: e.slug }))
+}
 
 interface PageProps {
   params: { slug: string }
@@ -122,8 +129,8 @@ export default async function EventPage({ params }: PageProps) {
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
             <div className="flex-1 max-w-4xl bg-white border border-slate-100 rounded-3xl p-6 md:p-12 shadow-sm">
               {event.image_url && (
-                <div className="mb-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
-                  <img src={event.image_url} alt={event.title} className="w-full h-auto object-cover max-h-[500px]" />
+                <div className="mb-10 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex justify-center">
+                  <img src={event.image_url} alt={event.title} className="w-full h-auto object-contain max-h-[700px]" />
                 </div>
               )}
 

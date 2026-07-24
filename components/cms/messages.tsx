@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { Mail, Phone, Calendar, Trash2, CheckCircle, Reply } from 'lucide-react'
 import { updateMessageStatus, deleteMessage } from '@/lib/cms/actions'
 import { toast } from '@/hooks/use-toast'
@@ -37,14 +37,24 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
   const [list, setList] = useState(messages)
   const [isPending, startTransition] = useTransition()
   const [selected, setSelected] = useState<MessageRow | null>(null)
+  const processingIds = useRef<Set<string>>(new Set())
 
   function updateStatus(m: MessageRow, status: 'read' | 'replied') {
-    if (m.status === status || isPending) return
+    const key = `${m.id}-${status}`
+    if (m.status === status || processingIds.current.has(key)) return
+    processingIds.current.add(key)
     startTransition(async () => {
       const result = await updateMessageStatus(m.id, status)
       if (!('error' in result)) {
         setSelected((prev) => (prev && prev.id === m.id ? { ...prev, status } : prev))
         setList((prev) => prev.map((row) => (row.id === m.id ? { ...row, status } : row)))
+      } else {
+        processingIds.current.delete(key)
+        toast({
+          title: 'Error',
+          description: result.error || `Failed to mark as ${status}`,
+          variant: 'destructive',
+        })
       }
     })
   }
@@ -203,7 +213,9 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
               key={m.id}
               onClick={() => {
                 setSelected(m)
-                if (m.status === 'unread' && !isPending) {
+                const key = `${m.id}-read`
+                if (m.status === 'unread' && !processingIds.current.has(key)) {
+                  processingIds.current.add(key)
                   setList((prev) =>
                     prev.map((row) => (row.id === m.id ? { ...row, status: 'read' } : row))
                   )
@@ -213,6 +225,12 @@ export function CmsMessageList({ messages }: { messages: MessageRow[] }) {
                       setList((prev) =>
                         prev.map((row) => (row.id === m.id ? { ...row, status: 'unread' } : row))
                       )
+                      processingIds.current.delete(key)
+                      toast({
+                        title: 'Error',
+                        description: result.error || 'Failed to mark as read',
+                        variant: 'destructive',
+                      })
                     }
                   })
                 }

@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: PageProps) {
 import { getSession } from '@/lib/cms/auth'
 import { canAccess } from '@/lib/cms/roles'
 
-export default async function CmsSlugPage({ params }: PageProps) {
+export default async function Page({ params }: PageProps) {
   const { slug } = await params
 
   const session = await getSession()

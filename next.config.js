@@ -12,27 +12,24 @@ const nextConfig = {
       },
     ],
   },
-  allowedDevOrigins: ['192.168.0.107'],
+  allowedDevOrigins: ['192.168.0.107', '0ed780f2ce17.ngrok-free.app', '1c0e-2409-40f2-216b-4eb5-91ff-d9e-15cc-971d.ngrok-free.app'],
   transpilePackages: ['@react-three/fiber', '@react-three/drei', 'three', '@react-three/rapier', 'meshline'],
-  experimental: {
-    // Tree-shake large icon/animation libraries to reduce unused CSS and JS
-    optimizePackageImports: ['lucide-react', 'framer-motion', '@radix-ui/react-icons'],
-  },
+
   async headers() {
+    const securityHeaders = [
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'X-XSS-Protection', value: '1; mode=block' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
+    ]
     return [
-      {
-        source: '/(.*)',
-        headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-        ],
-      },
+      { source: '/cms/:path*', headers: securityHeaders },
+      { source: '/api/:path*', headers: securityHeaders },
+      { source: '/results/:path*', headers: securityHeaders },
     ]
   },
 };
 
 module.exports = nextConfig;
-
+

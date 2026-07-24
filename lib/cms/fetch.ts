@@ -23,6 +23,9 @@ export async function resolveReferenceOptions(config: TableConfig): Promise<Refe
     if (ref.table === 'courses') {
       query = query.select(`${ref.value}, ${ref.label}, code`)
     }
+    if (ref.table === 'navigation_links') {
+      query = query.is('parent_id', null)
+    }
     const { data, error } = await query.order(ref.label, { ascending: true })
 
     if (error || !data) {
@@ -49,6 +52,8 @@ function referenceFor(field: FieldConfig) {
       return { table: 'courses', label: 'name', value: 'id' }
     case 'student_id':
       return { table: 'students', label: 'name', value: 'id' }
+    case 'parent_id':
+      return { table: 'navigation_links', label: 'name', value: 'id' }
     default:
       return null
   }
@@ -70,10 +75,15 @@ export async function fetchRows(config: TableConfig, id?: string): Promise<any[]
       .single()
     if (!error) resultData = data
   } else {
-    const { data, error } = await postgres
-      .from(config.table)
-      .select(select)
-      .order(orderBy, { ascending })
+    let query = postgres.from(config.table).select(select)
+    if (config.baseFilter) {
+      if (config.baseFilter.operator === 'is') {
+        query = query.is(config.baseFilter.column, config.baseFilter.value)
+      } else if (config.baseFilter.operator === 'not') {
+        query = query.not(config.baseFilter.column, 'is', config.baseFilter.value)
+      }
+    }
+    const { data, error } = await query.order(orderBy, { ascending })
     if (!error) resultData = data || []
   }
 
@@ -116,6 +126,15 @@ export async function fetchRows(config: TableConfig, id?: string): Promise<any[]
       const match = depts?.find(d => d.id === row.department_id)
       if (match) {
         row.departments = { name: `${match.name} (${match.code.toUpperCase()})` }
+      }
+    }
+    if (config.table === 'navigation_links' && row.parent_id) {
+      const parent = rows.find(r => r.id === row.parent_id)
+      if (parent) {
+        row.parent_name = parent.name
+      } else {
+        // If parent not in current page/fetch, this is a fallback
+        // but since we fetch all navigation_links, it should be in rows
       }
     }
   }

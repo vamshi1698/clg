@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps) {
   return { title: config ? `${id === 'new' ? `New ${config.singular}` : `Edit ${config.singular}`}` : 'Not Found' }
 }
 
-export default async function CmsEditPage({ params }: PageProps) {
+export default async function Page({ params }: PageProps) {
   const { slug, id } = await params
 
   const config = getTableConfig(slug)

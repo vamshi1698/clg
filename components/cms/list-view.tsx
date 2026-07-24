@@ -2,9 +2,27 @@
 
 import Link from 'next/link'
 import { useState, useTransition, Fragment, useMemo, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUpDown, Save, X, GraduationCap, Search, ChevronDown, ChevronUp, RotateCcw, TrendingUp, UploadCloud, Loader2, Info, AlertCircle, CheckCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUpDown, Save, X, GraduationCap, Search, ChevronDown, ChevronUp, RotateCcw, TrendingUp, UploadCloud, Loader2, Info, AlertCircle, CheckCircle, GripVertical } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { deleteRow, toggleActive, updateSortOrder, deleteRowPermanent, restoreRow, deleteRows, deleteRowsPermanent, restoreRows } from '@/lib/cms/actions'
+import { cn } from '@/lib/utils'
+import { deleteRow, toggleActive, updateSortOrder, updateSortOrdersBulk, deleteRowPermanent, restoreRow, deleteRows, deleteRowsPermanent, restoreRows } from '@/lib/cms/actions'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -72,6 +90,59 @@ function formatDateForList(v: unknown, isDateTime: boolean): string {
   return `${day} ${months[month]} ${year}`
 }
 
+import React from 'react'
+
+const SortableRowContext = React.createContext<{ attributes: any; listeners: any } | null>(null)
+
+function SortableTr({ id, children, isSortable }: { id: string; children: React.ReactNode; isSortable: boolean }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    ...(isDragging ? { position: 'relative', zIndex: 9999, opacity: 0.9, backgroundColor: '#f9fafb', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' } : {}),
+  } as React.CSSProperties
+
+  if (!isSortable) {
+    return <tr className="hover:bg-gray-50 transition-colors group">{children}</tr>
+  }
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className={`hover:bg-gray-50 transition-colors group ${isDragging ? 'bg-gray-50 shadow-xl ring-1 ring-gray-900/5' : ''}`}
+    >
+      <SortableRowContext.Provider value={{ attributes, listeners }}>
+        {children}
+      </SortableRowContext.Provider>
+    </tr>
+  )
+}
+
+function DragHandle() {
+  const context = React.useContext(SortableRowContext)
+  if (!context) return null
+  const { attributes, listeners } = context
+  return (
+    <button
+      {...attributes}
+      {...listeners}
+      className="p-1.5 text-gray-400 hover:text-gray-700 cursor-grab active:cursor-grabbing transition-colors rounded hover:bg-gray-100 touch-none flex items-center justify-center"
+      aria-label="Drag to reorder"
+    >
+      <GripVertical className="h-4 w-4" />
+    </button>
+  )
+}
+
 export function CmsListView({
   config,
   rows,
@@ -84,6 +155,11 @@ export function CmsListView({
 }
 
 function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').TableConfig; rows: Row[] }) {
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => setIsMounted(true), [])
+  const [localRows, setLocalRows] = useState(rows)
+  useEffect(() => { setLocalRows(rows) }, [rows])
+  
   const [search, setSearch] = useState('')
   const [editingSort, setEditingSort] = useState<string | null>(null)
   const [sortValue, setSortValue] = useState('')
@@ -93,6 +169,11 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   const [groupByCourse, setGroupByCourse] = useState(true)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [viewTrash, setViewTrash] = useState(false)
@@ -203,21 +284,21 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   const isDepartmentFilterable = config.slug === 'faculty' || config.slug === 'courses' || config.slug === 'students'
 
   const activeRows = useMemo(() => {
-    if (config.slug !== 'students') return rows
-    return rows.filter((r) => !r.is_deleted)
-  }, [rows, config.slug])
+    if (config.slug !== 'students') return localRows
+    return localRows.filter((r) => !r.is_deleted)
+  }, [localRows, config.slug])
 
   const deletedRows = useMemo(() => {
     if (config.slug !== 'students') return []
-    return rows.filter((r) => !!r.is_deleted)
-  }, [rows, config.slug])
+    return localRows.filter((r) => !!r.is_deleted)
+  }, [localRows, config.slug])
 
   let processedRows = config.slug === 'students' && viewTrash ? deletedRows : activeRows
 
   const semesterStats = useMemo(() => {
     if (config.slug !== 'result-summaries') return []
     const groups: Record<number, { sum: number; count: number; pass: number; fail: number }> = {}
-    rows.forEach((r) => {
+    localRows.forEach((r) => {
       const sem = Number(r.semester || 0)
       if (!sem) return
       if (!groups[sem]) {
@@ -350,6 +431,27 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       }
       return nameA.localeCompare(nameB)
     })
+  }
+
+  if (config.slug === 'navigation-links') {
+    const parents = filtered.filter(r => !r.parent_id)
+    const children = filtered.filter(r => r.parent_id)
+    
+    // Create hierarchical flat list
+    const newFiltered: Row[] = []
+    parents.forEach(p => {
+      newFiltered.push(p)
+      const myChildren = children.filter(c => c.parent_id === p.id)
+      newFiltered.push(...myChildren)
+    })
+    
+    // Append any orphaned children at the end
+    const orphanChildren = children.filter(c => !parents.some(p => p.id === c.parent_id))
+    newFiltered.push(...orphanChildren)
+    
+    // Replace filtered
+    filtered.length = 0
+    filtered.push(...newFiltered)
   }
 
   interface GroupedCourse {
@@ -521,6 +623,36 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     })
   }
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = localRows.findIndex((row) => row.id === active.id)
+    const newIndex = localRows.findIndex((row) => row.id === over.id)
+    
+    if (oldIndex === -1 || newIndex === -1) return
+
+    const nextRows = arrayMove(localRows, oldIndex, newIndex)
+    
+    const updates = nextRows.map((r, i) => ({
+      id: r.id,
+      sortOrder: (i + 1) * 10
+    }))
+
+    // Mutate local immediately for UI responsiveness
+    nextRows.forEach((r, i) => { r.sort_order = updates[i].sortOrder })
+    
+    setLocalRows(nextRows)
+
+    // Push to backend
+    startTransition(async () => {
+      const res = await updateSortOrdersBulk(config.table, updates)
+      if (res && res.error) {
+        toast({ title: 'Error', description: 'Failed to save order.', variant: 'destructive' })
+      }
+    })
+  }
+
   function toggleGroupCollapse(courseId: string) {
     setCollapsedGroups((prev) => {
       const next = new Set(prev)
@@ -535,7 +667,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     const displaySubtitle = isResults ? `Semester ${row.semester}` : (subtitleField && row[subtitleField] ? formatCell(subtitleField, row) : null)
 
     return (
-      <tr key={row.id} className="hover:bg-gray-50 transition-colors group">
+      <SortableTr key={row.id} id={row.id} isSortable={!!config.sortable}>
         {config.slug === 'students' && (
           <td className="px-5 py-4 w-10">
             <input
@@ -557,20 +689,27 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           </td>
         )}
         <td className="px-5 py-4 text-gray-400 text-xs font-mono">{index + 1}</td>
-        <td className="px-5 py-4">
-          {config.table === 'activity_logs' ? (
-            <span className="font-semibold text-gray-900 text-sm">{displayTitle}</span>
-          ) : (
-            <Link
-              href={`/cms/${config.slug}/${row.id}`}
-              className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-sm"
-            >
-              {displayTitle}
-            </Link>
+        <td className={cn("px-5 py-4 flex items-center gap-2", config.slug === 'navigation-links' && row.parent_id ? 'pl-16 relative before:absolute before:left-8 before:top-1/2 before:w-6 before:h-px before:bg-gray-200 before:-translate-y-1/2 after:absolute after:left-8 after:-top-4 after:bottom-1/2 after:w-px after:bg-gray-200' : '')}>
+          {config.sortable && (
+            <div className="-ml-2 z-10">
+              <DragHandle />
+            </div>
           )}
-          {displaySubtitle && (
-            <div className="text-xs text-gray-400 mt-0.5">{displaySubtitle}</div>
-          )}
+          <div className="z-10 bg-white">
+            {config.table === 'activity_logs' ? (
+              <span className="font-semibold text-gray-900 text-sm">{displayTitle}</span>
+            ) : (
+              <Link
+                href={`/cms/${config.slug}/${row.id}`}
+                className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-sm"
+              >
+                {displayTitle}
+              </Link>
+            )}
+            {displaySubtitle && (
+              <div className="text-xs text-gray-400 mt-0.5">{displaySubtitle}</div>
+            )}
+          </div>
         </td>
         {config.listFields
           .filter((f) => {
@@ -583,45 +722,8 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
             </td>
           ))}
         {config.sortable && (
-          <td className="px-5 py-4">
-            {editingSort === row.id ? (
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  value={sortValue}
-                  onChange={(e) => setSortValue(e.target.value)}
-                  className="w-16 px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400/40"
-                  autoFocus
-                />
-                <button 
-                  onClick={() => saveSort(row.id)} 
-                  disabled={isPending}
-                  aria-label="Save sort order"
-                  className="p-1 text-emerald-500 hover:text-emerald-600 disabled:opacity-50"
-                >
-                  <Save className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-                <button 
-                  onClick={() => setEditingSort(null)} 
-                  disabled={isPending}
-                  aria-label="Cancel sort edit"
-                  className="p-1 text-gray-300 hover:text-gray-500 disabled:opacity-50"
-                >
-                  <X className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setEditingSort(row.id)
-                  setSortValue(String(row.sort_order ?? 0))
-                }}
-                className="flex items-center gap-1 text-gray-400 hover:text-gray-700 text-xs font-mono"
-              >
-                <ArrowUpDown className="h-3 w-3" />
-                {String(row.sort_order ?? '—')}
-              </button>
-            )}
+          <td className="px-5 py-4 text-gray-400 text-xs font-mono">
+            {String(row.sort_order ?? '—')}
           </td>
         )}
         <td className="px-5 py-4">
@@ -680,7 +782,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
             )}
           </div>
         </td>
-      </tr>
+      </SortableTr>
     )
   }
 
@@ -691,13 +793,15 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold text-gray-900">{config.label}</h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            <span className="font-semibold text-gray-600">{processedRows.length}</span>{' '}
-            {isResults ? 'student' : config.singular.toLowerCase()}{processedRows.length !== 1 ? 's' : ''} total
-            {filtered.length !== processedRows.length && (
-              <span className="ml-1 text-blue-500 font-medium">({filtered.length} shown)</span>
-            )}
-          </p>
+          {config.slug !== 'result-summaries' && (
+            <p className="text-sm text-gray-400 mt-0.5">
+              <span className="font-semibold text-gray-600">{processedRows.length}</span>{' '}
+              {isResults ? 'student' : config.singular.toLowerCase()}{processedRows.length !== 1 ? 's' : ''} total
+              {filtered.length !== processedRows.length && (
+                <span className="ml-1 text-blue-500 font-medium">({filtered.length} shown)</span>
+              )}
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           {isDepartmentFilterable && (
@@ -738,16 +842,18 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           )}
 
           {/* Search */}
-          <div className="relative flex-grow sm:flex-grow-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Search…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 w-full sm:w-64 transition-all shadow-sm"
-            />
-          </div>
+          {config.slug !== 'result-summaries' && (
+            <div className="relative flex-grow sm:flex-grow-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 pr-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-300 w-full sm:w-64 transition-all shadow-sm"
+              />
+            </div>
+          )}
 
           {selectedIds.size > 0 && (
             <>
@@ -811,7 +917,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
             </button>
           )}
 
-          {!viewTrash && config.table !== 'activity_logs' && (
+          {!viewTrash && config.table !== 'activity_logs' && config.slug !== 'result-summaries' && (
             <Link
               href={`/cms/${config.slug}/new`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors flex-shrink-0 shadow-sm border border-gray-900"
@@ -855,148 +961,173 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       )}
 
       {/* Result Summaries Analytics Dashboard */}
-      {config.slug === 'result-summaries' && semesterStats.length > 0 && (
+      {config.slug === 'result-summaries' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          {/* Chart column */}
-          <div className="lg:col-span-2 space-y-3">
-            <div>
-              <h3 className="font-semibold text-gray-900 text-base">Academic Performance Trends</h3>
-              <p className="text-xs text-gray-400">Comparing average SGPA and overall pass percentage across semesters.</p>
+          {semesterStats.length === 0 ? (
+            <div className="lg:col-span-3 flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center mb-4">
+                <TrendingUp className="h-6 w-6 text-gray-300" />
+              </div>
+              <h3 className="font-semibold text-gray-900 text-lg">No Analytics Available</h3>
+              <p className="text-gray-400 text-sm mt-1 max-w-sm">
+                Add result summaries to see dynamic academic performance trends and metrics.
+              </p>
             </div>
-            <div className="h-64 w-full">
-              <DynamicResponsiveContainer width="100%" height="100%">
-                <DynamicComposedChart
-                  data={semesterStats}
-                  margin={{ top: 10, right: -5, left: -20, bottom: 0 }}
-                >
-                  <DynamicCartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                  <DynamicXAxis
-                    dataKey="semester"
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    axisLine={{ stroke: '#f3f4f6' }}
-                    tickLine={{ stroke: '#f3f4f6' }}
-                  />
-                  <DynamicYAxis
-                    yAxisId="left"
-                    domain={[0, 10]}
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    axisLine={{ stroke: '#f3f4f6' }}
-                    tickLine={{ stroke: '#f3f4f6' }}
-                  />
-                  <DynamicYAxis
-                    yAxisId="right"
-                    orientation="right"
-                    domain={[0, 100]}
-                    tick={{ fill: '#9ca3af', fontSize: 10 }}
-                    axisLine={{ stroke: '#f3f4f6' }}
-                    tickLine={{ stroke: '#f3f4f6' }}
-                  />
-                  <DynamicRechartsTooltip
-                    content={({ active, payload }: any) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload
-                        return (
-                          <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-md text-xs space-y-1.5 font-sans">
-                            <p className="font-bold text-gray-800">{data.semester}</p>
-                            <div className="grid grid-cols-2 gap-x-4 text-gray-600">
-                              <span>Avg SGPA:</span>
-                              <span className="font-semibold text-blue-600 text-right">{data.avgSgpa} / 10.0</span>
-                              <span>Pass Rate:</span>
-                              <span className="font-semibold text-emerald-600 text-right">{data.passRate}%</span>
-                              <span>Pass Count:</span>
-                              <span className="font-medium text-gray-800 text-right">{data.passCount}</span>
-                              <span>Fail Count:</span>
-                              <span className="font-medium text-gray-800 text-right">{data.failCount}</span>
-                            </div>
-                          </div>
-                        )
-                      }
-                      return null
-                    }}
-                  />
-                  <DynamicRechartsLegend
-                    verticalAlign="top"
-                    height={36}
-                    iconType="circle"
-                    iconSize={8}
-                    wrapperStyle={{ fontSize: '11px', fontWeight: 500 }}
-                  />
-                  <DynamicBar
-                    yAxisId="left"
-                    name="Average SGPA"
-                    dataKey="avgSgpa"
-                    fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
-                    barSize={32}
-                  />
-                  <DynamicLine
-                    yAxisId="right"
-                    type="monotone"
-                    name="Pass Percentage (%)"
-                    dataKey="passRate"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    dot={{ fill: '#10b981', r: 4 }}
-                  />
-                </DynamicComposedChart>
-              </DynamicResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Quick Metrics Cards */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 text-base mb-1">Quick Metrics</h3>
-            <div className="grid grid-cols-1 gap-3.5">
-              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
+          ) : (
+            <>
+              {/* Chart column */}
+              <div className="lg:col-span-2 space-y-3">
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Overall Average SGPA</p>
-                  <p className="text-2xl font-bold text-blue-900 mt-1">
-                    {(semesterStats.reduce((acc, curr) => acc + curr.avgSgpa, 0) / semesterStats.length).toFixed(2)}
-                  </p>
+                  <h3 className="font-semibold text-gray-900 text-base">Academic Performance Trends</h3>
+                  <p className="text-xs text-gray-400">Comparing average SGPA and overall pass percentage across semesters.</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-blue-400 opacity-60" />
-              </div>
-
-              <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Average Pass Rate</p>
-                  <p className="text-2xl font-bold text-emerald-900 mt-1">
-                    {(semesterStats.reduce((acc, curr) => acc + curr.passRate, 0) / semesterStats.length).toFixed(1)}%
-                  </p>
-                </div>
-                <GraduationCap className="h-8 w-8 text-emerald-400 opacity-60" />
-              </div>
-
-              <div className="p-4 bg-gray-50/60 rounded-xl border border-gray-100">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Distribution Summary</p>
-                <div className="mt-2.5 space-y-1 text-xs">
-                  <div className="flex justify-between text-gray-600">
-                    <span>Total Semesters:</span>
-                    <span className="font-semibold text-gray-900">{semesterStats.length}</span>
+              <div className="h-64 w-full min-w-0 overflow-x-auto">
+                {isMounted && (
+                  <div className="h-64 w-full min-w-0">
+                    <DynamicResponsiveContainer width="100%" height="100%" minHeight={256}>
+                      <DynamicComposedChart
+                        data={semesterStats}
+                        margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                      >
+                      <DynamicCartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                      <DynamicXAxis
+                        dataKey="semester"
+                        type="category"
+                        padding={{ left: 50, right: 50 }}
+                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        axisLine={{ stroke: '#f3f4f6' }}
+                        tickLine={{ stroke: '#f3f4f6' }}
+                      />
+                      <DynamicYAxis
+                        yAxisId="left"
+                        domain={[0, 10]}
+                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        axisLine={{ stroke: '#f3f4f6' }}
+                        tickLine={{ stroke: '#f3f4f6' }}
+                      />
+                      <DynamicYAxis
+                        yAxisId="right"
+                        orientation="right"
+                        domain={[0, 100]}
+                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        axisLine={{ stroke: '#f3f4f6' }}
+                        tickLine={{ stroke: '#f3f4f6' }}
+                      />
+                      <DynamicRechartsTooltip
+                        content={({ active, payload }: any) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload
+                            return (
+                              <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-md text-xs space-y-1.5 font-sans">
+                                <p className="font-bold text-gray-800">{data.semester}</p>
+                                <div className="grid grid-cols-2 gap-x-4 text-gray-600">
+                                  <span>Avg SGPA:</span>
+                                  <span className="font-semibold text-blue-600 text-right">{data.avgSgpa} / 10.0</span>
+                                  <span>Pass Rate:</span>
+                                  <span className="font-semibold text-emerald-600 text-right">{data.passRate}%</span>
+                                  <span>Pass Count:</span>
+                                  <span className="font-medium text-gray-800 text-right">{data.passCount}</span>
+                                  <span>Fail Count:</span>
+                                  <span className="font-medium text-gray-800 text-right">{data.failCount}</span>
+                                </div>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <DynamicRechartsLegend
+                        verticalAlign="top"
+                        height={36}
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: '11px', fontWeight: 500 }}
+                      />
+                      <DynamicBar
+                        yAxisId="left"
+                        name="Average SGPA"
+                        dataKey="avgSgpa"
+                        fill="#3b82f6"
+                        radius={4}
+                        barSize={32}
+                        minPointSize={0}
+                        isAnimationActive={false}
+                      />
+                      <DynamicLine
+                        yAxisId="right"
+                        type="monotone"
+                        name="Pass Percentage (%)"
+                        dataKey="passRate"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        dot={{ fill: '#10b981', r: 4 }}
+                        isAnimationActive={false}
+                      />
+                    </DynamicComposedChart>
+                    </DynamicResponsiveContainer>
                   </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Total Passed Records:</span>
-                    <span className="font-semibold text-emerald-600">
-                      {semesterStats.reduce((acc, curr) => acc + curr.passCount, 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Total Failed Records:</span>
-                    <span className="font-semibold text-red-600">
-                      {semesterStats.reduce((acc, curr) => acc + curr.failCount, 0)}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
-          </div>
+
+              {/* Quick Metrics Cards */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 text-base mb-1">Quick Metrics</h3>
+                <div className="grid grid-cols-1 gap-3.5">
+                  <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Overall Average SGPA</p>
+                      <p className="text-2xl font-bold text-blue-900 mt-1">
+                        {(semesterStats.reduce((acc, curr) => acc + curr.avgSgpa, 0) / semesterStats.length).toFixed(2)}
+                      </p>
+                    </div>
+                    <TrendingUp className="h-8 w-8 text-blue-400 opacity-60" />
+                  </div>
+
+                  <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Average Pass Rate</p>
+                      <p className="text-2xl font-bold text-emerald-900 mt-1">
+                        {(semesterStats.reduce((acc, curr) => acc + curr.passRate, 0) / semesterStats.length).toFixed(1)}%
+                      </p>
+                    </div>
+                    <GraduationCap className="h-8 w-8 text-emerald-400 opacity-60" />
+                  </div>
+
+                  <div className="p-4 bg-gray-50/60 rounded-xl border border-gray-100">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Distribution Summary</p>
+                    <div className="mt-2.5 space-y-1 text-xs">
+                      <div className="flex justify-between text-gray-600">
+                        <span>Total Semesters:</span>
+                        <span className="font-semibold text-gray-900">{semesterStats.length}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Total Passed Records:</span>
+                        <span className="font-semibold text-emerald-600">
+                          {semesterStats.reduce((acc, curr) => acc + curr.passCount, 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Total Failed Records:</span>
+                        <span className="font-semibold text-red-600">
+                          {semesterStats.reduce((acc, curr) => acc + curr.failCount, 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
       {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      {config.slug !== 'result-summaries' && (
+      <DndContext id="cms-dnd-context" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
             <thead className="bg-gray-50/50 border-b border-gray-200">
               <tr>
                 {config.slug === 'students' && (
@@ -1035,8 +1166,9 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                 <th className="px-5 py-3.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider w-32">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.length === 0 ? (
+            <SortableContext items={filtered.map(r => r.id)} strategy={verticalListSortingStrategy}>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={20} className="px-4 py-20 text-center">
                     <div className="flex flex-col items-center gap-3">
@@ -1097,10 +1229,13 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
               ) : (
                 filtered.map((row, i) => renderRow(row, i))
               )}
-            </tbody>
+              </tbody>
+            </SortableContext>
           </table>
         </div>
       </div>
+    </DndContext>
+    )}
 
       {confirmDelete && (
         <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null) }}>

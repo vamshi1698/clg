@@ -170,6 +170,26 @@ export async function updateSortOrder(table: string, id: string, sortOrder: numb
   if (error) return { error: formatDatabaseError(error) }
   await logCmsActivity('UPDATE_SORT_ORDER', table, `Updated sort order of record ID: ${id} to ${sortOrder}`)
   revalidateAdmin(table)
+  revalidateAdmin(table)
+  return { ok: true }
+}
+
+export async function updateSortOrdersBulk(table: string, updates: { id: string, sortOrder: number }[]): Promise<{ error?: string } & { ok?: boolean }> {
+  if (!isValidTable(table)) {
+    return { error: 'Invalid table name' }
+  }
+  const authErr = await verifyActionPermission(table, true)
+  if (authErr) return authErr
+
+  for (const update of updates) {
+    const { error } = await postgresClient.update(table, update.id, { sort_order: update.sortOrder })
+    if (error) {
+      return { error: formatDatabaseError(error) }
+    }
+  }
+
+  await logCmsActivity('UPDATE_SORT_ORDER_BULK', table, `Updated sort order for ${updates.length} records`)
+  revalidateAdmin(table)
   return { ok: true }
 }
 
@@ -179,6 +199,18 @@ export async function saveRow(table: string, data: Record<string, unknown>, id?:
   }
   const authErr = await verifyActionPermission(table, true)
   if (authErr) return authErr
+
+  // Stringify fields that are known to be JSONB in the database
+  const config = TABLE_CONFIGS.find((t) => t.table === table)
+  if (config) {
+    for (const field of config.fields) {
+      if (field.type === 'blocks' && data[field.name] !== undefined) {
+        if (typeof data[field.name] !== 'string') {
+          data[field.name] = JSON.stringify(data[field.name])
+        }
+      }
+    }
+  }
 
   if (id) {
     const { error } = await postgresClient.update(table, id, data as Record<string, any>)
@@ -196,6 +228,45 @@ export async function saveRow(table: string, data: Record<string, unknown>, id?:
     if (error) return { error: formatDatabaseError(error) }
     await logCmsActivity('INSERT', table, `Created new record. Data keys: ${Object.keys(data).join(', ')}`)
   }
+  if (table === 'custom_pages') {
+    const slug = String(data.slug || '');
+    const title = String(data.title || '');
+    const showInNav = data.show_in_nav === true;
+    const navOrder = typeof data.nav_order === 'number' ? data.nav_order : 99;
+    const isActive = data.is_active !== false; // defaults to true
+    
+    if (slug) {
+      const href = `/${slug}`;
+      const { data: existing } = await postgresClient.query(`SELECT id FROM navigation_links WHERE href = $1 LIMIT 1`, [href]);
+      
+      if (showInNav) {
+        if (existing && existing.length > 0) {
+          await postgresClient.update('navigation_links', existing[0].id, {
+            name: title,
+            sort_order: navOrder,
+            is_active: isActive,
+            updated_at: new Date().toISOString()
+          });
+        } else {
+          await postgresClient.insert('navigation_links', {
+            id: crypto.randomUUID(),
+            name: title,
+            href,
+            sort_order: navOrder,
+            is_active: isActive,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        }
+      } else {
+        if (existing && existing.length > 0) {
+          await postgresClient.delete('navigation_links', existing[0].id);
+        }
+      }
+    }
+    revalidateAdmin('navigation-links')
+  }
+
   revalidateAdmin(table)
   return { ok: true }
 }
@@ -204,7 +275,63 @@ function revalidateAdmin(table: string) {
   try {
     revalidatePath('/cms')
     revalidatePath(`/cms/${table}`)
-    revalidatePath('/', 'layout')
+    
+    // Targeted revalidation based on table
+    switch (table) {
+      case 'news':
+      case 'events':
+      case 'gallery':
+      case 'testimonials':
+        revalidatePath('/')
+        revalidatePath(`/${table}`)
+        break
+      case 'departments':
+      case 'courses':
+        revalidatePath('/academics')
+        revalidatePath(`/${table}`)
+        break
+      case 'faculty':
+        revalidatePath('/faculty-staff')
+        break
+      case 'leadership':
+      case 'achievements':
+      case 'milestones':
+      case 'accreditations':
+        revalidatePath('/about')
+        revalidatePath('/')
+        break
+      case 'recruiters':
+      case 'alumni_stats':
+      case 'alumni_ways':
+        revalidatePath('/alumni')
+        break
+      case 'faqs':
+        revalidatePath('/visitors')
+        revalidatePath('/parents')
+        revalidatePath('/students')
+        break
+      case 'students':
+      case 'results':
+      case 'result_summaries':
+        revalidatePath('/results')
+        break
+      case 'settings':
+      case 'navigation_links':
+        // These affect the global layout header/footer
+        revalidatePath('/', 'layout')
+        break
+      case 'custom_pages':
+        // Custom pages might affect the navbar or dynamic routes
+        // For dynamic slugs, we'd ideally revalidate exactly that slug, 
+        // but since we don't have it here, we rely on the global layout update 
+        // for when show_in_nav changes. However, saveRow explicitly calls 
+        // revalidateAdmin('navigation-links') when nav changes. 
+        // To be safe, we revalidate layout.
+        revalidatePath('/', 'layout')
+        break
+      default:
+        revalidatePath('/', 'layout')
+    }
   } catch {}
 }
 
@@ -213,9 +340,7 @@ export async function updateMessageStatus(id: string, status: 'unread' | 'read' 
   const authErr = await verifyActionPermission('contact_messages', true)
   if (authErr) return authErr
 
-  const update: Record<string, unknown> = { status }
-  if (status === 'read') update.read_at = new Date().toISOString()
-  if (status === 'replied') update.replied_at = new Date().toISOString()
+  const update: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
   const { error } = await postgresClient.update('contact_messages', id, update)
   if (error) return { error: formatDatabaseError(error) }
   await logCmsActivity('UPDATE_MESSAGE_STATUS', 'contact_messages', `Marked message ID ${id} as ${status}`)

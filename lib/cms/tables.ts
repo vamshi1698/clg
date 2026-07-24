@@ -8,8 +8,11 @@ export type FieldType =
   | 'date'
   | 'datetime'
   | 'url'
+  | 'url_array'
   | 'array'
   | 'image'
+  | 'image_array'
+  | 'blocks'
 
 export interface FieldConfig {
   name: string
@@ -37,6 +40,7 @@ export interface TableConfig {
   select?: string
   orderColumn?: string
   singleton?: boolean
+  baseFilter?: { column: string; operator: 'is' | 'not'; value: any }
 }
 
 const activeField: FieldConfig = {
@@ -297,10 +301,12 @@ export const TABLE_CONFIGS: TableConfig[] = [
       { name: 'title', label: 'Title', type: 'text', required: true, full: true },
       { name: 'category', label: 'Category', type: 'text', required: true, help: 'e.g. Campus, Events, Sports' },
       { name: 'description', label: 'Description', type: 'textarea', full: true },
-      { name: 'image_url', label: 'Image URL', type: 'image', required: true, full: true },
+      { name: 'image_url', label: 'Primary Image URL', type: 'image', required: true, full: true },
+      { name: 'additional_images', label: 'Additional Images', type: 'image_array', full: true },
       { name: 'thumbnail_url', label: 'Thumbnail URL', type: 'image', full: true },
       { name: 'is_video', label: 'Is Video', type: 'boolean' },
-      { name: 'video_url', label: 'Video URL', type: 'url', full: true, help: 'YouTube/Vimeo embed URL' },
+      { name: 'video_url', label: 'Primary Video URL', type: 'url', full: true, help: 'YouTube/Vimeo embed URL' },
+      { name: 'additional_videos', label: 'Additional Videos', type: 'url_array', full: true, help: 'Upload videos or paste embed URLs' },
       sortOrderField,
       activeField,
     ],
@@ -432,7 +438,7 @@ export const TABLE_CONFIGS: TableConfig[] = [
     subtitleField: 'register_number',
     listFields: ['name', 'register_number', 'courses', 'academic_year', 'semester', 'is_active'],
     orderColumn: 'register_number',
-    sortable: true,
+    sortable: false,
     select: '*, courses(name), departments(name)',
     fields: [
       { name: 'name', label: 'Name', type: 'text', required: true, full: true },
@@ -655,6 +661,69 @@ export const TABLE_CONFIGS: TableConfig[] = [
       { name: 'details', label: 'Details', type: 'textarea', required: true, full: true },
     ],
   },
+  {
+    table: 'custom_pages',
+    slug: 'custom-pages',
+    label: 'Custom Pages',
+    singular: 'Custom Page',
+    icon: 'FileText',
+    titleField: 'title',
+    subtitleField: 'slug',
+    listFields: ['title', 'slug', 'show_in_nav', 'is_active'],
+    orderColumn: 'nav_order',
+    sortable: true,
+    select: '*',
+    fields: [
+      { name: 'title', label: 'Title', type: 'text', required: true, full: true },
+      { name: 'slug', label: 'Slug', type: 'text', required: true, help: 'URL-friendly identifier' },
+      { name: 'meta_description', label: 'Meta Description', type: 'text', full: true, help: 'SEO description' },
+      { name: 'page_blocks', label: 'Page Builder', type: 'blocks', full: true },
+      { name: 'show_in_nav', label: 'Show in Navigation', type: 'boolean' },
+      { name: 'nav_order', label: 'Navigation Order', type: 'number' },
+      activeField,
+    ],
+  },
+  {
+    table: 'navigation_links',
+    slug: 'navigation-links',
+    label: 'Navigation Links',
+    singular: 'Navigation Link',
+    icon: 'List',
+    titleField: 'name',
+    subtitleField: 'href',
+    listFields: ['name', 'href', 'parent_name', 'is_active'],
+    orderColumn: 'sort_order',
+    sortable: true,
+    select: '*',
+    fields: [
+      { name: 'name', label: 'Name', type: 'text', required: true },
+      { name: 'href', label: 'URL Path', type: 'text', required: true, help: 'e.g., /about or https://example.com' },
+      { name: 'parent_id', label: 'Parent Link', type: 'select' },
+      sortOrderField,
+      activeField,
+    ],
+  },
+  {
+    table: 'media_library',
+    slug: 'media-library',
+    label: 'Media Library',
+    singular: 'Media Item',
+    icon: 'Image',
+    titleField: 'file_name',
+    subtitleField: 'classification',
+    listFields: ['file_name', 'classification', 'mime_type', 'file_size', 'created_at'],
+    orderColumn: 'created_at',
+    sortable: false,
+    select: '*',
+    fields: [
+      { name: 'file_name', label: 'File Name', type: 'text', required: true, full: true },
+      { name: 'file_path', label: 'File Path (URL)', type: 'text', required: true, full: true },
+      { name: 'mime_type', label: 'MIME Type', type: 'text', required: true },
+      { name: 'file_size', label: 'File Size (bytes)', type: 'number', required: true },
+      { name: 'classification', label: 'Classification', type: 'text', required: true },
+      activeField,
+    ],
+  },
 ]
 
 export function getTableConfig(slug: string): TableConfig | undefined {
@@ -671,6 +740,8 @@ export function getReferenceOptions(config: TableConfig) {
         relational[f.name] = { table: 'courses', label: 'name', value: 'id' }
       } else if (f.name === 'student_id') {
         relational[f.name] = { table: 'students', label: 'name', value: 'id' }
+      } else if (f.name === 'parent_id') {
+        relational[f.name] = { table: 'navigation_links', label: 'name', value: 'id' }
       }
     }
   }

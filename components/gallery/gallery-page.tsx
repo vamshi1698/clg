@@ -37,12 +37,55 @@ interface GalleryPageProps {
   items: GalleryItem[]
 }
 
-export function GalleryPage({ items }: GalleryPageProps) {
+export function GalleryPage({ items: rawItems }: GalleryPageProps) {
+  // Flatten additional_images and additional_videos into separate items for display
+  const items = rawItems.flatMap((item) => {
+    const results = [item]
+    
+    // If this item is a video but has a distinct primary image_url and thumbnail_url,
+    // the user likely wants the primary image to also appear as a photo in the gallery.
+    if (item.is_video && item.thumbnail_url && item.thumbnail_url !== item.image_url) {
+      results.push({
+        ...item,
+        id: `${item.id}-primary-img`,
+        is_video: false,
+        video_url: null,
+      })
+    }
+    if (item.additional_images && item.additional_images.length > 0) {
+      item.additional_images.forEach((url, idx) => {
+        results.push({
+          ...item,
+          id: `${item.id}-img-${idx}`,
+          image_url: url,
+          is_video: false,
+          video_url: null,
+          additional_images: null,
+          additional_videos: null,
+        })
+      })
+    }
+    if (item.additional_videos && item.additional_videos.length > 0) {
+      item.additional_videos.forEach((url, idx) => {
+        results.push({
+          ...item,
+          id: `${item.id}-vid-${idx}`,
+          is_video: true,
+          video_url: url,
+          image_url: item.thumbnail_url || item.image_url, // fallback
+          additional_images: null,
+          additional_videos: null,
+        })
+      })
+    }
+    return results
+  })
+
   const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null)
   const [filter, setFilter] = useState('all')
 
-  const categories = ['all', ...Array.from(new Set(items.map(i => i.category)))]
-  const filteredItems = filter === 'all' ? items : items.filter(i => i.category === filter)
+  const categories = ['all', ...Array.from(new Set(items.map(i => (i.category || '').trim().toLowerCase())))]
+  const filteredItems = filter === 'all' ? items : items.filter(i => (i.category || '').trim().toLowerCase() === filter)
   const photos = filteredItems.filter(i => !i.is_video)
   const videos = filteredItems.filter(i => i.is_video)
 
@@ -212,17 +255,16 @@ export function GalleryPage({ items }: GalleryPageProps) {
               whileInView="animate"
               viewport={{ once: true }}
               variants={staggerContainer}
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 auto-rows-[200px] md:auto-rows-[240px]"
             >
               {photos.map((item, index) => (
                 <motion.div
                   key={item.id}
                   variants={fadeInItem}
                   onClick={() => setSelectedItem(item)}
-                  className={`group cursor-pointer relative overflow-hidden rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-300 ${
+                  className={`group cursor-pointer relative overflow-hidden rounded-2xl shadow-sm hover:shadow-xl transition-shadow duration-300 bg-slate-100 ${
                     index % 7 === 0 ? 'col-span-2 row-span-2' : ''
                   }`}
-                  style={{ minHeight: index % 7 === 0 ? '360px' : '200px' }}
                 >
                   <Image
                     src={item.image_url}

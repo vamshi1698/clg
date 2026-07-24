@@ -104,15 +104,6 @@ export function AdmissionsPage({ importantDates, courses, faqs }: AdmissionsPage
           : ['M.A. (History / English)', 'M.Sc. (Mathematics / Physics)', 'M.Com', 'MCA', 'MBA'],
         href: '/courses',
       },
-      {
-        level: 'Certificate Programs',
-        duration: '3-6 Months',
-        color: 'from-gold-600 to-amber-700',
-        courses: (diplomaFromDb.length + certFromDb.length) > 0 
-          ? [...diplomaFromDb, ...certFromDb].map(c => c.name) 
-          : ['Digital Marketing', 'Financial Accounting', 'Tally ERP', 'Spoken English', 'Photography & Media'],
-        href: '/academics/undergraduate',
-      },
     ]
   }, [courses])
 
@@ -336,7 +327,7 @@ export function AdmissionsPage({ importantDates, courses, faqs }: AdmissionsPage
             <h2 className="font-display text-4xl md:text-5xl font-bold text-academic-950 mt-3">Programs We Offer</h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 max-w-4xl mx-auto gap-8">
             {programs.map((prog, i) => (
               <motion.div
                 key={i}

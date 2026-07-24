@@ -47,7 +47,7 @@ export default async function HomePage() {
     getStatistics(),
     getCourses(),
     getNews({ limit: 10 }),
-    getEvents({ upcoming: true, limit: 5 }),
+    getEvents({ limit: 5 }), // Fetch recent events
     getGallery({ limit: 10 }),
     getRecruiters(),
     getTestimonials(),
@@ -147,9 +147,7 @@ export default async function HomePage() {
         <RecruitersSection recruiters={recruiters} />
       )}
 
-      {testimonials.length > 0 && (
-        <TestimonialsSection testimonials={testimonials} />
-      )}
+      <TestimonialsSection testimonials={testimonials} />
 
       <CTASection />
     </>

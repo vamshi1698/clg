@@ -2,7 +2,14 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { ArrowLeft, Calendar } from 'lucide-react'
-import { getNewsBySlug } from '@/lib/data/public'
+import { getNewsBySlug, getNews } from '@/lib/data/public'
+
+export const dynamicParams = true
+
+export async function generateStaticParams() {
+  const news = await getNews({})
+  return news.map((n) => ({ slug: n.slug }))
+}
 
 interface PageProps {
   params: { slug: string }

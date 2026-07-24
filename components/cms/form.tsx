@@ -7,6 +7,8 @@ import { ArrowLeft, Save, Loader2, AlertCircle, Plus, Trash2, ChevronDown, Check
 import type { TableConfig, FieldConfig } from '@/lib/cms/tables'
 import { saveRow, deleteRow } from '@/lib/cms/actions'
 import { ResultsMultiForm } from './results-multi-form'
+import { MediaUploadInput } from './media-upload'
+import { BlocksEditor } from './blocks-editor'
 import { toast } from '@/hooks/use-toast'
 import {
   AlertDialog,
@@ -78,8 +80,6 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
   }
 
   const [values, setValues] = useState<Record<string, unknown>>(initial || {})
-  const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -87,15 +87,13 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
-    setSaved(false)
 
     const payload = buildPayload(config.fields, values)
     const requiredMissing = config.fields
       .filter((f) => f.required)
       .filter((f) => payload[f.name] === undefined || payload[f.name] === '' || payload[f.name] === null)
     if (requiredMissing.length) {
-      setError(`Required fields missing: ${requiredMissing.map((f) => f.label).join(', ')}`)
+      toast({ title: 'Validation Error', description: `Required fields missing: ${requiredMissing.map((f) => f.label).join(', ')}`, variant: 'destructive' })
       return
     }
 
@@ -103,19 +101,19 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
       if (config.singleton) {
         const result = await saveRow(config.table, payload, String(singletonId ?? 1))
         if (result.error) {
-          setError(result.error)
+          toast({ title: 'Error', description: result.error, variant: 'destructive' })
         } else {
-          setSaved(true)
+          toast({ title: 'Success', description: 'Settings saved successfully.' })
           router.refresh()
-          setTimeout(() => setSaved(false), 3000)
         }
       } else {
         const result = rowId
           ? await saveRow(config.table, payload, rowId)
           : await saveRow(config.table, payload)
         if (result.error) {
-          setError(result.error)
+          toast({ title: 'Error', description: result.error, variant: 'destructive' })
         } else {
+          toast({ title: 'Success', description: `${config.singular} saved successfully.` })
           router.refresh()
           router.push(`/cms/${config.slug}`)
         }
@@ -170,13 +168,7 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
         )}
       </div>
 
-      {/* Error */}
-      {error && (
-        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm mb-6">
-          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
-      )}
+
 
       <form onSubmit={handleSubmit}>
         {/* Main fields card */}
@@ -197,7 +189,11 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
                   key={field.name}
                   field={field}
                   value={values[field.name] ?? initial?.[field.name]}
-                  references={references?.[field.name]}
+                  references={
+                    field.name === 'parent_id' && initial?.id
+                      ? references?.[field.name]?.filter((r) => r.value !== initial.id)
+                      : references?.[field.name]
+                  }
                   onChange={(v) => setValues((prev) => ({ ...prev, [field.name]: v }))}
                 />
               ))}
@@ -209,12 +205,6 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
         <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-40 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-lg">
           <div className="max-w-4xl mx-auto px-4 lg:px-7 py-3 flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 min-w-0">
-              {saved && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-full">
-                  <Check className="h-3 w-3" />
-                  Saved successfully
-                </span>
-              )}
               {isPending && (
                 <span className="text-xs text-gray-400 flex items-center gap-1.5">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -283,7 +273,6 @@ export function CmsForm({ config, references, initial, rowId, singletonId }: For
                   startTransition(async () => {
                     const result = await deleteRow(config.table, rowId)
                     if (result && result.error) {
-                      setError(result.error)
                       toast({
                         title: 'Error',
                         description: `Failed to delete: ${result.error}`,
@@ -349,7 +338,7 @@ function PreviewModal({
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
-        
+
         {/* Preview Content */}
         <div className="flex-1 overflow-y-auto bg-gray-50 p-6 md:p-12">
           <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -376,16 +365,16 @@ function PreviewModal({
               )}
               <div className="prose prose-lg max-w-none text-gray-600">
                 {typeof description === 'string' ? (
-                   description.split('\n').map((line, i) => (
-                     <p key={i} className="min-h-[1.5rem]">{line}</p>
-                   ))
+                  description.split('\n').map((line, i) => (
+                    <p key={i} className="min-h-[1.5rem]">{line}</p>
+                  ))
                 ) : (
                   <pre className="text-sm bg-gray-100 p-4 rounded-lg overflow-auto">
                     {JSON.stringify(data, null, 2)}
                   </pre>
                 )}
               </div>
-              
+
               {/* Other Data Fields */}
               <div className="mt-12 pt-8 border-t border-gray-100">
                 <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">Other Data</h3>
@@ -449,12 +438,15 @@ function FieldRenderer({ field, value, references, onChange }: FieldRendererProp
       )
 
     case 'array':
+    case 'image_array':
+    case 'url_array':
       return (
         <div className={wrapperClass}>
           {label}
           <ArrayField
             value={Array.isArray(value) ? (value as string[]) : []}
             onChange={onChange}
+            type={field.type === 'image_array' ? 'image' : field.type === 'url_array' ? 'url' : 'text'}
           />
           {field.help && <p className="text-xs text-gray-400 mt-1.5">{field.help}</p>}
         </div>
@@ -493,7 +485,7 @@ function FieldRenderer({ field, value, references, onChange }: FieldRendererProp
               onChange={(e) => onChange(e.target.value || null)}
               className={`${inputBase} appearance-none pr-10 cursor-pointer`}
             >
-              <option value="">— Select {field.label} —</option>
+              <option value="">{field.name === 'parent_id' ? '— No Parent (Top Level) —' : `— Select ${field.label} —`}</option>
               {options.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -541,18 +533,24 @@ function FieldRenderer({ field, value, references, onChange }: FieldRendererProp
       return (
         <div className={wrapperClass}>
           {label}
-          <input
-            type="url"
+          <MediaUploadInput
             value={(value as string) || ''}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder={field.placeholder || (field.type === 'image' ? 'https://example.com/image.jpg' : 'https://')}
-            className={inputBase}
+            onChange={(v) => onChange(v)}
+            type={field.type}
+            placeholder={field.placeholder}
+            className="px-3.5 py-2.5 text-sm text-gray-900 bg-white border border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all placeholder:text-gray-400 disabled:bg-gray-50 disabled:text-gray-400"
           />
-          {field.type === 'image' && value != null && value !== '' && (
-            <div className="mt-2 relative w-24 h-24 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shadow-sm">
-              <img src={String(value)} alt="" className="w-full h-full object-cover" />
-            </div>
-          )}
+        </div>
+      )
+
+    case 'blocks':
+      return (
+        <div className="sm:col-span-2">
+          {label}
+          <BlocksEditor
+            value={Array.isArray(value) ? value : []}
+            onChange={(v) => onChange(v)}
+          />
         </div>
       )
 
@@ -576,11 +574,58 @@ function FieldRenderer({ field, value, references, onChange }: FieldRendererProp
 function ArrayField({
   value,
   onChange,
+  type = 'text',
 }: {
   value: string[]
   onChange: (v: string[]) => void
+  type?: 'text' | 'image' | 'url'
 }) {
   const [input, setInput] = useState('')
+  
+  if (type === 'image' || type === 'url') {
+    return (
+      <div className="space-y-4">
+        {value.length > 0 && (
+          <div className="space-y-3">
+            {value.map((item, i) => (
+              <div key={i} className="flex items-start gap-2 relative group">
+                <div className="flex-1">
+                  <MediaUploadInput
+                    value={item}
+                    onChange={(v) => {
+                      const newVals = [...value]
+                      newVals[i] = v
+                      onChange(newVals)
+                    }}
+                    type={type}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onChange(value.filter((_, idx) => idx !== i))}
+                  className="mt-1 p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition-colors border border-red-100 shrink-0"
+                  title="Remove item"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="p-4 bg-gray-50 border border-gray-200 border-dashed rounded-xl">
+          <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Add New {type === 'image' ? 'Image' : 'URL'}</p>
+          <MediaUploadInput
+            value=""
+            onChange={(v) => {
+              if (v) onChange([...value, v])
+            }}
+            type={type}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -652,7 +697,7 @@ function buildPayload(fields: FieldConfig[], values: Record<string, unknown>): R
       v = null
     } else if (f.type === 'date' || f.type === 'datetime') {
       if (v === '' || v === undefined) v = null
-    } else if (typeof v === 'string' && v.trim() === '' && f.type !== 'array') {
+    } else if (typeof v === 'string' && v.trim() === '' && !f.type.includes('array')) {
       v = null
     }
     payload[f.name] = v

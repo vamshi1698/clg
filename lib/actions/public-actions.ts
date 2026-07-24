@@ -14,6 +14,7 @@ import {
   resultLookupSchema,
   contactMessageSchema,
   admissionEnquirySchema,
+  testimonialSubmissionSchema,
 } from '@/lib/security'
 
 export async function lookupResults(registerNumber: string, dateOfBirth: string) {
@@ -246,5 +247,47 @@ export async function submitAdmissionEnquiry(formData: {
   } catch (err: any) {
     console.error('Error submitting enquiry:', err)
     return { error: err.message || 'Failed to submit enquiry. Please try again.' }
+  }
+}
+
+export async function submitTestimonial(formData: FormData) {
+  try {
+    const rawData = {
+      name: formData.get('name') as string,
+      designation: formData.get('designation') as string,
+      company: formData.get('company') as string,
+      batchYear: formData.get('batchYear') as string,
+      rating: Number(formData.get('rating')),
+      content: formData.get('content') as string,
+    }
+
+    const validated = validateInput(testimonialSubmissionSchema, rawData)
+
+    const payload = {
+      id: crypto.randomUUID(),
+      name: stripTags(validated.name),
+      designation: validated.designation ? stripTags(validated.designation) : null,
+      company: validated.company ? stripTags(validated.company) : null,
+      batch_year: validated.batchYear ? parseInt(validated.batchYear, 10) : null,
+      rating: validated.rating,
+      content: sanitizeHtml(validated.content),
+      is_active: false, // Default to inactive (requires CMS approval)
+      is_featured: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+
+    const { error } = await postgresClient.insert('testimonials', payload)
+
+    if (error) {
+      console.error('Error inserting testimonial:', error)
+      return { error: 'Failed to submit review. Please try again later.' }
+    }
+
+    return { ok: true, message: 'Thank you! Your review has been submitted and is pending approval.' }
+  } catch (error: any) {
+    console.error('Testimonial submission error:', error)
+    if (error?.message) return { error: error.message }
+    return { error: 'Invalid submission data.' }
   }
 }

@@ -163,3 +163,12 @@ export const admissionEnquirySchema = z.object({
   percentage: z.string().trim().min(1, 'Percentage is required'),
   queries: z.string().trim().max(5000, 'Queries text is too long').optional(),
 })
+
+export const testimonialSubmissionSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(200, 'Name is too long'),
+  designation: z.string().trim().max(200, 'Designation is too long').optional(),
+  company: z.string().trim().max(200, 'Company is too long').optional(),
+  batchYear: z.string().trim().regex(/^\d{4}$/, 'Batch year must be a 4-digit number').optional().or(z.literal('')),
+  rating: z.number().min(1).max(5).default(5),
+  content: z.string().trim().min(1, 'Review content is required').max(2000, 'Review is too long'),
+})

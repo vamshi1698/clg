@@ -57,6 +57,15 @@ class PostgresQuery {
     return this
   }
 
+  is(column: string, value: any): this {
+    if (value === null) {
+      this.filters.push({ column, operator: 'IS_NULL', value: null })
+    } else {
+      this.filters.push({ column, operator: 'IS', value })
+    }
+    return this
+  }
+
   order(column: string, options?: { ascending?: boolean }): this {
     this.orderByColumn = column
     this.orderAscending = options?.ascending !== false
@@ -86,6 +95,9 @@ class PostgresQuery {
     // Add WHERE clauses
     if (this.filters.length > 0) {
       const whereClauses = this.filters.map((f) => {
+        if (f.operator === 'IS_NULL') {
+          return `"${escapeIdentifier(f.column)}" IS NULL`
+        }
         values.push(f.value)
         return `"${escapeIdentifier(f.column)}" ${f.operator} $${paramIndex++}`
       })

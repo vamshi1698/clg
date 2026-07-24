@@ -72,21 +72,16 @@ const globalNavigation = [
   { name: 'Results', href: '/results' },
 ]
 
-const mainNavigation = [
-  { name: 'Admissions', href: '/admissions' },
-  {
-    name: 'Academics', href: '/academics', hasDropdown: true, items: [
-      { name: 'Departments', href: '/departments' },
-      { name: 'Undergraduate Programs', href: '/academics/undergraduate' },
-      { name: 'Graduate Programs', href: '/academics/graduate' },
-    ]
-  },
-  { name: 'Research', href: '/research' },
-  { name: 'Campus Life', href: '/campus-life' },
-  { name: 'About', href: '/about' },
-]
+export type NavItem = {
+  name: string
+  href: string
+  hasDropdown?: boolean
+  items?: { name: string; href: string }[]
+}
 
-export function Header() {
+export function Header({ navItems = [] }: { navItems?: NavItem[] }) {
+  const dynamicNavigation = useMemo(() => navItems, [navItems])
+
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
@@ -192,7 +187,7 @@ export function Header() {
 
           {/* Desktop navigation */}
           <nav className="hidden items-center gap-6 lg:flex">
-            {mainNavigation.map((item) => (
+            {dynamicNavigation.map((item) => (
               <div
                 key={item.name}
                 className="relative"
@@ -262,7 +257,7 @@ export function Header() {
       {mobileMenuOpen && (
         <div id="mobile-menu" className="lg:hidden border-t border-slate-200 bg-white h-screen overflow-y-auto pb-24">
           <div className="container-wide py-4 space-y-2">
-            {mainNavigation.map((item) => (
+            {dynamicNavigation.map((item) => (
               <div key={item.name} className="border-b border-slate-100 pb-2">
                 <Link
                   href={item.href}
