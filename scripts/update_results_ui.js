@@ -1,22 +1,9 @@
-'use client'
+const fs = require('fs');
 
-import { useState, useTransition } from 'react'
-import { motion } from 'framer-motion'
-import { Search, FileText, Award, TrendingUp, AlertCircle, Download, Printer, X, ShieldAlert } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { lookupResults } from '@/lib/actions/public-actions'
-import Image from 'next/image'
-import logoImage from '@/public/icon.png'
+let content = fs.readFileSync('components/results/results-page.tsx', 'utf-8');
 
-const fadeIn = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
-}
-
-interface ResultData {
+// Replace Interface
+content = content.replace(/interface ResultData \{[\s\S]*?\} \| null\n\}/, `interface ResultData {
   student: {
     id: string
     name: string
@@ -33,6 +20,13 @@ interface ResultData {
     external_marks: number | null
     total_marks: number | null
     max_marks: number | null
+    theory_max_marks: number | null
+    theory_min_marks: number | null
+    ia_max_marks: number | null
+    ia_min_marks: number | null
+    total_min_marks: number | null
+    grade_points: number | null
+    credit_points: number | null
     grade: string | null
     credits: number | null
     result_status: string | null
@@ -40,224 +34,30 @@ interface ResultData {
   summary: {
     semester: number
     academic_year: string
+    examination_type?: string
     sgpa: number | null
     cgpa: number | null
     total_credits: number | null
     earned_credits: number | null
+    total_max_marks: number | null
+    total_marks_obtained: number | null
+    percentage: number | null
+    overall_result: string | null
+    class_obtained: string | null
+    programme_total_max_marks: number | null
+    programme_total_marks_obtained: number | null
+    programme_total_credits_obtained: number | null
+    programme_cgpa: number | null
+    programme_grade: string | null
+    total_marks_words: string | null
+    programme_total_marks_words: string | null
     result_status: string | null
   } | null
-}
+}`);
 
-interface PdfRecord {
-  id: string
-  title: string
-  academic_year: string
-  semester: number
-  pdf_filename: string
-  created_at: string
-}
-
-interface ResultsPageProps {
-  initialPdfs?: PdfRecord[]
-}
-
-export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
-  const [registerNumber, setRegisterNumber] = useState('')
-  const [dobDay, setDobDay] = useState('')
-  const [dobMonth, setDobMonth] = useState('')
-  const [dobYear, setDobYear] = useState('')
-  const [result, setResult] = useState<ResultData | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  const [pdfAnnouncements, setPdfAnnouncements] = useState<PdfRecord[]>(initialPdfs)
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setResult(null)
-
-    if (!registerNumber.trim() || !dobDay || !dobMonth || !dobYear) {
-      setError('Please enter your register number and select your complete date of birth')
-      return
-    }
-
-    const dateOfBirth = `${dobYear}-${dobMonth}-${dobDay}`
-
-    startTransition(async () => {
-      const res = await lookupResults(registerNumber.trim(), dateOfBirth)
-      if (res.error) {
-        setError(res.error)
-        return
-      }
-      setResult(res as any)
-    })
-  }
-
-  const handlePrint = () => {
-    window.print()
-  }
-
-  return (
-    <div className="bg-slate-50/50 min-h-screen">
-      {/* Hero Section */}
-      <section className="relative pt-44 md:pt-52 pb-16 overflow-hidden print:hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
-            alt="Library studying"
-            fill
-            sizes="100vw"
-            priority
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-academic-950/75 to-transparent" />
-        </div>
-        <div className="relative container-wide text-white">
-          <motion.div initial="initial" animate="animate" variants={fadeIn} className="max-w-2xl">
-            <span className="inline-block bg-gold-500/20 border border-gold-500/40 text-gold-300 text-xs font-bold uppercase tracking-[0.25em] px-4 py-2 rounded-full mb-6">
-              Online Portal
-            </span>
-            <h1 className="font-display text-5xl md:text-6xl font-bold leading-tight mb-6">
-              Examination <span className="text-gold-400">Results</span>
-            </h1>
-            <p className="text-xl text-slate-300 leading-relaxed">
-              Check your semester-wise grades and academic statements online, or download official results PDF announcements.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Main Content Sections */}
-      <section className="section-padding py-12 lg:py-16 print:py-0 print:my-0">
-        <div className="container-wide max-w-6xl print:max-w-none print:p-0 print:m-0">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start print:block">
-
-            {/* Left/Main Column: Search and Result Viewer */}
-            <div className="lg:col-span-2 print:w-full space-y-8 print:space-y-0">
-
-              <Card className="border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white print:hidden">
-                <CardHeader className="bg-slate-50/70 border-b border-slate-200/60 px-6 py-4 rounded-t-2xl">
-                  <h2 className="font-display text-lg font-bold text-academic-950">Check Individual Results</h2>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <form onSubmit={handleSearch} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                          Register Number
-                        </label>
-                        <Input
-                          type="text"
-                          value={registerNumber}
-                          onChange={(e) => setRegisterNumber(e.target.value)}
-                          placeholder="Enter your register number"
-                          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 transition-shadow"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
-                          Date of Birth
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                          {/* Day selector */}
-                          <select
-                            value={dobDay}
-                            onChange={(e) => setDobDay(e.target.value)}
-                            className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
-                          >
-                            <option value="">Day</option>
-                            {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0')).map((d) => (
-                              <option key={d} value={d}>{d}</option>
-                            ))}
-                          </select>
-
-                          {/* Month selector */}
-                          <select
-                            value={dobMonth}
-                            onChange={(e) => setDobMonth(e.target.value)}
-                            className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
-                          >
-                            <option value="">Month</option>
-                            {[
-                              { val: '01', name: 'Jan' },
-                              { val: '02', name: 'Feb' },
-                              { val: '03', name: 'Mar' },
-                              { val: '04', name: 'Apr' },
-                              { val: '05', name: 'May' },
-                              { val: '06', name: 'Jun' },
-                              { val: '07', name: 'Jul' },
-                              { val: '08', name: 'Aug' },
-                              { val: '09', name: 'Sep' },
-                              { val: '10', name: 'Oct' },
-                              { val: '11', name: 'Nov' },
-                              { val: '12', name: 'Dec' },
-                            ].map((m) => (
-                              <option key={m.val} value={m.val}>{m.name}</option>
-                            ))}
-                          </select>
-
-                          {/* Year selector */}
-                          <select
-                            value={dobYear}
-                            onChange={(e) => setDobYear(e.target.value)}
-                            className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
-                          >
-                            <option value="">Year</option>
-                            {Array.from({ length: 50 }, (_, i) => String(new Date().getFullYear() - 10 - i)).map((y) => (
-                              <option key={y} value={y}>{y}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    {error && (
-                      <div className="flex items-center gap-2.5 p-4 bg-red-50 text-red-800 border border-red-200 rounded-xl text-sm">
-                        <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                        {error}
-                      </div>
-                    )}
-
-                    <Button type="submit" className="w-full py-3 bg-academic-950 text-white font-semibold rounded-xl hover:bg-academic-800 transition-colors shadow-sm disabled:opacity-50" disabled={isPending}>
-                      {isPending ? (
-                        <>Searching...</>
-                      ) : (
-                        <>
-                          <Search className="h-4 w-4 mr-2" />
-                          Check Results
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </Card>
-
-              {/* Individual Student Results Card */}
-              {result && (
-                <motion.div
-                  initial="initial"
-                  animate="animate"
-                  variants={fadeIn}
-                  className="print:mt-0"
-                >
-                  <Card className="border border-slate-200/80 rounded-2xl shadow-lg print:shadow-none print:border-4 print:border-double print:border-academic-900 print:rounded-none print:p-8 bg-white" id="result-card">
-                    <CardHeader className="bg-academic-950 text-white px-6 py-4 rounded-t-2xl print:hidden">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-display text-lg font-semibold">National College Jayanagar</h3>
-                          <p className="text-gray-300 text-xs">Semester Examination Results</p>
-                        </div>
-                        <div className="print:hidden flex items-center gap-2">
-                          <Button onClick={handlePrint} variant="outline" size="sm" className="bg-white text-academic-950 hover:bg-gray-150 border-none font-semibold">
-                            <Printer className="h-4 w-4 mr-1.5" />
-                            Print
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="p-6 space-y-6 print:p-0">
+// Replace render card
+const cardRegex = /<CardContent className="p-6 space-y-6 print:p-0">[\s\S]*?<\/CardContent>/;
+const newCardContent = `<CardContent className="p-6 space-y-6 print:p-0">
                       {/* Print-Only Header */}
                       <div className="hidden print:flex flex-col items-center justify-center text-center mb-6 pb-2">
                         <div className="flex items-center gap-3 justify-center mb-1">
@@ -491,65 +291,9 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                           Print Result Sheet
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
+                    </CardContent>`;
+                    
+content = content.replace(cardRegex, newCardContent);
 
-            </div>
-
-            {/* Right Column: Downloadable Announcements */}
-            <div className="space-y-6 print:hidden">
-              <Card className="border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
-                <CardHeader className="bg-slate-50/70 border-b border-slate-200/60 px-6 py-4 rounded-t-2xl">
-                  <CardTitle className="font-display text-base font-bold text-academic-950 flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-gold-500" />
-                    Official Announcements
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  {pdfAnnouncements.length > 0 ? (
-                    <div className="space-y-3">
-                      {pdfAnnouncements.map((pdf) => (
-                        <a
-                          key={pdf.id}
-                          href={`/results/${pdf.id}.pdf`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download={pdf.title.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'}
-                          className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-slate-50 bg-white transition-all group shadow-sm hover:shadow"
-                        >
-                          <FileText className="h-8 w-8 text-academic-700 flex-shrink-0 mt-0.5" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-academic-900 leading-snug group-hover:text-gold-600 transition-colors">
-                              {pdf.title}
-                            </p>
-                            <p className="text-[10px] text-gray-500 mt-1">
-                              Semester {pdf.semester} · {pdf.academic_year}
-                            </p>
-                          </div>
-                          <Download className="h-4 w-4 text-gray-400 group-hover:text-gold-600 self-center" />
-                        </a>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-gray-400 space-y-2">
-                      <ShieldAlert className="h-8 w-8 mx-auto text-gray-300" />
-                      <p className="text-xs">No official announcements posted at this time.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Help & Contact */}
-              <p className="text-center text-gray-500 text-xs">
-                For any issues with results, please contact the Examination Cell at <a href="mailto:exam@nationalcollege.edu.in" className="text-gold-600 hover:underline">exam@nationalcollege.edu.in</a>
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-    </div>
-  )
-}
+fs.writeFileSync('components/results/results-page.tsx', content);
+console.log('updated');

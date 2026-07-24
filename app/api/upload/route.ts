@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = new Uint8Array(bytes)
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+    const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads')
     try {
       await mkdir(uploadDir, { recursive: true })
     } catch (e) {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const baseName = path.basename(originalName, ext).replace(/[^a-z0-9]/gi, '_').toLowerCase()
     const uniqueFilename = `${baseName}_${crypto.randomBytes(4).toString('hex')}${ext}`
     
-    const filePath = path.join(uploadDir, uniqueFilename)
+    const filePath = path.join(/*turbopackIgnore: true*/ uploadDir, uniqueFilename)
     await writeFile(filePath, buffer)
 
     const fileUrl = `/uploads/${uniqueFilename}`

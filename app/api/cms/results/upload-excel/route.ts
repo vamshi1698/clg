@@ -140,6 +140,20 @@ export async function POST(req: Request) {
     const statusField = findHeader(headers, ['result_status', 'status', 'result status'])
     const sgpaField = findHeader(headers, ['sgpa'])
     const cgpaField = findHeader(headers, ['cgpa'])
+    
+    // New fields for extended format
+    const totalMaxMarksField = findHeader(headers, ['total_max_marks', 'total max'])
+    const totalMarksObtainedField = findHeader(headers, ['total_marks_obtained', 'total obtained', 'marks obtained'])
+    const percentageField = findHeader(headers, ['percentage', '%', 'overall percentage'])
+    const overallResultField = findHeader(headers, ['overall_result', 'overall result'])
+    const classObtainedField = findHeader(headers, ['class_obtained', 'class', 'class obtained'])
+    const progTotalMaxMarksField = findHeader(headers, ['programme_total_max_marks', 'prog total max'])
+    const progTotalMarksObtainedField = findHeader(headers, ['programme_total_marks_obtained', 'prog total obtained'])
+    const progTotalCreditsObtainedField = findHeader(headers, ['programme_total_credits_obtained', 'prog total credits'])
+    const progCgpaField = findHeader(headers, ['programme_cgpa', 'prog cgpa'])
+    const progGradeField = findHeader(headers, ['programme_grade', 'prog grade'])
+    const totalMarksWordsField = findHeader(headers, ['total_marks_words', 'marks in words'])
+    const progTotalMarksWordsField = findHeader(headers, ['programme_total_marks_words', 'prog marks in words'])
 
     // Validate presence of critical columns
     const hasIndexedColumns = headers.some(h => {
@@ -197,6 +211,18 @@ export async function POST(req: Request) {
           examType,
           sgpa,
           cgpa,
+          totalMaxMarks: totalMaxMarksField && row[totalMaxMarksField] !== undefined ? Number(row[totalMaxMarksField]) : undefined,
+          totalMarksObtained: totalMarksObtainedField && row[totalMarksObtainedField] !== undefined ? Number(row[totalMarksObtainedField]) : undefined,
+          percentage: percentageField && row[percentageField] !== undefined ? Number(row[percentageField]) : undefined,
+          overallResult: overallResultField && row[overallResultField] !== undefined ? String(row[overallResultField]).trim() : undefined,
+          classObtained: classObtainedField && row[classObtainedField] !== undefined ? String(row[classObtainedField]).trim() : undefined,
+          progTotalMaxMarks: progTotalMaxMarksField && row[progTotalMaxMarksField] !== undefined ? Number(row[progTotalMaxMarksField]) : undefined,
+          progTotalMarksObtained: progTotalMarksObtainedField && row[progTotalMarksObtainedField] !== undefined ? Number(row[progTotalMarksObtainedField]) : undefined,
+          progTotalCreditsObtained: progTotalCreditsObtainedField && row[progTotalCreditsObtainedField] !== undefined ? Number(row[progTotalCreditsObtainedField]) : undefined,
+          progCgpa: progCgpaField && row[progCgpaField] !== undefined ? Number(row[progCgpaField]) : undefined,
+          progGrade: progGradeField && row[progGradeField] !== undefined ? String(row[progGradeField]).trim() : undefined,
+          totalMarksWords: totalMarksWordsField && row[totalMarksWordsField] !== undefined ? String(row[totalMarksWordsField]).trim() : undefined,
+          progTotalMarksWords: progTotalMarksWordsField && row[progTotalMarksWordsField] !== undefined ? String(row[progTotalMarksWordsField]).trim() : undefined,
           subjects: []
         })
       }
@@ -216,6 +242,11 @@ export async function POST(req: Request) {
           const internal = internalField && row[internalField] !== undefined && row[internalField] !== '' ? Number(row[internalField]) : null
           const external = externalField && row[externalField] !== undefined && row[externalField] !== '' ? Number(row[externalField]) : null
           const max = maxField && row[maxField] !== undefined && row[maxField] !== '' ? Number(row[maxField]) : 100
+          const theoryMax = 60
+          const theoryMin = 21
+          const iaMax = 40
+          const iaMin = 14
+          const totalMin = 35
           const grade = gradeField && row[gradeField] !== undefined ? String(row[gradeField]).trim() : null
           const credits = creditsField && row[creditsField] !== undefined && row[creditsField] !== '' ? Number(row[creditsField]) : null
           const status = statusField && row[statusField] !== undefined ? String(row[statusField]).trim().toUpperCase() : null
@@ -226,6 +257,11 @@ export async function POST(req: Request) {
             internal,
             external,
             max,
+            theoryMax,
+            theoryMin,
+            iaMax,
+            iaMin,
+            totalMin,
             grade,
             credits,
             status
@@ -254,6 +290,11 @@ export async function POST(req: Request) {
               internal: internal !== undefined && internal !== '' ? Number(internal) : null,
               external: external !== undefined && external !== '' ? Number(external) : null,
               max: max !== undefined && max !== '' ? Number(max) : 100,
+              theoryMax: 60,
+              theoryMin: 21,
+              iaMax: 40,
+              iaMin: 14,
+              totalMin: 35,
               grade: grade !== undefined ? String(grade).trim() : null,
               credits: credits !== undefined && credits !== '' ? Number(credits) : null,
               status: status !== undefined ? String(status).trim().toUpperCase() : null
@@ -352,6 +393,7 @@ export async function POST(req: Request) {
 
           const points = getGradePoints(subject.grade)
           gradePointsSum += points * c
+          const creditPoints = points * c
 
           const resultId = crypto.randomUUID()
           const { error: resErr } = await postgresClient.insert('results', {
@@ -366,6 +408,13 @@ export async function POST(req: Request) {
             external_marks: subject.external,
             total_marks: totalMarks,
             max_marks: maxMarks,
+            theory_max_marks: subject.theoryMax,
+            theory_min_marks: subject.theoryMin,
+            ia_max_marks: subject.iaMax,
+            ia_min_marks: subject.iaMin,
+            total_min_marks: subject.totalMin,
+            grade_points: points,
+            credit_points: creditPoints,
             grade: subject.grade,
             credits: subject.credits,
             result_status: status,
@@ -414,6 +463,18 @@ export async function POST(req: Request) {
           cgpa,
           total_credits: totalCredits,
           earned_credits: earnedCredits,
+          total_max_marks: sData.totalMaxMarks,
+          total_marks_obtained: sData.totalMarksObtained,
+          percentage: sData.percentage,
+          overall_result: sData.overallResult !== undefined ? sData.overallResult : (hasFail ? 'FAIL' : 'PASS'),
+          class_obtained: sData.classObtained,
+          programme_total_max_marks: sData.progTotalMaxMarks,
+          programme_total_marks_obtained: sData.progTotalMarksObtained,
+          programme_total_credits_obtained: sData.progTotalCreditsObtained,
+          programme_cgpa: sData.progCgpa,
+          programme_grade: sData.progGrade,
+          total_marks_words: sData.totalMarksWords,
+          programme_total_marks_words: sData.progTotalMarksWords,
           result_status: hasFail ? 'FAIL' : 'PASS',
           published_at: new Date().toISOString(),
           is_active: true,

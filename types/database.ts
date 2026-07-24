@@ -310,6 +310,13 @@ export interface Result {
   external_marks: number | null
   total_marks: number | null
   max_marks: number | null
+  theory_max_marks: number | null
+  theory_min_marks: number | null
+  ia_max_marks: number | null
+  ia_min_marks: number | null
+  total_min_marks: number | null
+  grade_points: number | null
+  credit_points: number | null
   grade: string | null
   credits: number | null
   result_status: string | null
@@ -328,6 +335,18 @@ export interface ResultSummary {
   cgpa: number | null
   total_credits: number | null
   earned_credits: number | null
+  total_max_marks: number | null
+  total_marks_obtained: number | null
+  percentage: number | null
+  overall_result: string | null
+  class_obtained: string | null
+  programme_total_max_marks: number | null
+  programme_total_marks_obtained: number | null
+  programme_total_credits_obtained: number | null
+  programme_cgpa: number | null
+  programme_grade: string | null
+  total_marks_words: string | null
+  programme_total_marks_words: string | null
   result_status: string | null
   published_at: string | null
   is_active: boolean
