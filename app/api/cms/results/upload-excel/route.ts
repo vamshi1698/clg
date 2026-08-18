@@ -192,7 +192,7 @@ export async function POST(req: Request) {
       const deptCode = deptCodeField ? String(row[deptCodeField] || '').trim() : ''
       const academicYear = academicYearField ? String(row[academicYearField] || '').trim() : ''
       const semVal = semesterField ? parseInt(row[semesterField], 10) : NaN
-      const examType = examTypeField ? String(row[examTypeField] || 'Semester End Examination').trim() : 'Semester End Examination'
+      const examType = examTypeField ? String(row[examTypeField] || 'SEMESTER END EXAMINATION').trim() : 'SEMESTER END EXAMINATION'
 
       if (isNaN(semVal)) continue
 
@@ -363,9 +363,9 @@ export async function POST(req: Request) {
           }
         }
 
-        // Clean existing results & summaries for student + semester
-        await postgresClient.query('DELETE FROM results WHERE student_id = $1 AND semester = $2', [studentId, sData.semester])
-        await postgresClient.query('DELETE FROM result_summaries WHERE student_id = $1 AND semester = $2', [studentId, sData.semester])
+        // Clean existing results & summaries for student + semester + examType
+        await postgresClient.query('DELETE FROM results WHERE student_id = $1 AND semester = $2 AND examination_type = $3', [studentId, sData.semester, sData.examType])
+        await postgresClient.query('DELETE FROM result_summaries WHERE student_id = $1 AND semester = $2 AND examination_type = $3', [studentId, sData.semester, sData.examType])
 
         let totalCredits = 0
         let earnedCredits = 0

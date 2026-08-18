@@ -37,6 +37,7 @@ export default async function Page({ params }: PageProps) {
         .select('*')
         .eq('student_id', row.student_id)
         .eq('semester', row.semester)
+        .eq('examination_type', row.examination_type)
         .order('subject_code', { ascending: true })
 
       initial = {

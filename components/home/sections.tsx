@@ -317,7 +317,7 @@ export function NewsSection({ news }: NewsSectionProps) {
                 <Card className="card-hover h-full overflow-hidden">
                   <div className="aspect-video bg-gray-100 relative">
                     {item.image_url ? (
-                      <Image src={item.image_url} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
+                      <Image src={item.image_url} alt={item.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" priority={index === 0} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-academic-100">
                         <span className="text-academic-300 text-6xl font-display font-bold">NC</span>
@@ -503,6 +503,7 @@ export function GalleryPreview({ items }: GalleryPreviewProps) {
                     fill
                     sizes={index === 0 ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 50vw, 33vw"}
                     className="object-cover transition-transform hover:scale-105"
+                    priority={index === 0}
                   />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-academic-900/60 via-transparent to-transparent" />
@@ -870,6 +871,7 @@ export function NewsAndEventsSection({ news, events, statistics }: NewsAndEvents
                           fill
                           sizes="(max-width: 640px) 100vw, 176px"
                           className="object-cover"
+                          priority={index === 0}
                         />
                         <span className={`absolute top-3 left-3 px-2 py-0.5 text-[9px] font-bold text-white rounded-md tracking-wider uppercase shadow-sm ${
                           isOngoing ? 'bg-orange-500' : isPast ? 'bg-slate-400' : 'bg-blue-500'

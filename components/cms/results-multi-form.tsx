@@ -33,7 +33,7 @@ export function ResultsMultiForm({ config, references, initialData }: ResultsMul
   const [studentId, setStudentId] = useState(initialData?.student_id || '')
   const [semester, setSemester] = useState(initialData?.semester !== undefined ? String(initialData.semester) : '')
   const [academicYear, setAcademicYear] = useState(initialData?.academic_year || '')
-  const [examinationType, setExaminationType] = useState(initialData?.examination_type || 'Semester End Examination')
+  const [examinationType, setExaminationType] = useState(initialData?.examination_type || 'SEMESTER END EXAMINATION')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -87,6 +87,33 @@ export function ResultsMultiForm({ config, references, initialData }: ResultsMul
         if (i !== index) return sub
         const updated = { ...sub, [field]: value }
         return updated
+      })
+    )
+  }
+
+  function markSubjectAbsent(index: number, isAbsent: boolean) {
+    setSubjects((prev) =>
+      prev.map((s, i) => {
+        if (i === index) {
+          if (isAbsent) {
+            return {
+              ...s,
+              internal_marks: '0',
+              external_marks: '0',
+              grade: 'AB',
+              result_status: 'ABSENT'
+            }
+          } else {
+            return {
+              ...s,
+              internal_marks: '',
+              external_marks: '',
+              grade: '',
+              result_status: ''
+            }
+          }
+        }
+        return s
       })
     )
   }
@@ -263,14 +290,15 @@ export function ResultsMultiForm({ config, references, initialData }: ResultsMul
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Exam Type <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
+              <select
                 value={examinationType}
                 onChange={(e) => setExaminationType(e.target.value)}
-                placeholder="e.g. Semester End Examination"
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-academic-500 focus:border-transparent"
                 required
-              />
+              >
+                <option value="SEMESTER END EXAMINATION">Semester End Examination</option>
+                <option value="SUPPLEMENTARY EXAMINATION">Supplementary Examination</option>
+              </select>
             </div>
           </div>
         </div>
@@ -380,7 +408,7 @@ export function ResultsMultiForm({ config, references, initialData }: ResultsMul
                           className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-academic-500 text-center uppercase"
                         />
                       </td>
-                      <td className="py-3 px-2">
+                      <td className="py-3 px-2 flex flex-col items-center justify-center gap-1.5">
                         <select
                           value={sub.result_status}
                           onChange={(e) => updateSubjectField(index, 'result_status', e.target.value)}
@@ -392,6 +420,15 @@ export function ResultsMultiForm({ config, references, initialData }: ResultsMul
                           <option value="ABSENT">ABSENT</option>
                           <option value="PENDING">PENDING</option>
                         </select>
+                        <label className="text-[10px] flex items-center gap-1.5 text-gray-600 cursor-pointer font-medium hover:text-academic-700 w-full justify-center bg-gray-50/80 py-1 rounded border border-gray-200">
+                          <input
+                            type="checkbox"
+                            checked={sub.result_status === 'ABSENT'}
+                            onChange={(e) => markSubjectAbsent(index, e.target.checked)}
+                            className="rounded text-academic-600 focus:ring-academic-500 cursor-pointer w-3 h-3"
+                          />
+                          Mark Absent
+                        </label>
                       </td>
                       <td className="py-3 pl-2 text-right">
                         <button

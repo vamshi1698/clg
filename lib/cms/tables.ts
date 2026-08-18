@@ -459,7 +459,7 @@ export const TABLE_CONFIGS: TableConfig[] = [
     icon: 'FileText',
     titleField: 'subject_name',
     subtitleField: 'subject_code',
-    listFields: ['students', 'semester', 'subjects', 'result_status', 'is_active'],
+    listFields: ['students', 'semester', 'examination_type', 'subjects', 'result_status', 'is_active'],
     orderColumn: 'semester',
     sortable: true,
     select: '*, students(name, register_number)',

@@ -343,11 +343,12 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       courses: any
       subjects_array: { name: string; grade: string; status: string }[]
       result_status: string
+      examination_type: string
       is_active: boolean
     }>()
 
     rows.forEach((r) => {
-      const key = `${r.student_id}-${r.semester}`
+      const key = `${r.student_id}-${r.semester}-${r.examination_type || 'SEMESTER END EXAMINATION'}`
       const subjectInfo = {
         name: r.subject_name || r.subject_code || 'Unknown',
         grade: r.grade || '—',
@@ -377,6 +378,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           courses: r.courses,
           subjects_array: [subjectInfo],
           result_status: r.result_status || 'PENDING',
+          examination_type: r.examination_type,
           is_active: !!r.is_active
         })
       }

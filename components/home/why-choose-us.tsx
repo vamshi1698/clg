@@ -43,7 +43,7 @@ export function WhyChooseUs() {
                 More Than a College. <br /> <span className="text-gold-400">A Launchpad.</span>
               </h2>
               <p className="text-slate-400 text-lg leading-relaxed mb-8">
-                For over six decades, National College has been where ambitious students transform into accomplished professionals. 
+                For over six decades, National College has been where ambitious students transform into accomplished professionals.
                 Here's what sets us apart.
               </p>
               <Link

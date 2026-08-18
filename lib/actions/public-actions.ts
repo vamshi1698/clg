@@ -17,18 +17,31 @@ import {
   testimonialSubmissionSchema,
 } from '@/lib/security'
 
-export async function lookupResults(registerNumber: string, dateOfBirth: string) {
+export async function lookupResults(registerNumber: string, dateOfBirth: string, semester?: string, examType?: string) {
   try {
     // Validate input
-    const validated = validateInput(resultLookupSchema, { registerNumber, dateOfBirth })
+    const validated = validateInput(resultLookupSchema, { registerNumber, dateOfBirth, semester })
 
     const student = await getStudentByCredentials(validated.registerNumber, validated.dateOfBirth)
     if (!student) {
       return { error: 'No student found with the provided details. Please check your Register Number and Date of Birth.' }
     }
 
-    const results = await getStudentResults(student.id)
-    const summaries = await getStudentResultSummaries(student.id)
+    let results = await getStudentResults(student.id)
+    let summaries = await getStudentResultSummaries(student.id)
+
+    if (validated.semester) {
+      const semNum = parseInt(validated.semester, 10)
+      if (!isNaN(semNum)) {
+        results = results.filter((r: any) => r.semester === semNum)
+        summaries = summaries.filter((s: any) => s.semester === semNum)
+      }
+    }
+
+    if (examType) {
+      results = results.filter((r: any) => r.examination_type === examType)
+      summaries = summaries.filter((s: any) => s.examination_type === examType)
+    }
 
     let courseName = undefined
     let deptName = undefined
@@ -63,6 +76,7 @@ export async function lookupResults(registerNumber: string, dateOfBirth: string)
         register_number: student.register_number,
         course_name: courseName,
         department_name: deptName,
+        date_of_birth: (student as any).date_of_birth,
       },
       results: results.map(r => ({
         semester: r.semester,
@@ -73,11 +87,18 @@ export async function lookupResults(registerNumber: string, dateOfBirth: string)
         external_marks: r.external_marks,
         total_marks: r.total_marks,
         max_marks: r.max_marks,
+        theory_max_marks: r.theory_max_marks,
+        theory_min_marks: r.theory_min_marks,
+        ia_max_marks: r.ia_max_marks,
+        ia_min_marks: r.ia_min_marks,
+        total_min_marks: r.total_min_marks,
+        grade_points: r.grade_points,
+        credit_points: r.credit_points,
         grade: r.grade,
         credits: r.credits,
         result_status: r.result_status,
       })),
-      summary: summaries.find(s => s.semester === student.semester) || summaries[0] || null
+      summary: (validated.semester ? summaries[0] : (summaries.find((s: any) => s.semester === (student as any).semester) || summaries[0])) || null
     }
   } catch (err: any) {
     return { error: err.message || 'An error occurred while fetching results.' }

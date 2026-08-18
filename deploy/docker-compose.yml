@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  web:
+    image: college-app:latest
+    container_name: college_web
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000" # Only accessible locally (Nginx proxy)
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      # Add other required environment variables here
+    volumes:
+      - /opt/college/uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - college_network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: college_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-college_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-college_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-college_user} -d ${POSTGRES_DB:-college_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - college_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: college_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - college_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  college_network:
+    driver: bridge

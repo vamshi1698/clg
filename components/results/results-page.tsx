@@ -16,13 +16,14 @@ const fadeIn = {
   transition: { duration: 0.5 }
 }
 
-interface ResultData {
+export interface ResultData {
   student: {
     id: string
     name: string
     register_number: string
     course_name?: string
     department_name?: string
+    date_of_birth?: string | Date
   }
   results: Array<{
     semester: number
@@ -33,6 +34,13 @@ interface ResultData {
     external_marks: number | null
     total_marks: number | null
     max_marks: number | null
+    theory_max_marks: number | null
+    theory_min_marks: number | null
+    ia_max_marks: number | null
+    ia_min_marks: number | null
+    total_min_marks: number | null
+    grade_points: number | null
+    credit_points: number | null
     grade: string | null
     credits: number | null
     result_status: string | null
@@ -40,15 +48,28 @@ interface ResultData {
   summary: {
     semester: number
     academic_year: string
+    examination_type?: string
     sgpa: number | null
     cgpa: number | null
     total_credits: number | null
     earned_credits: number | null
+    total_max_marks: number | null
+    total_marks_obtained: number | null
+    percentage: number | null
+    overall_result: string | null
+    class_obtained: string | null
+    programme_total_max_marks: number | null
+    programme_total_marks_obtained: number | null
+    programme_total_credits_obtained: number | null
+    programme_cgpa: number | null
+    programme_grade: string | null
+    total_marks_words: string | null
+    programme_total_marks_words: string | null
     result_status: string | null
   } | null
 }
 
-interface PdfRecord {
+export interface PdfRecord {
   id: string
   title: string
   academic_year: string
@@ -66,10 +87,128 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
   const [dobDay, setDobDay] = useState('')
   const [dobMonth, setDobMonth] = useState('')
   const [dobYear, setDobYear] = useState('')
+  const [semester, setSemester] = useState('')
+  const [examType, setExamType] = useState('SEMESTER END EXAMINATION')
   const [result, setResult] = useState<ResultData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [pdfAnnouncements, setPdfAnnouncements] = useState<PdfRecord[]>(initialPdfs)
+
+  // Grading Helper
+  const getGradeFromMarks = (marksScored: number, maxMarks: number) => {
+    if (!maxMarks || maxMarks === 0) return 'F';
+    const pct = (marksScored / maxMarks) * 100;
+    if (pct >= 90) return 'O';
+    if (pct >= 80) return 'A+';
+    if (pct >= 70) return 'A';
+    if (pct >= 60) return 'B+';
+    if (pct >= 55) return 'B';
+    if (pct >= 50) return 'C';
+    if (pct >= 40) return 'P';
+    return 'F';
+  };
+
+  const getPointsFromGrade = (grade: string) => {
+    switch (grade?.toUpperCase().trim()) {
+      case 'O': return 10;
+      case 'A+': return 9;
+      case 'A': return 8;
+      case 'B+': return 7;
+      case 'B': return 6;
+      case 'C': return 5;
+      case 'P': return 4;
+      default: return 0;
+    }
+  };
+
+  // Enhance individual results with calculated grades/points if missing
+  const enhancedResults = result?.results?.map(r => {
+    const marksScored = Number(r.total_marks) || 0;
+    const maxMarks = Number(r.max_marks) || 100;
+
+    // Auto-calculate grade if missing
+    const computedGrade = r.grade && r.grade !== '-' ? r.grade : getGradeFromMarks(marksScored, maxMarks);
+
+    // Auto-calculate grade points if missing
+    const computedGradePoints = r.grade_points != null ? Number(r.grade_points) : getPointsFromGrade(computedGrade);
+
+    // Auto-calculate credit points if missing
+    const credits = Number(r.credits) || 0;
+    const computedCreditPoints = r.credit_points != null ? Number(r.credit_points) : (computedGradePoints * credits);
+
+    return {
+      ...r,
+      display_grade: computedGrade,
+      display_grade_points: computedGradePoints,
+      display_credit_points: computedCreditPoints
+    };
+  }) || [];
+
+  // Calculated fallback fields (fixed string concatenation)
+  const calculatedTotalMarks = enhancedResults.reduce((acc, curr) => acc + (Number(curr.total_marks) || 0), 0) || 0;
+  const calculatedEarnedCredits = enhancedResults.reduce((acc, curr) => acc + ((curr.result_status?.toUpperCase() === 'PASS' || curr.display_grade !== 'F') ? (Number(curr.credits) || 0) : 0), 0) || 0;
+  const calculatedTotalMax = enhancedResults.reduce((acc, curr) => acc + (Number(curr.max_marks) || 100), 0) || 0;
+  const calculatedPercentage = calculatedTotalMax > 0 ? ((calculatedTotalMarks / calculatedTotalMax) * 100).toFixed(2) : '-';
+  const calculatedOverallResult = enhancedResults.some(r => 
+    r.result_status?.toUpperCase() === 'FAIL' || 
+    r.result_status?.toUpperCase() === 'ABSENT' || 
+    r.display_grade === 'F' || 
+    r.display_grade === 'AB'
+  ) ? 'FAIL' : 'PASS';
+
+  const totalCreditPoints = enhancedResults.reduce((acc, curr) => acc + curr.display_credit_points, 0) || 0;
+  const totalCreditsAtt = enhancedResults.reduce((acc, curr) => acc + (Number(curr.credits) || 0), 0) || 1;
+  const calculatedSgpa = calculatedEarnedCredits > 0 ? (totalCreditPoints / totalCreditsAtt).toFixed(2) : '-';
+
+  // Additional Helpers
+  const getGradeFromSgpa = (sgpa: number) => {
+    const s = Number(sgpa);
+    if (isNaN(s)) return '-';
+    if (s >= 9.0) return 'O';
+    if (s >= 8.0) return 'A+';
+    if (s >= 7.0) return 'A';
+    if (s >= 6.0) return 'B+';
+    if (s >= 5.5) return 'B';
+    if (s >= 5.0) return 'C';
+    if (s >= 4.0) return 'P';
+    return 'F';
+  };
+
+  const getClassFromPercentage = (pct: number) => {
+    const p = Number(pct);
+    if (isNaN(p)) return '-';
+    if (p >= 70) return 'FIRST CLASS WITH DISTINCTION';
+    if (p >= 60) return 'FIRST CLASS';
+    if (p >= 50) return 'SECOND CLASS';
+    if (p >= 40) return 'PASS CLASS';
+    return 'FAIL';
+  };
+
+  const numberToWords = (num: number): string => {
+    if (num === 0) return 'ZERO';
+    const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+    const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+
+    if (num < 20) return ones[num];
+    if (num < 100) return tens[Math.floor(num / 10)] + (num % 10 !== 0 ? ' ' + ones[num % 10] : '');
+    if (num < 1000) return ones[Math.floor(num / 100)] + ' HUNDRED' + (num % 100 !== 0 ? ' AND ' + numberToWords(num % 100) : '');
+    if (num < 100000) return numberToWords(Math.floor(num / 1000)) + ' THOUSAND' + (num % 1000 !== 0 ? ' ' + numberToWords(num % 1000) : '');
+    return num.toString();
+  };
+
+  // Choose the best values (DB first, fallback second)
+  const displayTotalMarks = result?.summary?.total_marks_obtained ?? calculatedTotalMarks;
+  const displayEarnedCredits = result?.summary?.earned_credits ?? result?.results?.reduce((acc, curr) => acc + (curr.credits || 0), 0) ?? '-';
+  const displayPercentage = result?.summary?.percentage != null ? Number(result.summary.percentage).toFixed(2) : calculatedPercentage;
+  const displaySgpa = calculatedSgpa !== '-' ? calculatedSgpa : (result?.summary?.sgpa != null ? Number(result.summary.sgpa).toFixed(2) : '-');
+  const displayOverallResult = result?.summary?.result_status ?? calculatedOverallResult;
+
+  // New fallbacks for missing fields
+  const displayProgrammeGrade = result?.summary?.programme_grade || (displayOverallResult === 'FAIL' ? 'F' : getGradeFromSgpa(Number(displaySgpa)));
+  const displayClassObtained = result?.summary?.class_obtained || (displayOverallResult === 'FAIL' ? 'FAIL' : getClassFromPercentage(Number(displayPercentage)));
+  const displayMarksInWords = result?.summary?.total_marks_words || numberToWords(Number(displayTotalMarks));
+  const displayProgMarksInWords = result?.summary?.programme_total_marks_words || displayMarksInWords; // Fallback to current sem marks if prog is missing
+
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,7 +223,7 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
     const dateOfBirth = `${dobYear}-${dobMonth}-${dobDay}`
 
     startTransition(async () => {
-      const res = await lookupResults(registerNumber.trim(), dateOfBirth)
+      const res = await lookupResults(registerNumber.trim(), dateOfBirth, semester, examType)
       if (res.error) {
         setError(res.error)
         return
@@ -99,6 +238,32 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
 
   return (
     <div className="bg-slate-50/50 min-h-screen">
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .print-marks-sheet {
+            width: 190mm;
+            height: 277mm; /* A4 size (297mm) minus 2x10mm margins */
+            position: relative;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+          }
+          .print-footer-bottom {
+            margin-top: auto;
+          }
+        }
+      `}} />
+
       {/* Hero Section */}
       <section className="relative pt-44 md:pt-52 pb-16 overflow-hidden print:hidden">
         <div className="absolute inset-0">
@@ -133,15 +298,15 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start print:block">
 
             {/* Left/Main Column: Search and Result Viewer */}
-            <div className="lg:col-span-2 print:w-full space-y-8 print:space-y-0">
+            <div className="lg:col-span-2 min-w-0 print:w-full space-y-8 print:space-y-0">
 
-              <Card className="border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white print:hidden">
-                <CardHeader className="bg-slate-50/70 border-b border-slate-200/60 px-6 py-4 rounded-t-2xl">
+              <Card className="border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white print:border-none print:shadow-none print:m-0 print:p-0">
+                <CardHeader className="bg-slate-50/70 border-b border-slate-200/60 px-6 py-4 rounded-t-2xl print:hidden">
                   <h2 className="font-display text-lg font-bold text-academic-950">Check Individual Results</h2>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <form onSubmit={handleSearch} className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <CardContent className="p-6 space-y-6 print:p-0">
+                  <form onSubmit={handleSearch} className="space-y-6 print:hidden">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
                           Register Number
@@ -210,6 +375,36 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                           </select>
                         </div>
                       </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                          Semester
+                        </label>
+                        <select
+                          value={semester}
+                          onChange={(e) => setSemester(e.target.value)}
+                          className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
+                        >
+                          <option value="">Latest / All</option>
+                          {[1, 2, 3, 4, 5, 6].map((s) => (
+                            <option key={s} value={s}>Semester {s}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
+                          Exam Type
+                        </label>
+                        <select
+                          value={examType}
+                          onChange={(e) => setExamType(e.target.value)}
+                          className="flex h-11 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-academic-650 text-gray-700 shadow-sm cursor-pointer"
+                        >
+                          <option value="SEMESTER END EXAMINATION">Semester End Examination</option>
+                          <option value="SUPPLEMENTARY EXAMINATION">Supplementary Examination</option>
+                        </select>
+                      </div>
                     </div>
 
                     {error && (
@@ -224,105 +419,85 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                         <>Searching...</>
                       ) : (
                         <>
-                          <Search className="h-4 w-4 mr-2" />
-                          Check Results
+                          <Search className="h-5 w-5 mr-2 inline-block" />
+                          View Results
                         </>
                       )}
                     </Button>
                   </form>
-                </CardContent>
-              </Card>
 
-              {/* Individual Student Results Card */}
-              {result && (
-                <motion.div
-                  initial="initial"
-                  animate="animate"
-                  variants={fadeIn}
-                  className="print:mt-0"
-                >
-                  <Card className="border border-slate-200/80 rounded-2xl shadow-lg print:shadow-none print:border-4 print:border-double print:border-academic-900 print:rounded-none print:p-8 bg-white" id="result-card">
-                    <CardHeader className="bg-academic-950 text-white px-6 py-4 rounded-t-2xl print:hidden">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-display text-lg font-semibold">National College Jayanagar</h3>
-                          <p className="text-gray-300 text-xs">Semester Examination Results</p>
-                        </div>
-                        <div className="print:hidden flex items-center gap-2">
-                          <Button onClick={handlePrint} variant="outline" size="sm" className="bg-white text-academic-950 hover:bg-gray-150 border-none font-semibold">
-                            <Printer className="h-4 w-4 mr-1.5" />
-                            Print
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="p-6 space-y-6 print:p-0">
+                  {result && (
+                    <div className="mt-8 pt-8 border-t border-slate-200/60 print:mt-0 print:pt-0 print:border-none print-marks-sheet">
                       {/* Print-Only Header */}
                       <div className="hidden print:flex flex-col items-center justify-center text-center mb-6 pb-2">
-                        <div className="flex items-center gap-3 justify-center mb-1">
-                          <Image src={logoImage} alt="Logo" width={48} height={48} className="flex-shrink-0" />
-                          <div>
-                            <p className="text-[10px] text-gray-600 font-medium">The National Education Society of Karnataka (R.)</p>
+                        <div className="w-full text-center mb-1">
+                          <p className="text-[10px] text-gray-600 font-medium">The National Education Society of Karnataka (R.)</p>
+                          <div className="flex items-center justify-center w-full mt-2 mb-2">
+                            <div className="w-16 h-16 flex-shrink-0 mr-4 flex items-center justify-center">
+                              <Image src={logoImage} alt="Logo" width={64} height={64} className="object-contain" priority />
+                            </div>
                             <h1 className="font-display text-2xl font-bold uppercase tracking-wider text-academic-900 leading-none">
-                              THE NATIONAL COLLEGE
+                              THE NATIONAL COLLEGE JAYANAGAR
                             </h1>
-                            <p className="text-[11px] font-semibold tracking-widest">AUTONOMOUS</p>
-                            <p className="text-[10px] text-gray-700 font-medium uppercase mt-0.5">NAAC ACCREDITED - 'A++' GRADE</p>
-                            <p className="text-[10px] text-gray-700">Affiliated to Bangalore University</p>
-                            <p className="text-[9px] text-gray-500">36th B Cross, 7th Block, Jayanagar, Bengaluru - 560 070</p>
+                            <div className="w-16 ml-4"></div> {/* Dummy spacer for perfect centering */}
                           </div>
+                          <p className="text-[11px] font-semibold tracking-widest">AUTONOMOUS</p>
+                          <p className="text-[10px] text-gray-700 font-medium uppercase mt-0.5">NAAC ACCREDITED - 'A' GRADE</p>
+                          <p className="text-[10px] text-gray-700">Affiliated to Bangalore University</p>
+                          <p className="text-[9px] text-gray-500">36th B Cross, 7th Block, Jayanagar, Bengaluru - 560 070</p>
                         </div>
-                        
+
                         <div className="w-full border-b border-gray-400 my-2"></div>
                         <h2 className="font-display text-xs font-bold uppercase tracking-widest text-academic-900 mt-1 underline">
                           STATEMENT OF MARKS
                         </h2>
                         <h3 className="text-[11px] font-semibold mt-1 uppercase">
-                          {result.summary?.semester === 1 ? 'I' : result.summary?.semester === 2 ? 'II' : result.summary?.semester === 3 ? 'III' : result.summary?.semester === 4 ? 'IV' : result.summary?.semester === 5 ? 'V' : result.summary?.semester === 6 ? 'VI' : result.summary?.semester} SEMESTER - {result.summary?.examination_type || 'EXAMINATION'}
+                          {result?.summary?.semester === 1 ? 'I' : result?.summary?.semester === 2 ? 'II' : result?.summary?.semester === 3 ? 'III' : result?.summary?.semester === 4 ? 'IV' : result?.summary?.semester === 5 ? 'V' : result?.summary?.semester === 6 ? 'VI' : (result?.summary?.semester || '')} SEMESTER - {result?.summary?.examination_type || 'SEMESTER END EXAMINATION'}
                         </h3>
                       </div>
 
                       {/* Student Info */}
-                      <div className="grid grid-cols-2 gap-x-12 gap-y-1 p-4 bg-gray-50 print:bg-white rounded-lg print:rounded-none border border-gray-100 print:border-none print:py-1 print:my-1 text-sm print:text-[11px]">
-                        <div className="flex"><span className="w-32 font-semibold">Academic Year</span><span>: {result.summary?.academic_year || '-'}</span></div>
-                        <div className="flex"><span className="w-32 font-semibold">Programme Name</span><span className="uppercase font-bold">: {result.student.course_name || '-'}</span></div>
-                        <div className="flex"><span className="w-32 font-semibold">Register No.</span><span className="uppercase font-bold">: {result.student.register_number}</span></div>
-                        <div className="flex"><span className="w-32 font-semibold">Student Name</span><span className="uppercase font-bold">: {result.student.name}</span></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 md:gap-y-1 p-4 bg-gray-50 print:bg-white rounded-lg print:rounded-none border border-gray-100 print:border-none print:py-1 print:my-1 text-xs md:text-sm print:text-[11px]">
+                        <div className="flex flex-col sm:flex-row"><span className="w-full sm:w-32 font-semibold text-gray-500 sm:text-gray-900">Academic Year</span><span className="hidden sm:inline">: </span><span className="sm:ml-1">{result?.summary?.academic_year || '-'}</span></div>
+                        <div className="flex flex-col sm:flex-row"><span className="w-full sm:w-32 font-semibold text-gray-500 sm:text-gray-900">Programme Name</span><span className="hidden sm:inline">: </span><span className="uppercase font-bold sm:ml-1">{result?.student?.course_name || '-'}</span></div>
+                        <div className="flex flex-col sm:flex-row"><span className="w-full sm:w-32 font-semibold text-gray-500 sm:text-gray-900">Register No.</span><span className="hidden sm:inline">: </span><span className="uppercase font-bold sm:ml-1">{result?.student?.register_number}</span></div>
+                        <div className="flex flex-col sm:flex-row"><span className="w-full sm:w-32 font-semibold text-gray-500 sm:text-gray-900">Student Name</span><span className="hidden sm:inline">: </span><span className="uppercase font-bold sm:ml-1">{result?.student?.name}</span></div>
+                        <div className="flex flex-col sm:flex-row"><span className="w-full sm:w-32 font-semibold text-gray-500 sm:text-gray-900">Date of Birth</span><span className="hidden sm:inline">: </span><span className="uppercase font-bold sm:ml-1">{result?.student?.date_of_birth ? new Date(result.student.date_of_birth).toLocaleDateString('en-GB').replace(/\//g, '-') : '-'}</span></div>
+                        <div className="flex flex-col sm:flex-row"><span className="w-full sm:w-32 font-semibold text-gray-500 sm:text-gray-900">Exam Type</span><span className="hidden sm:inline">: </span><span className="uppercase font-bold sm:ml-1">{result?.summary?.examination_type || 'SEMESTER END EXAMINATION'}</span></div>
                       </div>
 
                       {/* Results Table */}
-                      {result.results.length > 0 ? (
+                      {result?.results && result.results.length > 0 ? (
                         <div className="overflow-x-auto border border-gray-300 rounded-lg print:border-gray-400 print:rounded-none print:my-2">
-                          <table className="w-full text-sm print:text-[9px] border-collapse">
+                          <table className="w-full text-[9px] md:text-xs lg:text-sm print:text-[9px] border-collapse">
                             <thead className="bg-gray-50 print:bg-gray-100 border-b print:border-gray-400 text-academic-900">
                               <tr>
-                                <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-6">Sl.<br/>No</th>
+                                <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-6">Sl.<br />No</th>
                                 <th rowSpan={2} className="border-r print:border-gray-400 px-2 py-1 text-left font-bold w-20">Subject/Code</th>
                                 <th rowSpan={2} className="border-r print:border-gray-400 px-2 py-1 text-left font-bold">Subject/Paper</th>
                                 <th colSpan={3} className="border-r border-b print:border-gray-400 px-1 py-1 text-center font-bold">Theory / Practical</th>
                                 <th colSpan={3} className="border-r border-b print:border-gray-400 px-1 py-1 text-center font-bold">IA/Viva</th>
                                 <th colSpan={3} className="border-r border-b print:border-gray-400 px-1 py-1 text-center font-bold">Total</th>
                                 <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-6">Cr.</th>
-                                <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-8">Gr.<br/>Pts.</th>
+                                <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-8">Gr.<br />Pts.</th>
                                 <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-8">Cr. Pts.</th>
-                                <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-10">Letter<br/>Grade</th>
+                                <th rowSpan={2} className="border-r print:border-gray-400 px-1 py-1 text-center font-bold w-10">Letter<br />Grade</th>
                                 <th rowSpan={2} className="px-2 py-1 text-center font-bold w-12">Remarks</th>
                               </tr>
                               <tr>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Max.<br/>Marks</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Min.<br/>Marks</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Marks<br/>Scored</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Max.<br/>Marks</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Min.<br/>Marks</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Marks<br/>Scored</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Max.<br/>Marks</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Min.<br/>Marks</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Marks<br/>Scored</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Max.<br />Marks</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Min.<br />Marks</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Marks<br />Scored</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Max.<br />Marks</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Min.<br />Marks</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Marks<br />Scored</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Max.<br />Marks</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Min.<br />Marks</th>
+                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-medium">Marks<br />Scored</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y print:divide-gray-400 font-medium">
-                              {result.results.map((r, i) => (
+                              {enhancedResults.map((r, i) => (
                                 <tr key={i} className="hover:bg-gray-50/50">
                                   <td className="border-r print:border-gray-400 px-1 py-1 text-center">{i + 1}</td>
                                   <td className="border-r print:border-gray-400 px-2 py-1 uppercase">{r.subject_code}</td>
@@ -337,29 +512,29 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                                   <td className="border-r print:border-gray-400 px-1 py-1 text-center">{r.total_min_marks ?? 35}</td>
                                   <td className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">{r.total_marks ?? '-'}</td>
                                   <td className="border-r print:border-gray-400 px-1 py-1 text-center">{r.credits ?? '-'}</td>
-                                  <td className="border-r print:border-gray-400 px-1 py-1 text-center">{r.grade_points != null ? Number(r.grade_points).toFixed(2) : '-'}</td>
-                                  <td className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">{r.credit_points != null ? Number(r.credit_points).toFixed(2) : '-'}</td>
-                                  <td className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">{r.grade || '-'}</td>
+                                  <td className="border-r print:border-gray-400 px-1 py-1 text-center">{r.display_grade_points.toFixed(2)}</td>
+                                  <td className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">{r.display_credit_points.toFixed(2)}</td>
+                                  <td className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">{r.display_grade || '-'}</td>
                                   <td className="px-2 py-1 text-center uppercase">{r.result_status || '-'}</td>
                                 </tr>
                               ))}
                               {/* Grand Total Row */}
                               <tr className="bg-gray-50 print:bg-gray-100 font-bold border-t-2 print:border-gray-400">
                                 <td colSpan={11} className="border-r print:border-gray-400 px-2 py-1 text-left">Grand Total</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.summary?.total_marks_obtained || '-'}</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.summary?.earned_credits || '-'}</td>
+                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{displayTotalMarks}</td>
+                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{displayEarnedCredits}</td>
                                 <td className="border-r print:border-gray-400 px-1 py-1 text-center bg-gray-200 print:bg-gray-200"></td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.results.reduce((acc, curr) => acc + (curr.credit_points || 0), 0).toFixed(2)}</td>
+                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{totalCreditPoints.toFixed(2)}</td>
                                 <td colSpan={2} className="px-2 py-1 text-center bg-gray-200 print:bg-gray-200"></td>
                               </tr>
                             </tbody>
                           </table>
-                          <div className="flex justify-between items-center border-t print:border-gray-400 bg-gray-50 print:bg-gray-100 px-2 py-1 text-sm print:text-[10px] font-bold">
-                            <div>Total Marks Secured in Words: <span className="font-normal">{result.summary?.total_marks_words || '-'}</span></div>
-                            <div className="flex gap-6">
-                              <div>Percentage: <span className="font-normal">{result.summary?.percentage != null ? Number(result.summary.percentage).toFixed(2) : '-'}</span></div>
-                              <div>SGPA: <span className="font-normal">{result.summary?.sgpa != null ? Number(result.summary.sgpa).toFixed(2) : '-'}</span></div>
-                              <div>Grade: <span className="font-normal">{result.summary?.programme_grade || '-'}</span></div>
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 border-t print:border-gray-400 bg-gray-50 print:bg-gray-100 px-2 py-2 md:py-1 text-[10px] md:text-xs lg:text-sm print:text-[10px] font-bold">
+                            <div>Total Marks Secured in Words: <span className="font-normal block sm:inline">{displayMarksInWords}</span></div>
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 w-full md:w-auto mt-2 md:mt-0">
+                              <div>Percentage: <span className="font-normal">{displayPercentage}</span></div>
+                              <div>SGPA: <span className="font-normal">{displaySgpa}</span></div>
+                              <div>Grade: <span className="font-normal">{displayProgrammeGrade}</span></div>
                             </div>
                           </div>
                         </div>
@@ -370,101 +545,22 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                         </div>
                       )}
 
-                      {/* Semester-Wise Result Table */}
-                      <div className="overflow-x-auto border border-gray-300 rounded-lg print:border-gray-400 print:rounded-none mt-2">
-                          <table className="w-full text-sm print:text-[9px] border-collapse">
-                            <thead className="bg-gray-50 print:bg-gray-100 border-b print:border-gray-400 text-academic-900">
-                              <tr>
-                                <th className="border-r print:border-gray-400 px-2 py-1 text-left font-bold w-24">Semester-Wise Result</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">I</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">II</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">III</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">IV</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">V</th>
-                                <th className="border-r print:border-gray-400 px-1 py-1 text-center font-bold">VI</th>
-                                <th className="px-2 py-1 text-center font-bold bg-gray-200 print:bg-gray-200 w-32">Programme Total</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y print:divide-gray-400 font-medium">
-                              <tr>
-                                <td className="border-r print:border-gray-400 px-2 py-1 font-semibold">Maximum Marks</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.summary?.total_max_marks || '-'}</td>
-                                <td className="px-2 py-1 text-center font-bold bg-gray-100 print:bg-gray-100">{result.summary?.programme_total_max_marks || '-'}</td>
-                              </tr>
-                              <tr>
-                                <td className="border-r print:border-gray-400 px-2 py-1 font-semibold">Marks Obtained</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.summary?.total_marks_obtained || '-'}</td>
-                                <td className="px-2 py-1 text-center font-bold bg-gray-100 print:bg-gray-100">{result.summary?.programme_total_marks_obtained || '-'}</td>
-                              </tr>
-                              <tr>
-                                <td className="border-r print:border-gray-400 px-2 py-1 font-semibold">Credits Obtained</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.summary?.earned_credits || '-'}</td>
-                                <td className="px-2 py-1 text-center font-bold bg-gray-100 print:bg-gray-100">{result.summary?.programme_total_credits_obtained || '-'}</td>
-                              </tr>
-                              <tr>
-                                <td className="border-r print:border-gray-400 px-2 py-1 font-semibold">SGPA</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.summary?.sgpa != null ? Number(result.summary.sgpa).toFixed(2) : '-'}</td>
-                                <td className="px-2 py-1 text-center font-bold bg-gray-100 print:bg-gray-100">Programme CGPA : {result.summary?.programme_cgpa != null ? Number(result.summary.programme_cgpa).toFixed(2) : '-'}</td>
-                              </tr>
-                              <tr>
-                                <td className="border-r print:border-gray-400 px-2 py-1 font-semibold">Grade</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="px-2 py-1 text-center font-bold bg-gray-100 print:bg-gray-100">Programme Grade : {result.summary?.programme_grade || '-'}</td>
-                              </tr>
-                              <tr>
-                                <td className="border-r print:border-gray-400 px-2 py-1 font-semibold">Year of Pass</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">-</td>
-                                <td className="border-r print:border-gray-400 px-1 py-1 text-center">{result.summary?.academic_year?.split('-')[1] || '-'}</td>
-                                <td className="px-2 py-1 text-center font-bold bg-gray-100 print:bg-gray-100">{result.summary?.academic_year?.split('-')[1] || '-'}</td>
-                              </tr>
-                            </tbody>
-                          </table>
-                      </div>
-
                       {/* Final Footer Row */}
-                      <div className="border border-gray-400 p-1 flex justify-between items-center text-sm print:text-[10px] font-bold mt-2">
-                        <div>Marks Secured in Words : <span className="font-normal">{result.summary?.programme_total_marks_words || '-'}</span></div>
-                        <div className="flex gap-6">
-                          <div className="border-l border-gray-400 pl-2">Overall Percentage : <span className="font-normal">{result.summary?.percentage != null ? Number(result.summary.percentage).toFixed(2) : '-'}</span></div>
-                          <div className="border-l border-gray-400 pl-2">Overall Result : <span className="font-normal uppercase">{result.summary?.overall_result || '-'}</span></div>
-                          <div className="border-l border-gray-400 pl-2">Class : <span className="font-normal uppercase">{result.summary?.class_obtained || '-'}</span></div>
+                      <div className="border border-gray-400 p-2 md:p-1 flex flex-col md:flex-row justify-between items-start md:items-center text-[10px] md:text-xs lg:text-sm print:text-[10px] font-bold mt-2 gap-2 md:gap-0">
+                        <div>Marks Secured in Words : <span className="font-normal block sm:inline">{displayProgMarksInWords}</span></div>
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 w-full md:w-auto mt-2 md:mt-0">
+                          <div className="border-none md:border-l border-gray-400 md:pl-2">Overall Percentage : <span className="font-normal">{displayPercentage}</span></div>
+                          <div className="border-none md:border-l border-gray-400 md:pl-2">Overall Result : <span className="font-normal uppercase">{displayOverallResult}</span></div>
+                          <div className="border-none md:border-l border-gray-400 md:pl-2">Class : <span className="font-normal uppercase">{displayClassObtained}</span></div>
                         </div>
                       </div>
 
                       {/* Print-Only Signature & Verification Block */}
-                      <div className="hidden print:grid grid-cols-3 gap-4 pt-12 mt-2 text-[11px] justify-items-center w-full">
+                      <div className="hidden print:grid grid-cols-3 gap-4 pt-12 mt-2 text-[11px] justify-items-center w-full print-footer-bottom">
                         <div className="flex flex-col items-center justify-end h-16 w-32 relative">
+                          {/* We can place the college seal image here if available, currently using a placeholder */}
                           <div className="absolute -top-4 w-20 h-20 border-2 border-academic-900 rounded-full flex items-center justify-center opacity-30 pointer-events-none transform -rotate-12">
-                            <span className="text-center text-[7px] leading-tight font-bold text-academic-900">THE NATIONAL COLLEGE<br/>AUTONOMOUS</span>
+                            <span className="text-center text-[7px] leading-tight font-bold text-academic-900">THE NATIONAL COLLEGE<br />AUTONOMOUS</span>
                           </div>
                         </div>
                         <div className="flex flex-col items-center justify-end h-16">
@@ -477,9 +573,9 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                             Controller of Examinations
                           </div>
                         </div>
-                        
+
                         <div className="col-span-3 text-left w-full text-[9px] font-bold text-gray-700 mt-2">
-                          M.C.No : -<br/>
+                          M.C.No : -<br />
                           Printed Date : {new Date().toLocaleDateString('en-GB')}
                         </div>
                       </div>
@@ -491,15 +587,15 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                           Print Result Sheet
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
             </div>
 
             {/* Right Column: Downloadable Announcements */}
-            <div className="space-y-6 print:hidden">
+            <div className="space-y-6 min-w-0 print:hidden">
               <Card className="border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md transition-shadow bg-white">
                 <CardHeader className="bg-slate-50/70 border-b border-slate-200/60 px-6 py-4 rounded-t-2xl">
                   <CardTitle className="font-display text-base font-bold text-academic-950 flex items-center gap-2">

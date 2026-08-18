@@ -1,8 +1,3 @@
-/**
- * Local Postgres Database Client
- * Provides a Supabase-like interface for querying local Postgres
- */
-
 import { Pool } from 'pg'
 
 const DATABASE_URL = process.env.DATABASE_URL
@@ -228,7 +223,7 @@ export class PostgresClient {
 }
 
 class PostgresQueryBuilder {
-  constructor(private tableName: string) {}
+  constructor(private tableName: string) { }
 
   select(columns: string | string[] = '*') {
     const query = new PostgresQuery(this.tableName)

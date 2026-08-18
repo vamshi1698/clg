@@ -200,6 +200,19 @@ export async function saveRow(table: string, data: Record<string, unknown>, id?:
   const authErr = await verifyActionPermission(table, true)
   if (authErr) return authErr
 
+  if (table === 'results') {
+    const rData = data as any;
+    if (rData.internal_marks != null && rData.ia_max_marks != null && Number(rData.internal_marks) > Number(rData.ia_max_marks)) {
+      return { error: 'Validation Error: IA/Viva marks (' + rData.internal_marks + ') cannot exceed Maximum IA marks (' + rData.ia_max_marks + ')' };
+    }
+    if (rData.external_marks != null && rData.theory_max_marks != null && Number(rData.external_marks) > Number(rData.theory_max_marks)) {
+      return { error: 'Validation Error: Theory/Practical marks (' + rData.external_marks + ') cannot exceed Maximum Theory marks (' + rData.theory_max_marks + ')' };
+    }
+    if (rData.total_marks != null && rData.max_marks != null && Number(rData.total_marks) > Number(rData.max_marks)) {
+      return { error: 'Validation Error: Total marks (' + rData.total_marks + ') cannot exceed Maximum marks (' + rData.max_marks + ')' };
+    }
+  }
+
   // Stringify fields that are known to be JSONB in the database
   const config = TABLE_CONFIGS.find((t) => t.table === table)
   if (config) {
@@ -391,9 +404,9 @@ export async function saveMultipleResults(
   }>
 ): Promise<{ error?: string } & { ok?: boolean }> {
   try {
-    // 1. Delete existing results & summaries for student + semester
-    await postgresClient.query('DELETE FROM results WHERE student_id = $1 AND semester = $2', [studentId, semester])
-    await postgresClient.query('DELETE FROM result_summaries WHERE student_id = $1 AND semester = $2', [studentId, semester])
+    // 1. Delete existing results & summaries for student + semester + exam type
+    await postgresClient.query('DELETE FROM results WHERE student_id = $1 AND semester = $2 AND examination_type = $3', [studentId, semester, examinationType])
+    await postgresClient.query('DELETE FROM result_summaries WHERE student_id = $1 AND semester = $2 AND examination_type = $3', [studentId, semester, examinationType])
 
     let totalCredits = 0
     let earnedCredits = 0

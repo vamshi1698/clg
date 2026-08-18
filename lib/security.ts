@@ -144,6 +144,7 @@ export const resultLookupSchema = z.object({
     .trim()
     .min(1, 'Date of birth is required')
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format'),
+  semester: z.string().optional(),
 })
 
 export const contactMessageSchema = z.object({
