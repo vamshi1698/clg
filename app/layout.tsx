@@ -16,7 +16,7 @@ const bebasNeue = Bebas_Neue({
   weight: '400',
   display: 'swap',
   variable: '--font-bebas-neue',
-  preload: false, // only used for display headings — not needed for FCP
+  preload: false,
 })
 
 export const metadata: Metadata = {
