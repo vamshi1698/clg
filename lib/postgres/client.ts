@@ -220,6 +220,38 @@ export class PostgresClient {
       return { data: null, error }
     }
   }
+
+  async getClient() {
+    if (!pool) return null
+    return await pool.connect()
+  }
+
+  async withTransaction<T>(
+    callback: (client: import('pg').PoolClient) => Promise<T>
+  ): Promise<{ data: T | null; error: any }> {
+    if (!pool) {
+      return {
+        data: null,
+        error: { message: 'Missing DATABASE_URL environment variable', code: 'NO_DATABASE_URL' }
+      }
+    }
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      const result = await callback(client)
+      await client.query('COMMIT')
+      return { data: result, error: null }
+    } catch (error: any) {
+      try {
+        await client.query('ROLLBACK')
+      } catch (rbErr) {
+        console.error('Failed to rollback PostgreSQL transaction:', rbErr)
+      }
+      return { data: null, error }
+    } finally {
+      client.release()
+    }
+  }
 }
 
 class PostgresQueryBuilder {
@@ -231,4 +263,5 @@ class PostgresQueryBuilder {
   }
 }
 
+export { pool as pgPool }
 export const postgresClient = new PostgresClient()

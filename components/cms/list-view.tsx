@@ -159,7 +159,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   useEffect(() => setIsMounted(true), [])
   const [localRows, setLocalRows] = useState(rows)
   useEffect(() => { setLocalRows(rows) }, [rows])
-  
+
   const [search, setSearch] = useState('')
   const [editingSort, setEditingSort] = useState<string | null>(null)
   const [sortValue, setSortValue] = useState('')
@@ -185,7 +185,16 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   const [excelFile, setExcelFile] = useState<File | null>(null)
   const [excelPending, setExcelPending] = useState(false)
   const [excelError, setExcelError] = useState<string | null>(null)
-  const [excelResult, setExcelResult] = useState<{ importedCount: number; errors: string[] | null } | null>(null)
+  const [excelResult, setExcelResult] = useState<{
+    importedCount: number
+    insertedCount?: number
+    updatedCount?: number
+    batchCount?: number
+    batchSize?: number
+    executionTimeMs?: number
+    errors: string[] | null
+    warnings?: string[] | null
+  } | null>(null)
 
   const downloadStudentTemplate = () => {
     const headers = [
@@ -394,7 +403,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
         .map((r) => [r.course_id, r.courses.name])
     ).entries()
   ).map(([id, name]) => ({ id, name }))
-   .sort((a, b) => a.name.localeCompare(b.name))
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const departmentsList = useMemo(() => {
     return Array.from(
@@ -404,7 +413,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           .map((r) => [r.department_id, r.departments.name])
       ).entries()
     ).map(([id, name]) => ({ id, name }))
-     .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => a.name.localeCompare(b.name))
   }, [processedRows])
 
   const filtered = processedRows.filter((r) => {
@@ -438,7 +447,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   if (config.slug === 'navigation-links') {
     const parents = filtered.filter(r => !r.parent_id)
     const children = filtered.filter(r => r.parent_id)
-    
+
     // Create hierarchical flat list
     const newFiltered: Row[] = []
     parents.forEach(p => {
@@ -446,11 +455,11 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       const myChildren = children.filter(c => c.parent_id === p.id)
       newFiltered.push(...myChildren)
     })
-    
+
     // Append any orphaned children at the end
     const orphanChildren = children.filter(c => !parents.some(p => p.id === c.parent_id))
     newFiltered.push(...orphanChildren)
-    
+
     // Replace filtered
     filtered.length = 0
     filtered.push(...newFiltered)
@@ -510,13 +519,12 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
             return (
               <span
                 key={idx}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${
-                  isFail
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${isFail
                     ? 'bg-red-50 text-red-600 border-red-100'
                     : isPass
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                    : 'bg-gray-50 text-gray-500 border-gray-100'
-                }`}
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      : 'bg-gray-50 text-gray-500 border-gray-100'
+                  }`}
                 title={`${sub.name} - Grade: ${sub.grade || 'N/A'}`}
               >
                 <span className="font-bold">{sub.name}</span>
@@ -533,9 +541,8 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     if (typeof v === 'boolean') {
       return (
         <span
-          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-            v ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-400'
-          }`}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${v ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-400'
+            }`}
         >
           {v ? 'Yes' : 'No'}
         </span>
@@ -631,11 +638,11 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
 
     const oldIndex = localRows.findIndex((row) => row.id === active.id)
     const newIndex = localRows.findIndex((row) => row.id === over.id)
-    
+
     if (oldIndex === -1 || newIndex === -1) return
 
     const nextRows = arrayMove(localRows, oldIndex, newIndex)
-    
+
     const updates = nextRows.map((r, i) => ({
       id: r.id,
       sortOrder: (i + 1) * 10
@@ -643,7 +650,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
 
     // Mutate local immediately for UI responsiveness
     nextRows.forEach((r, i) => { r.sort_order = updates[i].sortOrder })
-    
+
     setLocalRows(nextRows)
 
     // Push to backend
@@ -938,11 +945,10 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
               setViewTrash(false)
               setSelectedIds(new Set())
             }}
-            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-              !viewTrash
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${!viewTrash
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+              }`}
           >
             Active ({rows.filter(r => !r.is_deleted).length})
           </button>
@@ -951,11 +957,10 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
               setViewTrash(true)
               setSelectedIds(new Set())
             }}
-            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-              viewTrash
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${viewTrash
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
+              }`}
           >
             Trash / Recycle Bin ({rows.filter(r => r.is_deleted).length})
           </button>
@@ -983,94 +988,94 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                   <h3 className="font-semibold text-gray-900 text-base">Academic Performance Trends</h3>
                   <p className="text-xs text-gray-400">Comparing average SGPA and overall pass percentage across semesters.</p>
                 </div>
-              <div className="h-64 w-full min-w-0 overflow-x-auto">
-                {isMounted && (
-                  <div className="h-64 w-full min-w-0">
-                    <DynamicResponsiveContainer width="100%" height="100%" minHeight={256}>
-                      <DynamicComposedChart
-                        data={semesterStats}
-                        margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
-                      >
-                      <DynamicCartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <DynamicXAxis
-                        dataKey="semester"
-                        type="category"
-                        padding={{ left: 50, right: 50 }}
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
-                        axisLine={{ stroke: '#f3f4f6' }}
-                        tickLine={{ stroke: '#f3f4f6' }}
-                      />
-                      <DynamicYAxis
-                        yAxisId="left"
-                        domain={[0, 10]}
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
-                        axisLine={{ stroke: '#f3f4f6' }}
-                        tickLine={{ stroke: '#f3f4f6' }}
-                      />
-                      <DynamicYAxis
-                        yAxisId="right"
-                        orientation="right"
-                        domain={[0, 100]}
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
-                        axisLine={{ stroke: '#f3f4f6' }}
-                        tickLine={{ stroke: '#f3f4f6' }}
-                      />
-                      <DynamicRechartsTooltip
-                        content={({ active, payload }: any) => {
-                          if (active && payload && payload.length) {
-                            const data = payload[0].payload
-                            return (
-                              <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-md text-xs space-y-1.5 font-sans">
-                                <p className="font-bold text-gray-800">{data.semester}</p>
-                                <div className="grid grid-cols-2 gap-x-4 text-gray-600">
-                                  <span>Avg SGPA:</span>
-                                  <span className="font-semibold text-blue-600 text-right">{data.avgSgpa} / 10.0</span>
-                                  <span>Pass Rate:</span>
-                                  <span className="font-semibold text-emerald-600 text-right">{data.passRate}%</span>
-                                  <span>Pass Count:</span>
-                                  <span className="font-medium text-gray-800 text-right">{data.passCount}</span>
-                                  <span>Fail Count:</span>
-                                  <span className="font-medium text-gray-800 text-right">{data.failCount}</span>
-                                </div>
-                              </div>
-                            )
-                          }
-                          return null
-                        }}
-                      />
-                      <DynamicRechartsLegend
-                        verticalAlign="top"
-                        height={36}
-                        iconType="circle"
-                        iconSize={8}
-                        wrapperStyle={{ fontSize: '11px', fontWeight: 500 }}
-                      />
-                      <DynamicBar
-                        yAxisId="left"
-                        name="Average SGPA"
-                        dataKey="avgSgpa"
-                        fill="#3b82f6"
-                        radius={4}
-                        barSize={32}
-                        minPointSize={0}
-                        isAnimationActive={false}
-                      />
-                      <DynamicLine
-                        yAxisId="right"
-                        type="monotone"
-                        name="Pass Percentage (%)"
-                        dataKey="passRate"
-                        stroke="#10b981"
-                        strokeWidth={2}
-                        dot={{ fill: '#10b981', r: 4 }}
-                        isAnimationActive={false}
-                      />
-                    </DynamicComposedChart>
-                    </DynamicResponsiveContainer>
-                  </div>
-                )}
+                <div className="h-64 w-full min-w-0 overflow-x-auto">
+                  {isMounted && (
+                    <div className="h-64 w-full min-w-0">
+                      <DynamicResponsiveContainer width="100%" height="100%" minHeight={256}>
+                        <DynamicComposedChart
+                          data={semesterStats}
+                          margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                        >
+                          <DynamicCartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                          <DynamicXAxis
+                            dataKey="semester"
+                            type="category"
+                            padding={{ left: 50, right: 50 }}
+                            tick={{ fill: '#9ca3af', fontSize: 10 }}
+                            axisLine={{ stroke: '#f3f4f6' }}
+                            tickLine={{ stroke: '#f3f4f6' }}
+                          />
+                          <DynamicYAxis
+                            yAxisId="left"
+                            domain={[0, 10]}
+                            tick={{ fill: '#9ca3af', fontSize: 10 }}
+                            axisLine={{ stroke: '#f3f4f6' }}
+                            tickLine={{ stroke: '#f3f4f6' }}
+                          />
+                          <DynamicYAxis
+                            yAxisId="right"
+                            orientation="right"
+                            domain={[0, 100]}
+                            tick={{ fill: '#9ca3af', fontSize: 10 }}
+                            axisLine={{ stroke: '#f3f4f6' }}
+                            tickLine={{ stroke: '#f3f4f6' }}
+                          />
+                          <DynamicRechartsTooltip
+                            content={({ active, payload }: any) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload
+                                return (
+                                  <div className="bg-white border border-gray-200 p-3 rounded-lg shadow-md text-xs space-y-1.5 font-sans">
+                                    <p className="font-bold text-gray-800">{data.semester}</p>
+                                    <div className="grid grid-cols-2 gap-x-4 text-gray-600">
+                                      <span>Avg SGPA:</span>
+                                      <span className="font-semibold text-blue-600 text-right">{data.avgSgpa} / 10.0</span>
+                                      <span>Pass Rate:</span>
+                                      <span className="font-semibold text-emerald-600 text-right">{data.passRate}%</span>
+                                      <span>Pass Count:</span>
+                                      <span className="font-medium text-gray-800 text-right">{data.passCount}</span>
+                                      <span>Fail Count:</span>
+                                      <span className="font-medium text-gray-800 text-right">{data.failCount}</span>
+                                    </div>
+                                  </div>
+                                )
+                              }
+                              return null
+                            }}
+                          />
+                          <DynamicRechartsLegend
+                            verticalAlign="top"
+                            height={36}
+                            iconType="circle"
+                            iconSize={8}
+                            wrapperStyle={{ fontSize: '11px', fontWeight: 500 }}
+                          />
+                          <DynamicBar
+                            yAxisId="left"
+                            name="Average SGPA"
+                            dataKey="avgSgpa"
+                            fill="#3b82f6"
+                            radius={4}
+                            barSize={32}
+                            minPointSize={0}
+                            isAnimationActive={false}
+                          />
+                          <DynamicLine
+                            yAxisId="right"
+                            type="monotone"
+                            name="Pass Percentage (%)"
+                            dataKey="passRate"
+                            stroke="#10b981"
+                            strokeWidth={2}
+                            dot={{ fill: '#10b981', r: 4 }}
+                            isAnimationActive={false}
+                          />
+                        </DynamicComposedChart>
+                      </DynamicResponsiveContainer>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
               {/* Quick Metrics Cards */}
               <div className="space-y-4">
@@ -1126,118 +1131,118 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
 
       {/* Table */}
       {config.slug !== 'result-summaries' && (
-      <DndContext id="cms-dnd-context" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-            <thead className="bg-gray-50/50 border-b border-gray-200">
-              <tr>
-                {config.slug === 'students' && (
-                  <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-10">
-                    <input
-                      type="checkbox"
-                      checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedIds(new Set(filtered.map((r) => r.id)))
-                        } else {
-                          setSelectedIds(new Set())
-                        }
-                      }}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
-                    />
-                  </th>
-                )}
-                <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
-                <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider min-w-[200px]">
-                  {isResults ? 'Student' : config.titleField.replace(/_/g, ' ')}
-                </th>
-                {config.listFields
-                  .filter((f) => {
-                    if (isResults) return f !== 'students' && f !== 'semester'
-                    return f !== config.titleField && f !== subtitleField && f !== 'id'
-                  })
-                  .map((f) => (
-                    <th key={f} className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
-                      {f.replace(/_/g, ' ')}
+        <DndContext id="cms-dnd-context" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50/50 border-b border-gray-200">
+                  <tr>
+                    {config.slug === 'students' && (
+                      <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-10">
+                        <input
+                          type="checkbox"
+                          checked={filtered.length > 0 && selectedIds.size === filtered.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedIds(new Set(filtered.map((r) => r.id)))
+                            } else {
+                              setSelectedIds(new Set())
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4 cursor-pointer"
+                        />
+                      </th>
+                    )}
+                    <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
+                    <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider min-w-[200px]">
+                      {isResults ? 'Student' : config.titleField.replace(/_/g, ' ')}
                     </th>
-                  ))}
-                {config.sortable && (
-                  <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">Order</th>
-                )}
-                <th className="px-5 py-3.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider w-32">Actions</th>
-              </tr>
-            </thead>
-            <SortableContext items={filtered.map(r => r.id)} strategy={verticalListSortingStrategy}>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={20} className="px-4 py-20 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-14 h-14 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center">
-                        <Search className="h-6 w-6 text-gray-300" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-gray-400">
-                          {search ? `No results for "${search}"` : `No ${config.label.toLowerCase()} found`}
-                        </p>
-                        <p className="text-xs text-gray-300 mt-1">
-                          {search ? 'Try a different search term.' : `Add your first ${config.singular.toLowerCase()} to get started.`}
-                        </p>
-                      </div>
-                      {!search && !viewTrash && (
-                        <Link
-                          href={`/cms/${config.slug}/new`}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-[#0e1726] text-white text-xs font-semibold rounded-xl hover:bg-[#1a2d47] transition-colors mt-1"
-                        >
-                          <Plus className="h-3.5 w-3.5" /> Add {config.singular}
-                        </Link>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : isCourseGroupable && groupByCourse ? (
-                groupedCourses.map((group) => {
-                  const isCollapsed = collapsedGroups.has(group.courseId)
-                  return (
-                    <Fragment key={group.courseId}>
-                      {/* Group header row */}
-                      <tr className="bg-gray-50 border-y border-gray-100">
-                        <td colSpan={colSpanCount} className="px-4 py-2.5">
-                          <button
-                            onClick={() => toggleGroupCollapse(group.courseId)}
-                            aria-label={isCollapsed ? `Expand ${group.courseName}` : `Collapse ${group.courseName}`}
-                            aria-expanded={!isCollapsed}
-                            className="flex items-center gap-2.5 w-full text-left hover:opacity-70 transition-opacity"
-                          >
-                            <GraduationCap className="h-4 w-4 text-[#0e1726] flex-shrink-0" />
-                            <span className="text-sm font-bold text-[#0e1726]">{group.courseName}</span>
-                            <span className="text-xs font-semibold text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
-                              {group.rows.length}
-                            </span>
-                            <span className="ml-auto">
-                              {isCollapsed
-                                ? <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
-                                : <ChevronUp className="h-3.5 w-3.5 text-gray-400" />
-                              }
-                            </span>
-                          </button>
+                    {config.listFields
+                      .filter((f) => {
+                        if (isResults) return f !== 'students' && f !== 'semester'
+                        return f !== config.titleField && f !== subtitleField && f !== 'id'
+                      })
+                      .map((f) => (
+                        <th key={f} className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          {f.replace(/_/g, ' ')}
+                        </th>
+                      ))}
+                    {config.sortable && (
+                      <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">Order</th>
+                    )}
+                    <th className="px-5 py-3.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider w-32">Actions</th>
+                  </tr>
+                </thead>
+                <SortableContext items={filtered.map(r => r.id)} strategy={verticalListSortingStrategy}>
+                  <tbody className="divide-y divide-gray-100">
+                    {filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={20} className="px-4 py-20 text-center">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="w-14 h-14 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center">
+                              <Search className="h-6 w-6 text-gray-300" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-400">
+                                {search ? `No results for "${search}"` : `No ${config.label.toLowerCase()} found`}
+                              </p>
+                              <p className="text-xs text-gray-300 mt-1">
+                                {search ? 'Try a different search term.' : `Add your first ${config.singular.toLowerCase()} to get started.`}
+                              </p>
+                            </div>
+                            {!search && !viewTrash && (
+                              <Link
+                                href={`/cms/${config.slug}/new`}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-[#0e1726] text-white text-xs font-semibold rounded-xl hover:bg-[#1a2d47] transition-colors mt-1"
+                              >
+                                <Plus className="h-3.5 w-3.5" /> Add {config.singular}
+                              </Link>
+                            )}
+                          </div>
                         </td>
                       </tr>
-                      {!isCollapsed && group.rows.map((row, i) => renderRow(row, i))}
-                    </Fragment>
-                  )
-                })
-              ) : (
-                filtered.map((row, i) => renderRow(row, i))
-              )}
-              </tbody>
-            </SortableContext>
-          </table>
-        </div>
-      </div>
-    </DndContext>
-    )}
+                    ) : isCourseGroupable && groupByCourse ? (
+                      groupedCourses.map((group) => {
+                        const isCollapsed = collapsedGroups.has(group.courseId)
+                        return (
+                          <Fragment key={group.courseId}>
+                            {/* Group header row */}
+                            <tr className="bg-gray-50 border-y border-gray-100">
+                              <td colSpan={colSpanCount} className="px-4 py-2.5">
+                                <button
+                                  onClick={() => toggleGroupCollapse(group.courseId)}
+                                  aria-label={isCollapsed ? `Expand ${group.courseName}` : `Collapse ${group.courseName}`}
+                                  aria-expanded={!isCollapsed}
+                                  className="flex items-center gap-2.5 w-full text-left hover:opacity-70 transition-opacity"
+                                >
+                                  <GraduationCap className="h-4 w-4 text-[#0e1726] flex-shrink-0" />
+                                  <span className="text-sm font-bold text-[#0e1726]">{group.courseName}</span>
+                                  <span className="text-xs font-semibold text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
+                                    {group.rows.length}
+                                  </span>
+                                  <span className="ml-auto">
+                                    {isCollapsed
+                                      ? <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+                                      : <ChevronUp className="h-3.5 w-3.5 text-gray-400" />
+                                    }
+                                  </span>
+                                </button>
+                              </td>
+                            </tr>
+                            {!isCollapsed && group.rows.map((row, i) => renderRow(row, i))}
+                          </Fragment>
+                        )
+                      })
+                    ) : (
+                      filtered.map((row, i) => renderRow(row, i))
+                    )}
+                  </tbody>
+                </SortableContext>
+              </table>
+            </div>
+          </div>
+        </DndContext>
+      )}
 
       {confirmDelete && (
         <AlertDialog open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null) }}>
@@ -1245,7 +1250,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
             <AlertDialogHeader>
               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
               <AlertDialogDescription>
-                {config.slug === 'students' 
+                {config.slug === 'students'
                   ? `This will move the student "${confirmDelete.title}" to the Trash/Recycle Bin.`
                   : `This action cannot be undone. This will permanently delete the item "${confirmDelete.title}".`
                 }
@@ -1448,17 +1453,44 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
 
               {excelResult && (
                 <div className="border border-green-200 bg-green-50/50 rounded-lg p-4 space-y-2 text-xs">
-                  <h4 className="font-semibold text-green-900 flex items-center gap-1.5 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    Import Complete
+                  <h4 className="font-semibold text-green-900 flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      Import Complete
+                    </span>
+                    {excelResult.executionTimeMs !== undefined && (
+                      <span className="text-[11px] font-normal text-green-700 bg-green-100/70 px-2 py-0.5 rounded">
+                        {excelResult.executionTimeMs}ms
+                      </span>
+                    )}
                   </h4>
-                  <div className="bg-white p-2.5 rounded border border-green-150 text-center font-bold text-lg text-academic-900">
-                    {excelResult.importedCount} student(s) imported
+                  <div className="bg-white p-2.5 rounded border border-green-150 text-center">
+                    <div className="font-bold text-lg text-academic-900">
+                      {excelResult.importedCount} student(s) imported
+                    </div>
+                    {(excelResult.insertedCount !== undefined || excelResult.updatedCount !== undefined) && (
+                      <div className="text-[11px] text-gray-500 mt-0.5">
+                        {excelResult.insertedCount ?? 0} created &bull; {excelResult.updatedCount ?? 0} updated
+                        {excelResult.batchCount ? ` across ${excelResult.batchCount} batch transaction(s) (200 records/tx)` : ''}
+                      </div>
+                    )}
                   </div>
-                  {excelResult.errors && (
+                  {excelResult.warnings && excelResult.warnings.length > 0 && (
+                    <div className="mt-2">
+                      <p className="font-semibold text-amber-800 flex items-center gap-1 mb-1">
+                        Format Notes ({excelResult.warnings.length}):
+                      </p>
+                      <ul className="list-disc pl-4 space-y-1 text-amber-700 max-h-24 overflow-y-auto bg-amber-50/40 p-2 rounded border border-amber-200 font-mono text-[10px]">
+                        {excelResult.warnings.map((warn, i) => (
+                          <li key={i}>{warn}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {excelResult.errors && excelResult.errors.length > 0 && (
                     <div className="mt-2">
                       <p className="font-semibold text-red-700 flex items-center gap-1 mb-1">
-                        Warnings ({excelResult.errors.length}):
+                        Errors / Rolled Back Batches ({excelResult.errors.length}):
                       </p>
                       <ul className="list-disc pl-4 space-y-1 text-red-600 max-h-32 overflow-y-auto bg-red-50/40 p-2 rounded border border-red-100 font-mono text-[10px]">
                         {excelResult.errors.map((err, i) => (
