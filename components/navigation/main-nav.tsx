@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Search, ChevronDown, ShieldCheck, BookOpenText, Atom, GraduationCap, CornerDownRight } from 'lucide-react'
+import { Menu, X, Search, ChevronDown, ShieldCheck, BookOpenText, Atom, GraduationCap, CornerDownRight, Code2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import logoImage from '@/public/icon.png'
 
@@ -62,6 +62,11 @@ const SEARCH_INDEX = [
   { title: 'Electronics Department', category: 'Department', href: '/departments/ec', description: 'Analog/digital labs, embedded systems engineering.' },
   { title: 'Commerce & Management Department', category: 'Department', href: '/departments/co', description: 'Business studies, finance seminars, accounting.' },
   { title: 'English Department', category: 'Department', href: '/departments/en', description: 'Language labs, literature studies, public speaking.' },
+
+  // Developer & Partner
+  { title: 'Anakarla Vamsi (Developer)', category: 'Developer', href: 'https://fellowdev.in', description: 'Lead developer & software architect at fellowdev.in.' },
+  { title: 'Developer Portal', category: 'Developer', href: 'https://fellowdev.in', description: 'Platform engineering, architecture, and systems developed by Anakarla Vamsi (fellowdev.in).' },
+  { title: 'FellowDev (Anakarla Vamsi)', category: 'Developer', href: 'https://fellowdev.in', description: 'Official technology partner and engineering by Anakarla Vamsi at fellowdev.in.' },
 ]
 
 const globalNavigation = [
@@ -396,7 +401,37 @@ export function Header({ navItems = [] }: { navItems?: NavItem[] }) {
                     {filteredSearchResults.map((result: any) => {
                       const IconComponent =
                         result.category === 'Page' ? BookOpenText :
-                          result.category === 'Course' ? GraduationCap : Atom;
+                          result.category === 'Course' ? GraduationCap :
+                            result.category === 'Developer' ? Code2 : Atom;
+                      const isExternal = result.href.startsWith('http') || result.href.startsWith('//')
+
+                      if (isExternal) {
+                        return (
+                          <a
+                            key={result.title}
+                            href={result.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setIsSearchOpen(false)}
+                            className="flex items-start gap-4 p-4 rounded-2xl border border-slate-100 hover:border-gold-500 hover:bg-slate-50/50 bg-white transition-all group shadow-sm hover:shadow"
+                          >
+                            <div className="w-10 h-10 bg-slate-100/80 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-gold-50 transition-colors">
+                              <IconComponent className="h-5 w-5 text-academic-900 group-hover:text-gold-650 transition-colors" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-slate-900 text-sm leading-snug">{result.title}</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full shrink-0">
+                                  {result.category}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-400 mt-1 line-clamp-1">{result.description}</p>
+                            </div>
+                            <CornerDownRight className="h-4 w-4 text-slate-450 opacity-0 group-hover:opacity-100 transition-opacity self-center" />
+                          </a>
+                        )
+                      }
+
                       return (
                         <Link
                           key={result.title}

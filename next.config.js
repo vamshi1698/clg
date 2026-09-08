@@ -17,6 +17,16 @@ const nextConfig = {
   },
   transpilePackages: ['@react-three/fiber', '@react-three/drei', 'three', '@react-three/rapier', 'meshline'],
 
+  async redirects() {
+    return [
+      {
+        source: '/developer',
+        destination: 'https://fellowdev.in',
+        permanent: false,
+      },
+    ]
+  },
+
   async headers() {
     const securityHeaders = [
       { key: 'X-Frame-Options', value: 'DENY' },

@@ -308,7 +308,7 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                 </CardHeader>
                 <CardContent className="p-6 space-y-6 print:p-0">
                   <form onSubmit={handleSearch} className="space-y-6 print:hidden">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
                         <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-2">
                           Register Number

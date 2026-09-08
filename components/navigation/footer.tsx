@@ -150,7 +150,19 @@ export function Footer() {
       <div className="relative border-t border-white/10">
         <div className="container-wide flex flex-col items-center justify-between gap-4 py-6 md:flex-row">
           <p className="text-center text-sm text-white/55 md:text-left">
-            © {currentYear} National College Jayanagar. All rights reserved.
+            © {currentYear} National College Jayanagar. All rights reserved.{' '}
+            <span className="hidden sm:inline">|</span>{' '}
+            <span className="block sm:inline mt-1 sm:mt-0">
+              Developed by{' '}
+              <a
+                href="https://fellowdev.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold-400 hover:text-gold-300 font-medium transition-colors"
+              >
+                Anakarla Vamsi
+              </a>
+            </span>
           </p>
           <div className="flex items-center gap-6 text-sm">
             <Link href="/privacy" className="text-gray-400 hover:text-gold-500 transition-colors">
@@ -159,6 +171,14 @@ export function Footer() {
             <Link href="/terms" className="text-gray-400 hover:text-gold-500 transition-colors">
               Terms of Use
             </Link>
+            <a
+              href="https://fellowdev.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-gold-500 transition-colors"
+            >
+              Developer
+            </a>
             <Link href="/contact" className="text-gray-400 hover:text-gold-500 transition-colors">
               Contact
             </Link>

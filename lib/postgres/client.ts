@@ -19,10 +19,10 @@ function getPoolConfig(): PoolConfig | null {
   const config: PoolConfig = {
     // Strip sslmode from URI so custom ssl object takes precedence without conflicting
     connectionString: requiresSsl ? DATABASE_URL.replace(/[?&]sslmode=[^&]+/, '') : DATABASE_URL,
-    // Optimal serverless pool configuration (prevents connection exhaustion on Vercel/Neon/Supabase)
-    max: process.env.PG_MAX_CONNECTIONS ? parseInt(process.env.PG_MAX_CONNECTIONS, 10) : 2,
-    idleTimeoutMillis: 1000,
-    connectionTimeoutMillis: 5000,
+    // Optimal connection pool configuration for pooled Supabase / Postgres
+    max: process.env.PG_MAX_CONNECTIONS ? parseInt(process.env.PG_MAX_CONNECTIONS, 10) : 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 15000,
     allowExitOnIdle: true,
   }
 

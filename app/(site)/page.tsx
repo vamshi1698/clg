@@ -109,7 +109,7 @@ export default async function HomePage() {
       <HeroSection
         image_url={
           settings?.hero_image_url ||
-          'https://images.unsplash.com/photo-1541829070740-15665fc885ce?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80'
+          'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=2000&q=80'
         }
         tagline={settings?.tagline || undefined}
         established_year={settings?.established_year}
