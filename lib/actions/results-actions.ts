@@ -61,6 +61,14 @@ export async function deleteResultsPdf(id: string) {
       }
     }
 
+    // Delete from Supabase Storage
+    try {
+      const { deleteFromStorage } = await import('@/lib/storage/supabase-storage')
+      await deleteFromStorage('results-pdfs', [filename])
+    } catch (sErr) {
+      // Safe ignore
+    }
+
     // 3. Delete from DB
     const { error: deleteErr } = await postgresClient.delete('results_pdfs', id)
     if (deleteErr) {
