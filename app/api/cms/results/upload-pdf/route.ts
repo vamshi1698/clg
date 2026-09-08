@@ -31,26 +31,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid semester value' }, { status: 400 })
     }
 
-    // Read upload directory from environment variables
-    const uploadDir = process.env.RESULTS_UPLOAD_DIR
-    if (!uploadDir) {
-      return NextResponse.json({ error: 'RESULTS_UPLOAD_DIR is not configured in environment variables' }, { status: 500 })
-    }
-
-    // Ensure the external upload folder exists
-    await mkdir(uploadDir, { recursive: true })
-
     // Generate unique file name to avoid overwrite issues
     const fileId = crypto.randomUUID()
     const extension = path.extname(file.name) || '.pdf'
     const pdfFilename = `${fileId}${extension}`
-    const filePath = path.join(/*turbopackIgnore: true*/ uploadDir, pdfFilename)
 
-    // Convert file buffer to write it to disk
+    // Convert file buffer
     const bytes = await file.arrayBuffer()
-    // Convert ArrayBuffer to Uint8Array, which satisfies writeFile's expected type
     const buffer = new Uint8Array(bytes)
-    await writeFile(filePath, buffer)
+
+    // Upload to Supabase Storage (if configured)
+    const { uploadToStorage } = await import('@/lib/storage/supabase-storage')
+    await uploadToStorage('results-pdfs', pdfFilename, buffer, 'application/pdf').catch((err) => {
+      console.warn('Supabase storage PDF upload warning (falling back to disk):', err)
+    })
+
+    // Also write to local disk/tmp cache
+    let uploadDir = process.env.RESULTS_UPLOAD_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads', 'results')
+    try {
+      await mkdir(uploadDir, { recursive: true })
+      await writeFile(path.join(uploadDir, pdfFilename), buffer)
+    } catch (e) {
+      try {
+        const os = await import('os')
+        uploadDir = path.join(os.tmpdir(), 'results')
+        await mkdir(uploadDir, { recursive: true }).catch(() => {})
+        await writeFile(path.join(uploadDir, pdfFilename), buffer)
+      } catch (diskErr) {
+        // Disk write failed on serverless (safe to ignore if Supabase storage succeeded)
+      }
+    }
 
     // Insert record in Postgres database
     const payload = {

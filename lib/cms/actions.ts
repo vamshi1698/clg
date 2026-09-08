@@ -594,4 +594,34 @@ function formatColumnName(name: string): string {
     .join(' ')
 }
 
+export async function fetchPaginatedCmsData(
+  slug: string,
+  options: {
+    page?: number
+    pageSize?: number | 'all'
+    search?: string
+    courseId?: string
+    departmentId?: string
+    viewTrash?: boolean
+  } = {}
+) {
+  const session = await getSession()
+  if (!session || !canAccessTable(session.role, slug)) {
+    return { error: 'Unauthorized', rows: [], total: 0, page: 1, pageSize: 25, totalPages: 1 }
+  }
 
+  const { getTableConfig } = await import('@/lib/cms/tables')
+  const { fetchPaginatedRows } = await import('@/lib/cms/fetch')
+  const config = getTableConfig(slug)
+  if (!config) {
+    return { error: 'Invalid configuration', rows: [], total: 0, page: 1, pageSize: 25, totalPages: 1 }
+  }
+
+  try {
+    const result = await fetchPaginatedRows(config, options)
+    return { ...result, error: null }
+  } catch (err: any) {
+    console.error(`Error in fetchPaginatedCmsData for ${slug}:`, err)
+    return { error: err.message || 'Database error', rows: [], total: 0, page: 1, pageSize: 25, totalPages: 1 }
+  }
+}

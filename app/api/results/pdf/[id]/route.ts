@@ -27,24 +27,52 @@ export async function GET(
     }
 
     const pdfRecord = data as any
-    const uploadDir = process.env.RESULTS_UPLOAD_DIR
-    if (!uploadDir) {
-      return new Response('RESULTS_UPLOAD_DIR is not configured in environment variables', { status: 500 })
-    }
-    const filePath = path.join(uploadDir, pdfRecord.pdf_filename)
+    const os = await import('os')
+    const candidateDirs = [
+      process.env.RESULTS_UPLOAD_DIR,
+      path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads', 'results'),
+      path.join(os.tmpdir(), 'results'),
+      path.join(/*turbopackIgnore: true*/ process.cwd(), 'uploads', 'results'),
+    ].filter(Boolean) as string[]
 
-    try {
-      const fileBuffer = await readFile(filePath)
-      return new Response(new Uint8Array(fileBuffer), {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="${pdfRecord.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`,
-        },
-      })
-    } catch (fsError) {
-      console.error('File system read error:', fsError)
-      return new Response('PDF file not found on disk', { status: 404 })
+    let fileBuffer: Buffer | null = null
+    for (const dir of candidateDirs) {
+      try {
+        const filePath = path.join(path.normalize(dir), pdfRecord.pdf_filename)
+        fileBuffer = await readFile(filePath)
+        if (fileBuffer) break
+      } catch (e) {
+        // continue
+      }
     }
+
+    if (!fileBuffer) {
+      // Fallback: Check Supabase Storage
+      try {
+        const { getFileFromStorage } = await import('@/lib/storage/supabase-storage')
+        const { data: blob } = await getFileFromStorage('results-pdfs', pdfRecord.pdf_filename)
+        if (blob) {
+          const arrayBuf = await blob.arrayBuffer()
+          return new Response(new Uint8Array(arrayBuf), {
+            headers: {
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': `inline; filename="${(pdfRecord.title || 'result').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`,
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          })
+        }
+      } catch (cloudErr) {
+        // Fallback error
+      }
+      return new Response('PDF file not found on disk or storage', { status: 404 })
+    }
+
+    return new Response(new Uint8Array(fileBuffer), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${pdfRecord.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`,
+      },
+    })
   } catch (error: any) {
     console.error('Error serving PDF:', error)
     return new Response('Internal Server Error', { status: 500 })

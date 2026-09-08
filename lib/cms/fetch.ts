@@ -95,10 +95,30 @@ export async function fetchRows(config: TableConfig, id?: string): Promise<any[]
   const hasDeptId = config.fields.some(f => f.name === 'department_id')
   const hasStudentId = config.fields.some(f => f.name === 'student_id')
 
+  const studentIds = hasStudentId
+    ? Array.from(new Set(rows.map((r: any) => r.student_id).filter(Boolean)))
+    : []
+  const courseIds = hasCourseId
+    ? Array.from(new Set(rows.map((r: any) => r.course_id).filter(Boolean)))
+    : []
+  const deptIds = hasDeptId
+    ? Array.from(new Set(rows.map((r: any) => r.department_id).filter(Boolean)))
+    : []
+
   const [coursesRes, deptsRes, studentsRes] = await Promise.all([
-    hasCourseId ? postgresClient.from('courses').select('id, name, code') : null,
-    hasDeptId ? postgresClient.from('departments').select('id, name, code') : null,
-    hasStudentId ? postgresClient.from('students').select('id, name, register_number, course_id') : null,
+    courseIds.length > 0
+      ? postgresClient.from('courses').select('id, name, code').in('id', courseIds)
+      : hasCourseId && !id
+      ? postgresClient.from('courses').select('id, name, code')
+      : null,
+    deptIds.length > 0
+      ? postgresClient.from('departments').select('id, name, code').in('id', deptIds)
+      : hasDeptId && !id
+      ? postgresClient.from('departments').select('id, name, code')
+      : null,
+    studentIds.length > 0
+      ? postgresClient.from('students').select('id, name, register_number, course_id').in('id', studentIds)
+      : null,
   ])
 
   const courses = coursesRes?.data as any[] | null
@@ -151,5 +171,180 @@ export async function fetchSingleton(config: TableConfig): Promise<any | null> {
     .order('id', { ascending: true })
   if (error || !data || (data as any[]).length === 0) return null
   return (data as any[])[0]
+}
+
+export interface FetchPaginatedOptions {
+  page?: number
+  pageSize?: number | 'all'
+  search?: string
+  courseId?: string
+  departmentId?: string
+  viewTrash?: boolean
+}
+
+export interface PaginatedResult<T = any> {
+  rows: T[]
+  total: number
+  page: number
+  pageSize: number | 'all'
+  totalPages: number
+}
+
+export async function fetchPaginatedRows(
+  config: TableConfig,
+  options: FetchPaginatedOptions = {}
+): Promise<PaginatedResult> {
+  const page = Math.max(1, options.page || 1)
+  const pageSize = options.pageSize || 25
+  const limit = pageSize === 'all' ? null : Number(pageSize)
+  const offset = limit ? (page - 1) * limit : 0
+
+  if (config.slug === 'students') {
+    const isTrash = !!options.viewTrash
+    let whereClauses = ['s.is_deleted = ' + (isTrash ? 'TRUE' : 'FALSE')]
+    let params: any[] = []
+    let paramIdx = 1
+
+    if (options.departmentId) {
+      whereClauses.push(`s.department_id = $${paramIdx++}`)
+      params.push(options.departmentId)
+    }
+    if (options.courseId) {
+      whereClauses.push(`s.course_id = $${paramIdx++}`)
+      params.push(options.courseId)
+    }
+    if (options.search && options.search.trim()) {
+      const term = `%${options.search.trim()}%`
+      whereClauses.push(`(s.name ILIKE $${paramIdx} OR s.register_number ILIKE $${paramIdx})`)
+      paramIdx++
+      params.push(term)
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : ''
+    const countSql = `SELECT COUNT(*)::int as total FROM students s ${whereSql}`
+    const countRes = await postgresClient.query(countSql, params)
+    const total = countRes.data?.[0]?.total || 0
+
+    let dataSql = `SELECT s.* FROM students s ${whereSql} ORDER BY s.register_number ASC`
+    let queryParams = [...params]
+    if (limit) {
+      dataSql += ` LIMIT $${paramIdx++} OFFSET $${paramIdx++}`
+      queryParams.push(limit, offset)
+    }
+
+    const dataRes = await postgresClient.query(dataSql, queryParams)
+    const rows = dataRes.data || []
+
+    const courseIds = Array.from(new Set(rows.map((r: any) => r.course_id).filter(Boolean)))
+    const deptIds = Array.from(new Set(rows.map((r: any) => r.department_id).filter(Boolean)))
+
+    const [coursesRes, deptsRes] = await Promise.all([
+      courseIds.length > 0 ? postgresClient.from('courses').select('id, name, code').in('id', courseIds) : null,
+      deptIds.length > 0 ? postgresClient.from('departments').select('id, name, code').in('id', deptIds) : null,
+    ])
+    const courses = coursesRes?.data as any[] | null
+    const depts = deptsRes?.data as any[] | null
+
+    for (const row of rows) {
+      if (row.course_id) {
+        const match = courses?.find((c) => c.id === row.course_id)
+        if (match) row.courses = { name: `${match.name} (${match.code.toUpperCase()})` }
+      }
+      if (row.department_id) {
+        const match = depts?.find((d) => d.id === row.department_id)
+        if (match) row.departments = { name: `${match.name} (${match.code.toUpperCase()})` }
+      }
+    }
+
+    const totalPages = limit ? Math.max(1, Math.ceil(total / limit)) : 1
+    return { rows, total, page, pageSize, totalPages }
+  }
+
+  if (config.slug === 'results') {
+    let whereClauses: string[] = []
+    let params: any[] = []
+    let paramIdx = 1
+
+    if (options.courseId) {
+      whereClauses.push(`s.course_id = $${paramIdx++}`)
+      params.push(options.courseId)
+    }
+    if (options.departmentId) {
+      whereClauses.push(`s.department_id = $${paramIdx++}`)
+      params.push(options.departmentId)
+    }
+    if (options.search && options.search.trim()) {
+      const term = `%${options.search.trim()}%`
+      whereClauses.push(`(s.name ILIKE $${paramIdx} OR s.register_number ILIKE $${paramIdx} OR r.subject_name ILIKE $${paramIdx} OR r.subject_code ILIKE $${paramIdx})`)
+      paramIdx++
+      params.push(term)
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : ''
+    const countSql = `
+      SELECT COUNT(DISTINCT (r.student_id, r.semester, COALESCE(r.examination_type, 'SEMESTER END EXAMINATION')))::int as total
+      FROM results r
+      LEFT JOIN students s ON r.student_id = s.id
+      ${whereSql}
+    `
+    const countRes = await postgresClient.query(countSql, params)
+    const total = countRes.data?.[0]?.total || 0
+
+    let dataSql: string
+    let queryParams = [...params]
+    if (limit) {
+      const limitIdx = paramIdx++
+      const offsetIdx = paramIdx++
+      queryParams.push(limit, offset)
+      dataSql = `
+        WITH paged_groups AS (
+          SELECT r.student_id, r.semester, COALESCE(r.examination_type, 'SEMESTER END EXAMINATION') as exam_type, r.academic_year
+          FROM results r
+          LEFT JOIN students s ON r.student_id = s.id
+          ${whereSql}
+          GROUP BY r.student_id, r.semester, COALESCE(r.examination_type, 'SEMESTER END EXAMINATION'), r.academic_year
+          ORDER BY r.semester DESC, r.student_id ASC
+          LIMIT $${limitIdx} OFFSET $${offsetIdx}
+        )
+        SELECT r.*, s.name as student_name, s.register_number as student_register_number, s.course_id as student_course_id, c.name as course_name, c.code as course_code
+        FROM results r
+        INNER JOIN paged_groups pg ON r.student_id = pg.student_id AND r.semester = pg.semester AND COALESCE(r.examination_type, 'SEMESTER END EXAMINATION') = pg.exam_type
+        LEFT JOIN students s ON r.student_id = s.id
+        LEFT JOIN courses c ON s.course_id = c.id
+        ORDER BY r.semester DESC, s.name ASC, r.id ASC;
+      `
+    } else {
+      dataSql = `
+        SELECT r.*, s.name as student_name, s.register_number as student_register_number, s.course_id as student_course_id, c.name as course_name, c.code as course_code
+        FROM results r
+        LEFT JOIN students s ON r.student_id = s.id
+        LEFT JOIN courses c ON s.course_id = c.id
+        ${whereSql}
+        ORDER BY r.semester DESC, s.name ASC, r.id ASC;
+      `
+    }
+
+    const dataRes = await postgresClient.query(dataSql, queryParams)
+    const rows = (dataRes.data || []).map((row: any) => ({
+      ...row,
+      students: {
+        name: `${row.student_name || 'Student'} (${row.student_register_number || '—'})`,
+        register_number: row.student_register_number,
+      },
+      courses: row.course_name ? { name: `${row.course_name} (${(row.course_code || '').toUpperCase()})` } : null,
+      course_id: row.student_course_id || row.course_id,
+    }))
+
+    const totalPages = limit ? Math.max(1, Math.ceil(total / limit)) : 1
+    return { rows, total, page, pageSize, totalPages }
+  }
+
+  // Generic table fallback
+  const allRows = await fetchRows(config)
+  const rowsList = Array.isArray(allRows) ? allRows : []
+  const total = rowsList.length
+  const paginated = limit ? rowsList.slice(offset, offset + limit) : rowsList
+  const totalPages = limit ? Math.max(1, Math.ceil(total / limit)) : 1
+  return { rows: paginated, total, page, pageSize, totalPages }
 }
 

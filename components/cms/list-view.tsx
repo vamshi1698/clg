@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { useState, useTransition, Fragment, useMemo, useEffect } from 'react'
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUpDown, Save, X, GraduationCap, Search, ChevronDown, ChevronUp, RotateCcw, TrendingUp, UploadCloud, Loader2, Info, AlertCircle, CheckCircle, GripVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUpDown, Save, X, GraduationCap, Search, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, RotateCcw, TrendingUp, UploadCloud, Loader2, Info, AlertCircle, CheckCircle, GripVertical } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { cn } from '@/lib/utils'
-import { deleteRow, toggleActive, updateSortOrder, updateSortOrdersBulk, deleteRowPermanent, restoreRow, deleteRows, deleteRowsPermanent, restoreRows } from '@/lib/cms/actions'
+import { deleteRow, toggleActive, updateSortOrder, updateSortOrdersBulk, deleteRowPermanent, restoreRow, deleteRows, deleteRowsPermanent, restoreRows, fetchPaginatedCmsData } from '@/lib/cms/actions'
 import {
   DndContext,
   closestCenter,
@@ -146,19 +146,58 @@ function DragHandle() {
 export function CmsListView({
   config,
   rows,
+  initialTotal,
+  initialPage,
+  initialPageSize,
+  initialTotalPages,
+  serverReferences,
 }: {
   config: import('@/lib/cms/tables').TableConfig
   rows: Row[]
+  initialTotal?: number
+  initialPage?: number
+  initialPageSize?: number | 'all'
+  initialTotalPages?: number
+  serverReferences?: Record<string, { value: string; label: string }[]>
 }) {
   if (config.singleton) return null
-  return <ListViewInner config={config} rows={rows} />
+  return (
+    <ListViewInner
+      config={config}
+      rows={rows}
+      initialTotal={initialTotal}
+      initialPage={initialPage}
+      initialPageSize={initialPageSize}
+      initialTotalPages={initialTotalPages}
+      serverReferences={serverReferences}
+    />
+  )
 }
 
-function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').TableConfig; rows: Row[] }) {
+function ListViewInner({
+  config,
+  rows,
+  initialTotal,
+  initialPage = 1,
+  initialPageSize = 25,
+  serverReferences,
+}: {
+  config: import('@/lib/cms/tables').TableConfig
+  rows: Row[]
+  initialTotal?: number
+  initialPage?: number
+  initialPageSize?: number | 'all'
+  initialTotalPages?: number
+  serverReferences?: Record<string, { value: string; label: string }[]>
+}) {
   const [isMounted, setIsMounted] = useState(false)
   useEffect(() => setIsMounted(true), [])
   const [localRows, setLocalRows] = useState(rows)
   useEffect(() => { setLocalRows(rows) }, [rows])
+
+  const isServerPagination = config.slug === 'students' || config.slug === 'results'
+  const [serverTotal, setServerTotal] = useState<number | null>(initialTotal ?? null)
+  const [isFetchingPage, setIsFetchingPage] = useState(false)
 
   const [search, setSearch] = useState('')
   const [editingSort, setEditingSort] = useState<string | null>(null)
@@ -195,6 +234,48 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     errors: string[] | null
     warnings?: string[] | null
   } | null>(null)
+
+  const [currentPage, setCurrentPage] = useState(initialPage)
+  const [pageSize, setPageSize] = useState<number | 'all'>(initialPageSize)
+
+  // Reset page on filter changes
+  useEffect(() => {
+    setSelectedIds(new Set())
+    setCurrentPage(1)
+  }, [selectedDepartmentId, selectedCourseId, search, viewTrash, groupByCourse, pageSize])
+
+  // Fetch DB paginated data on state change
+  useEffect(() => {
+    if (!isServerPagination) return
+    let isCancelled = false
+    setIsFetchingPage(true)
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetchPaginatedCmsData(config.slug, {
+          page: currentPage,
+          pageSize,
+          search,
+          courseId: selectedCourseId,
+          departmentId: selectedDepartmentId,
+          viewTrash,
+        })
+        if (!isCancelled && !res.error) {
+          setLocalRows(res.rows)
+          setServerTotal(res.total)
+        }
+      } catch (err) {
+        console.error('Failed to fetch DB paginated rows:', err)
+      } finally {
+        if (!isCancelled) setIsFetchingPage(false)
+      }
+    }, 200)
+
+    return () => {
+      isCancelled = true
+      clearTimeout(timer)
+    }
+  }, [config.slug, isServerPagination, currentPage, pageSize, search, selectedCourseId, selectedDepartmentId, viewTrash])
 
   const downloadStudentTemplate = () => {
     const headers = [
@@ -281,10 +362,6 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     }
   }
 
-  useEffect(() => {
-    setSelectedIds(new Set())
-  }, [selectedDepartmentId, selectedCourseId, search, viewTrash])
-
   const titleField = config.titleField
   const subtitleField = config.subtitleField
 
@@ -340,6 +417,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       })
       .sort((a, b) => a.semester.localeCompare(b.semester))
   }, [rows, config.slug])
+
   if (isResults) {
     const mergedMap = new Map<string, {
       id: string
@@ -356,7 +434,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       is_active: boolean
     }>()
 
-    rows.forEach((r) => {
+    localRows.forEach((r) => {
       const key = `${r.student_id}-${r.semester}-${r.examination_type || 'SEMESTER END EXAMINATION'}`
       const subjectInfo = {
         name: r.subject_name || r.subject_code || 'Unknown',
@@ -396,16 +474,24 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     processedRows = Array.from(mergedMap.values())
   }
 
-  const coursesList = Array.from(
-    new Map(
-      processedRows
-        .filter((r) => r.course_id && r.courses?.name)
-        .map((r) => [r.course_id, r.courses.name])
-    ).entries()
-  ).map(([id, name]) => ({ id, name }))
-    .sort((a, b) => a.name.localeCompare(b.name))
+  const coursesList = useMemo(() => {
+    if (serverReferences?.course_id && serverReferences.course_id.length > 0) {
+      return serverReferences.course_id.map((r) => ({ id: r.value, name: r.label }))
+    }
+    return Array.from(
+      new Map(
+        processedRows
+          .filter((r) => r.course_id && r.courses?.name)
+          .map((r) => [r.course_id, r.courses.name])
+      ).entries()
+    ).map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [serverReferences, processedRows])
 
   const departmentsList = useMemo(() => {
+    if (serverReferences?.department_id && serverReferences.department_id.length > 0) {
+      return serverReferences.department_id.map((r) => ({ id: r.value, name: r.label }))
+    }
     return Array.from(
       new Map(
         processedRows
@@ -414,9 +500,10 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       ).entries()
     ).map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [processedRows])
+  }, [serverReferences, processedRows])
 
   const filtered = processedRows.filter((r) => {
+    if (isServerPagination) return true // Server already performed filtering on the DB
     const matchesSearch = !search || (() => {
       const s = search.toLowerCase()
       const inStandardFields = config.listFields.some((f) => String(r[f] ?? '').toLowerCase().includes(s))
@@ -469,15 +556,33 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
     courseId: string
     courseName: string
     rows: Row[]
+    totalInCourse: number
   }
 
-  const groupedCourses: GroupedCourse[] = []
+  const totalItems = (isServerPagination && serverTotal !== null) ? serverTotal : filtered.length
+  const numericPageSize = pageSize === 'all' ? totalItems : Number(pageSize)
+  const totalPages = Math.max(1, Math.ceil(totalItems / (numericPageSize || 1)))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedRows = useMemo(() => {
+    if (isServerPagination || pageSize === 'all') return filtered
+    const startIndex = (safeCurrentPage - 1) * numericPageSize
+    return filtered.slice(startIndex, startIndex + numericPageSize)
+  }, [isServerPagination, filtered, safeCurrentPage, numericPageSize, pageSize])
 
-  if (isCourseGroupable && groupByCourse) {
+  const groupedCourses: GroupedCourse[] = useMemo(() => {
+    if (!isCourseGroupable || !groupByCourse) return []
+
+    // Calculate total items per course across the entire filtered dataset
+    const totalCourseCounts = new Map<string, number>()
+    filtered.forEach((r) => {
+      const cid = r.course_id || 'unassigned'
+      totalCourseCounts.set(cid, (totalCourseCounts.get(cid) || 0) + 1)
+    })
+
     const groupsMap = new Map<string, Row[]>()
     const unassignedRows: Row[] = []
 
-    filtered.forEach((r) => {
+    paginatedRows.forEach((r) => {
       if (r.course_id) {
         if (!groupsMap.has(r.course_id)) {
           groupsMap.set(r.course_id, [])
@@ -488,47 +593,56 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       }
     })
 
+    const list: GroupedCourse[] = []
     groupsMap.forEach((groupRows, courseId) => {
       const courseName = groupRows[0]?.courses?.name || 'Unknown Course'
-      groupedCourses.push({
+      list.push({
         courseId,
         courseName,
         rows: groupRows,
+        totalInCourse: totalCourseCounts.get(courseId) || groupRows.length,
       })
     })
-    groupedCourses.sort((a, b) => a.courseName.localeCompare(b.courseName))
+    list.sort((a, b) => a.courseName.localeCompare(b.courseName))
 
     if (unassignedRows.length > 0) {
-      groupedCourses.push({
+      list.push({
         courseId: 'unassigned',
         courseName: 'Unassigned / Other',
         rows: unassignedRows,
+        totalInCourse: totalCourseCounts.get('unassigned') || unassignedRows.length,
       })
     }
-  }
+    return list
+  }, [isCourseGroupable, groupByCourse, filtered, paginatedRows])
 
   function formatCell(field: string, row: Row): React.ReactNode {
     if (field === 'subjects') {
       const list = row.subjects_array as { name: string; grade: string; status: string }[]
       if (!list || list.length === 0) return <span className="text-gray-300">—</span>
       return (
-        <div className="flex flex-wrap gap-1.5 max-w-xl">
+        <div className="flex flex-wrap items-center gap-1.5 max-w-xl py-1">
           {list.map((sub, idx) => {
             const isPass = sub.status === 'PASS'
             const isFail = sub.status === 'FAIL'
             return (
               <span
                 key={idx}
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${isFail
-                    ? 'bg-red-50 text-red-600 border-red-100'
+                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium border transition-all ${
+                  isFail
+                    ? 'bg-rose-50 text-rose-700 border-rose-200'
                     : isPass
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                      : 'bg-gray-50 text-gray-500 border-gray-100'
-                  }`}
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-slate-50 text-slate-600 border-slate-200'
+                }`}
                 title={`${sub.name} - Grade: ${sub.grade || 'N/A'}`}
               >
-                <span className="font-bold">{sub.name}</span>
-                <span className="opacity-70">({sub.grade || '—'})</span>
+                <span className="font-semibold text-slate-800">{sub.name}</span>
+                <span className={`px-1 py-0.2 rounded text-[11px] font-bold ${
+                  isFail ? 'bg-rose-200/80 text-rose-800' : 'bg-emerald-200/80 text-emerald-800'
+                }`}>
+                  {sub.grade || '—'}
+                </span>
               </span>
             )
           })}
@@ -536,13 +650,44 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       )
     }
 
+    if (field === 'result_status' || field === 'status') {
+      const v = row[field]
+      if (v === null || v === undefined) return <span className="text-gray-300">—</span>
+      const statusUpper = String(v).toUpperCase()
+      if (statusUpper === 'PASS') {
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+            PASS
+          </span>
+        )
+      }
+      if (statusUpper === 'FAIL') {
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+            FAIL
+          </span>
+        )
+      }
+      if (statusUpper === 'ABSENT') {
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            ABSENT
+          </span>
+        )
+      }
+    }
+
     const v = row[field]
     if (v === null || v === undefined) return <span className="text-gray-300">—</span>
     if (typeof v === 'boolean') {
       return (
         <span
-          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${v ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-400'
-            }`}
+          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+            v ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-gray-100 text-gray-400'
+          }`}
         >
           {v ? 'Yes' : 'No'}
         </span>
@@ -672,8 +817,10 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
   }
 
   function renderRow(row: Row, index: number) {
-    const displayTitle = isResults ? (row.students?.name || 'Untitled') : String(row[titleField] ?? 'Untitled')
-    const displaySubtitle = isResults ? `Semester ${row.semester}` : (subtitleField && row[subtitleField] ? formatCell(subtitleField, row) : null)
+    const displayTitle = isResults ? (row.students?.name || 'Untitled Student') : String(row[titleField] ?? 'Untitled')
+    const displaySubtitle = isResults
+      ? `Semester ${row.semester}${row.academic_year ? ` • ${row.academic_year}` : ''}`
+      : (subtitleField && row[subtitleField] ? formatCell(subtitleField, row) : null)
 
     return (
       <SortableTr key={row.id} id={row.id} isSortable={!!config.sortable}>
@@ -708,15 +855,24 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
             {config.table === 'activity_logs' ? (
               <span className="font-semibold text-gray-900 text-sm">{displayTitle}</span>
             ) : (
-              <Link
-                href={`/cms/${config.slug}/${row.id}`}
-                className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-sm"
-              >
-                {displayTitle}
-              </Link>
-            )}
-            {displaySubtitle && (
-              <div className="text-xs text-gray-400 mt-0.5">{displaySubtitle}</div>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Link
+                    href={`/cms/${config.slug}/${row.id}`}
+                    className="font-semibold text-gray-900 hover:text-blue-600 transition-colors text-sm"
+                  >
+                    {displayTitle}
+                  </Link>
+                  {isResults && row.students?.register_number && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-mono font-medium border border-slate-200">
+                      {row.students.register_number}
+                    </span>
+                  )}
+                </div>
+                {displaySubtitle && (
+                  <div className="text-xs text-gray-500 font-medium">{displaySubtitle}</div>
+                )}
+              </div>
             )}
           </div>
         </td>
@@ -801,14 +957,14 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-gray-900">{config.label}</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-display text-2xl font-bold text-gray-900">{config.label}</h1>
+            {isFetchingPage && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+          </div>
           {config.slug !== 'result-summaries' && (
             <p className="text-sm text-gray-400 mt-0.5">
-              <span className="font-semibold text-gray-600">{processedRows.length}</span>{' '}
-              {isResults ? 'student' : config.singular.toLowerCase()}{processedRows.length !== 1 ? 's' : ''} total
-              {filtered.length !== processedRows.length && (
-                <span className="ml-1 text-blue-500 font-medium">({filtered.length} shown)</span>
-              )}
+              <span className="font-semibold text-gray-600">{totalItems}</span>{' '}
+              {isResults ? 'student' : config.singular.toLowerCase()}{totalItems !== 1 ? 's' : ''} total
             </p>
           )}
         </div>
@@ -853,7 +1009,11 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
           {/* Search */}
           {config.slug !== 'result-summaries' && (
             <div className="relative flex-grow sm:flex-grow-0">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              {isFetchingPage ? (
+                <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-500 animate-spin pointer-events-none" />
+              ) : (
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              )}
               <input
                 type="text"
                 placeholder="Search…"
@@ -950,7 +1110,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
           >
-            Active ({rows.filter(r => !r.is_deleted).length})
+            Active ({!viewTrash && serverTotal !== null ? serverTotal : localRows.filter(r => !r.is_deleted).length})
           </button>
           <button
             onClick={() => {
@@ -962,7 +1122,7 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
           >
-            Trash / Recycle Bin ({rows.filter(r => r.is_deleted).length})
+            Trash / Recycle Bin ({viewTrash && serverTotal !== null ? serverTotal : localRows.filter(r => r.is_deleted).length})
           </button>
         </div>
       )}
@@ -1084,42 +1244,28 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                   <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-wider text-blue-600">Overall Average SGPA</p>
-                      <p className="text-2xl font-bold text-blue-900 mt-1">
-                        {(semesterStats.reduce((acc, curr) => acc + curr.avgSgpa, 0) / semesterStats.length).toFixed(2)}
+                      <p className="text-2xl font-bold text-gray-900 mt-0.5">
+                        {semesterStats.length > 0
+                          ? (semesterStats.reduce((acc, s) => acc + s.avgSgpa, 0) / semesterStats.length).toFixed(2)
+                          : '0.00'}
                       </p>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-blue-400 opacity-60" />
+                    <div className="p-2.5 bg-blue-100/60 text-blue-700 rounded-lg">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
                   </div>
 
                   <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 flex items-center justify-between">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Average Pass Rate</p>
-                      <p className="text-2xl font-bold text-emerald-900 mt-1">
-                        {(semesterStats.reduce((acc, curr) => acc + curr.passRate, 0) / semesterStats.length).toFixed(1)}%
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Overall Pass Rate</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-0.5">
+                        {semesterStats.length > 0
+                          ? `${(semesterStats.reduce((acc, s) => acc + s.passRate, 0) / semesterStats.length).toFixed(1)}%`
+                          : '0%'}
                       </p>
                     </div>
-                    <GraduationCap className="h-8 w-8 text-emerald-400 opacity-60" />
-                  </div>
-
-                  <div className="p-4 bg-gray-50/60 rounded-xl border border-gray-100">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-gray-500">Distribution Summary</p>
-                    <div className="mt-2.5 space-y-1 text-xs">
-                      <div className="flex justify-between text-gray-600">
-                        <span>Total Semesters:</span>
-                        <span className="font-semibold text-gray-900">{semesterStats.length}</span>
-                      </div>
-                      <div className="flex justify-between text-gray-600">
-                        <span>Total Passed Records:</span>
-                        <span className="font-semibold text-emerald-600">
-                          {semesterStats.reduce((acc, curr) => acc + curr.passCount, 0)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-gray-600">
-                        <span>Total Failed Records:</span>
-                        <span className="font-semibold text-red-600">
-                          {semesterStats.reduce((acc, curr) => acc + curr.failCount, 0)}
-                        </span>
-                      </div>
+                    <div className="p-2.5 bg-emerald-100/60 text-emerald-700 rounded-lg">
+                      <CheckCircle className="h-5 w-5" />
                     </div>
                   </div>
                 </div>
@@ -1132,13 +1278,13 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
       {/* Table */}
       {config.slug !== 'result-summaries' && (
         <DndContext id="cms-dnd-context" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50/50 border-b border-gray-200">
-                  <tr>
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+            <div className="overflow-x-auto max-h-[calc(100vh-290px)] overflow-y-auto">
+              <table className="w-full text-sm border-separate border-spacing-0">
+                <thead className="sticky top-0 z-20 shadow-[0_1px_0_0_#e2e8f0]">
+                  <tr className="bg-slate-50 border-b border-gray-200">
                     {config.slug === 'students' && (
-                      <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-10">
+                      <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-10 bg-slate-50 border-b border-gray-200">
                         <input
                           type="checkbox"
                           checked={filtered.length > 0 && selectedIds.size === filtered.length}
@@ -1153,8 +1299,8 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                         />
                       </th>
                     )}
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-12">#</th>
-                    <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider min-w-[200px]">
+                    <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-12 bg-slate-50 border-b border-gray-200">#</th>
+                    <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider min-w-[200px] bg-slate-50 border-b border-gray-200">
                       {isResults ? 'Student' : config.titleField.replace(/_/g, ' ')}
                     </th>
                     {config.listFields
@@ -1163,18 +1309,18 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                         return f !== config.titleField && f !== subtitleField && f !== 'id'
                       })
                       .map((f) => (
-                        <th key={f} className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                        <th key={f} className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap bg-slate-50 border-b border-gray-200">
                           {f.replace(/_/g, ' ')}
                         </th>
                       ))}
                     {config.sortable && (
-                      <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">Order</th>
+                      <th className="px-5 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28 bg-slate-50 border-b border-gray-200">Order</th>
                     )}
-                    <th className="px-5 py-3.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider w-32">Actions</th>
+                    <th className="px-5 py-3.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wider w-32 bg-slate-50 border-b border-gray-200">Actions</th>
                   </tr>
                 </thead>
                 <SortableContext items={filtered.map(r => r.id)} strategy={verticalListSortingStrategy}>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-gray-100 bg-white">
                     {filtered.length === 0 ? (
                       <tr>
                         <td colSpan={20} className="px-4 py-20 text-center">
@@ -1204,11 +1350,12 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                     ) : isCourseGroupable && groupByCourse ? (
                       groupedCourses.map((group) => {
                         const isCollapsed = collapsedGroups.has(group.courseId)
+                        const pageOffset = pageSize === 'all' ? 0 : (safeCurrentPage - 1) * numericPageSize
                         return (
                           <Fragment key={group.courseId}>
                             {/* Group header row */}
-                            <tr className="bg-gray-50 border-y border-gray-100">
-                              <td colSpan={colSpanCount} className="px-4 py-2.5">
+                            <tr className="bg-slate-100 border-y border-slate-200">
+                              <td colSpan={colSpanCount} className="px-4 py-2.5 bg-slate-100 border-y border-slate-200 font-medium">
                                 <button
                                   onClick={() => toggleGroupCollapse(group.courseId)}
                                   aria-label={isCollapsed ? `Expand ${group.courseName}` : `Collapse ${group.courseName}`}
@@ -1217,8 +1364,8 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                                 >
                                   <GraduationCap className="h-4 w-4 text-[#0e1726] flex-shrink-0" />
                                   <span className="text-sm font-bold text-[#0e1726]">{group.courseName}</span>
-                                  <span className="text-xs font-semibold text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
-                                    {group.rows.length}
+                                  <span className="text-xs font-semibold text-gray-500 bg-gray-200 px-2.5 py-0.5 rounded-full">
+                                    {group.rows.length} {group.totalInCourse > group.rows.length ? `shown (${group.totalInCourse} total)` : 'records'}
                                   </span>
                                   <span className="ml-auto">
                                     {isCollapsed
@@ -1229,17 +1376,90 @@ function ListViewInner({ config, rows }: { config: import('@/lib/cms/tables').Ta
                                 </button>
                               </td>
                             </tr>
-                            {!isCollapsed && group.rows.map((row, i) => renderRow(row, i))}
+                            {!isCollapsed && group.rows.map((row) => {
+                              const itemIndex = filtered.indexOf(row)
+                              const globalIdx = pageOffset + (itemIndex >= 0 ? itemIndex : 0)
+                              return renderRow(row, globalIdx)
+                            })}
                           </Fragment>
                         )
                       })
                     ) : (
-                      filtered.map((row, i) => renderRow(row, i))
+                      paginatedRows.map((row, i) => {
+                        const globalIdx = pageSize === 'all' ? i : (safeCurrentPage - 1) * numericPageSize + i
+                        return renderRow(row, globalIdx)
+                      })
                     )}
                   </tbody>
                 </SortableContext>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filtered.length > 0 && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3.5 bg-gray-50/70 border-t border-gray-200 text-xs text-gray-600">
+                <div className="flex items-center gap-1.5 font-medium">
+                  <span>Showing</span>
+                  <span className="font-bold text-gray-900">
+                    {totalItems === 0 ? 0 : (safeCurrentPage - 1) * numericPageSize + 1}
+                  </span>
+                  <span>–</span>
+                  <span className="font-bold text-gray-900">
+                    {Math.min(safeCurrentPage * numericPageSize, totalItems)}
+                  </span>
+                  <span>of</span>
+                  <span className="font-bold text-gray-900">{totalItems}</span>
+                  <span>entries</span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-500 font-medium">Per page:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        const val = e.target.value === 'all' ? 'all' : Number(e.target.value)
+                        setPageSize(val)
+                        setCurrentPage(1)
+                      }}
+                      className="px-2 py-1 text-xs font-semibold bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400/40 text-gray-700 cursor-pointer shadow-2xs"
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                      <option value="all">All</option>
+                    </select>
+                  </div>
+
+                  {pageSize !== 'all' && totalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={safeCurrentPage <= 1}
+                        className="p-1 rounded-md border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-2xs"
+                        aria-label="Previous page"
+                        title="Previous page"
+                      >
+                        <ChevronLeft className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="px-2.5 py-0.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-md shadow-2xs">
+                        {safeCurrentPage} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={safeCurrentPage >= totalPages}
+                        className="p-1 rounded-md border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shadow-2xs"
+                        aria-label="Next page"
+                        title="Next page"
+                      >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </DndContext>
       )}

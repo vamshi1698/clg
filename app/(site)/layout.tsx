@@ -11,19 +11,22 @@ export default async function SiteLayout({
   const rawLinks = await getNavigationLinks()
   
   // Build nested hierarchy: 1 level deep
-  const navItems: NavItem[] = rawLinks
-    .filter(link => !link.parent_id)
-    .map(parent => {
-      const children = rawLinks.filter(link => link.parent_id === parent.id)
-      return {
-        name: parent.name,
-        href: parent.href,
-        hasDropdown: children.length > 0,
-        items: children.length > 0 
-          ? children.map(child => ({ name: child.name, href: child.href }))
-          : undefined
-      }
-    })
+  let navItems: NavItem[] = []
+  if (rawLinks && rawLinks.length > 0) {
+    navItems = rawLinks
+      .filter((link) => !link.parent_id)
+      .map((parent) => {
+        const children = rawLinks.filter((link) => link.parent_id === parent.id)
+        return {
+          name: parent.name,
+          href: parent.href,
+          hasDropdown: children.length > 0,
+          items: children.length > 0 
+            ? children.map((child) => ({ name: child.name, href: child.href }))
+            : undefined,
+        }
+      })
+  }
 
   return (
     <>

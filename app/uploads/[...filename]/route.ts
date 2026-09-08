@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import path from 'path';
+import os from 'os';
 
 export async function GET(
   request: NextRequest,
@@ -9,23 +10,56 @@ export async function GET(
   try {
     const params = await props.params;
     const filenamePath = params.filename.join('/');
-    const rawUploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads');
-    // Normalize path to handle Windows backslashes vs forward slashes
-    const uploadDir = path.normalize(rawUploadDir);
     
     // Prevent directory traversal
     const safePath = path.normalize(filenamePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const filePath = path.join(uploadDir, safePath);
+    
+    const candidateDirs = [
+      process.env.UPLOAD_DIR,
+      path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads'),
+      path.join(os.tmpdir(), 'uploads'),
+      path.join(/*turbopackIgnore: true*/ process.cwd(), 'uploads'),
+    ].filter(Boolean) as string[];
 
-    // Ensure the resolved path is within the upload directory
-    if (!filePath.startsWith(uploadDir)) {
-       return new NextResponse('Forbidden', { status: 403 });
+    let fileBuffer: Buffer | null = null;
+    let foundPath: string | null = null;
+
+    for (const dir of candidateDirs) {
+      try {
+        const testPath = path.join(path.normalize(dir), safePath);
+        fileBuffer = await readFile(testPath);
+        if (fileBuffer) {
+          foundPath = testPath;
+          break;
+        }
+      } catch (e) {
+        // Continue searching other directories
+      }
     }
 
-    const fileBuffer = await readFile(filePath);
+    if (!fileBuffer || !foundPath) {
+      // Fallback: Check Supabase Storage
+      try {
+        const { getFileFromStorage } = await import('@/lib/storage/supabase-storage')
+        const { data: blob } = await getFileFromStorage('uploads', safePath)
+        if (blob) {
+          const arrayBuf = await blob.arrayBuffer()
+          const mimeType = blob.type || 'application/octet-stream'
+          return new NextResponse(new Uint8Array(arrayBuf), {
+            headers: {
+              'Content-Type': mimeType,
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          })
+        }
+      } catch (cloudErr) {
+        // Fallback error
+      }
+      return new NextResponse('File not found', { status: 404 });
+    }
     
     // Guess MIME type based on extension
-    const ext = path.extname(filePath).toLowerCase();
+    const ext = path.extname(foundPath).toLowerCase();
     let mimeType = 'application/octet-stream';
     if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
     else if (ext === '.png') mimeType = 'image/png';
@@ -46,3 +80,4 @@ export async function GET(
     return new NextResponse('File not found', { status: 404 });
   }
 }
+

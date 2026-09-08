@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   images: {
     remotePatterns: [
       {
@@ -12,7 +15,6 @@ const nextConfig = {
       },
     ],
   },
-  allowedDevOrigins: ['192.168.0.107', '0ed780f2ce17.ngrok-free.app', '1c0e-2409-40f2-216b-4eb5-91ff-d9e-15cc-971d.ngrok-free.app'],
   transpilePackages: ['@react-three/fiber', '@react-three/drei', 'three', '@react-three/rapier', 'meshline'],
 
   async headers() {

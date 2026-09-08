@@ -139,11 +139,49 @@ A comprehensive, modern institutional management and web platform built for coll
 
 ## 🌍 Deployment
 
-This project includes configuration files for various deployment strategies:
+### 🚀 Deploying to Vercel (Hobby / Free Tier - Recommended)
+
+This project is fully optimized for **Vercel's Free Tier** with zero-cost cloud databases (e.g. [Neon Serverless Postgres](https://neon.tech) or [Supabase](https://supabase.com)):
+
+#### 1. Push to GitHub
+Ensure your latest changes are pushed to your GitHub repository:
+```bash
+git add .
+git commit -m "Ready for production"
+git push origin main
+```
+
+#### 2. Import into Vercel
+1. Go to [vercel.com](https://vercel.com) and click **"Add New" > "Project"**.
+2. Import your GitHub repository (`clg`).
+3. Framework Preset will be automatically detected as **Next.js**.
+
+#### 3. Configure Environment Variables in Vercel
+Under **Environment Variables**, add the following:
+
+| Variable | Description | Example / Recommendation |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | PostgreSQL connection string (with SSL) | `postgresql://user:pass@ep-xyz-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require` |
+| `CMS_SESSION_SECRET` | Secure random string (32+ chars) | Generate via `openssl rand -hex 32` |
+| `CMS_SETUP_SECRET` | Secure admin setup key (32+ chars) | Generate via `openssl rand -hex 32` |
+| `APP_URL` | Production URL | `https://your-project.vercel.app` |
+| `RESEND_API_KEY` | *(Optional)* Resend API Key for emails | `re_xxxxxxxxxxxx` |
+| `RESEND_FROM_EMAIL` | *(Optional)* Sender email | `onboarding@resend.dev` |
+
+> [!TIP]
+> **Free Tier Database Recommendation:**
+> Use **Neon** (pooled connection string on port 5432) or **Supabase** (Transaction pooler on port 6543) with `?sslmode=require`. The serverless database pool is configured to prevent connection exhaustion.
+
+#### 4. Click Deploy
+Vercel will build and deploy your application automatically.
+
+---
+
+### 🐳 Alternative Deployment Strategies
 - **Docker:** Use the provided `Dockerfile` and `.dockerignore` for containerized deployment.
-- **Nginx:** An `nginx.conf` is provided for reverse proxy and static asset serving.
-- **Netlify:** Contains a `netlify.toml` and Next.js plugin for easy deployment on Netlify.
+- **Nginx & VPS:** `nginx.conf` is provided for reverse proxy and static asset serving on Ubuntu/Debian servers.
 
 ## 📄 License
 
 This project is proprietary or licensed as per institutional requirements.
+

@@ -55,7 +55,7 @@ const SECURITY_HEADERS: Record<string, string> = {
     "img-src 'self' data: blob: https: http:",
     "frame-src 'self' https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://www.google.com https://google.com https://*.google.com https://*.google.co.in",
     "media-src 'self' https: http: data: blob:",
-    "connect-src 'self'",
+    "connect-src 'self' https: wss: data: blob:",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

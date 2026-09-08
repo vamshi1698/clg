@@ -14,7 +14,9 @@ import {
   Calendar,
   Layers,
   Sparkles,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -54,6 +56,12 @@ export default function ResultsUploadPage() {
   const [datasets, setDatasets] = useState<{ academic_year: string, semester: number, examination_type: string }[]>([])
   const [pdfPending, startPdfTransition] = useTransition()
   const [excelPending, startExcelTransition] = useTransition()
+
+  // Pagination states
+  const [pdfPage, setPdfPage] = useState(1)
+  const [datasetPage, setDatasetPage] = useState(1)
+  const PDF_PAGE_SIZE = 5
+  const DATASET_PAGE_SIZE = 5
 
   // PDF Form state
   const [pdfTitle, setPdfTitle] = useState('')
@@ -455,33 +463,70 @@ export default function ResultsUploadPage() {
           {/* List of active PDFs */}
           <Card className="border border-gray-200 shadow-md">
             <CardHeader className="bg-gray-50/70 border-b border-gray-200/60 py-4">
-              <CardTitle className="font-display text-base text-academic-900">
-                Uploaded Notifications ({pdfs.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="font-display text-base text-academic-900">
+                  Uploaded Notifications ({pdfs.length})
+                </CardTitle>
+                {pdfs.length > PDF_PAGE_SIZE && (
+                  <span className="text-xs text-gray-500 font-medium">
+                    Page {pdfPage} of {Math.ceil(pdfs.length / PDF_PAGE_SIZE)}
+                  </span>
+                )}
+              </div>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex flex-col">
               {pdfs.length > 0 ? (
-                <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-                  {pdfs.map((pdf) => (
-                    <div key={pdf.id} className="flex items-center justify-between p-4 hover:bg-gray-50">
-                      <div className="min-w-0 pr-4">
-                        <p className="font-medium text-sm text-academic-900 truncate">{pdf.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          Sem {pdf.semester} · {pdf.academic_year} · Uploaded: {new Date(pdf.created_at).toLocaleDateString()}
-                        </p>
+                <>
+                  <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                    {pdfs
+                      .slice((pdfPage - 1) * PDF_PAGE_SIZE, pdfPage * PDF_PAGE_SIZE)
+                      .map((pdf) => (
+                        <div key={pdf.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                          <div className="min-w-0 pr-4">
+                            <p className="font-medium text-sm text-academic-900 truncate">{pdf.title}</p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              Sem {pdf.semester} · {pdf.academic_year} · Uploaded: {new Date(pdf.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                            onClick={() => handleDeletePdf(pdf.id)}
+                            disabled={pdfPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
+
+                  {pdfs.length > PDF_PAGE_SIZE && (
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50/80 border-t border-gray-200 text-xs text-gray-600">
+                      <span>
+                        Showing {(pdfPage - 1) * PDF_PAGE_SIZE + 1}–{Math.min(pdfPage * PDF_PAGE_SIZE, pdfs.length)} of {pdfs.length}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setPdfPage((p) => Math.max(1, p - 1))}
+                          disabled={pdfPage <= 1}
+                          className="p-1 rounded border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          title="Previous page"
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setPdfPage((p) => Math.min(Math.ceil(pdfs.length / PDF_PAGE_SIZE), p + 1))}
+                          disabled={pdfPage >= Math.ceil(pdfs.length / PDF_PAGE_SIZE)}
+                          className="p-1 rounded border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          title="Next page"
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                        onClick={() => handleDeletePdf(pdf.id)}
-                        disabled={pdfPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               ) : (
                 <div className="p-8 text-center text-gray-500 text-sm">
                   No official results PDFs uploaded yet.
@@ -624,33 +669,70 @@ export default function ResultsUploadPage() {
 
               {/* Imported Detailed Datasets Section inside the Excel Card */}
               <div className="border-t border-gray-200/60 pt-6 space-y-4">
-                <h4 className="font-semibold text-sm text-academic-900 flex items-center gap-2">
-                  <Database className="h-4.5 w-4.5 text-gold-600" />
-                  Imported Detailed Datasets ({datasets.length})
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm text-academic-900 flex items-center gap-2">
+                    <Database className="h-4.5 w-4.5 text-gold-600" />
+                    Imported Detailed Datasets ({datasets.length})
+                  </h4>
+                  {datasets.length > DATASET_PAGE_SIZE && (
+                    <span className="text-xs text-gray-500 font-medium">
+                      Page {datasetPage} of {Math.ceil(datasets.length / DATASET_PAGE_SIZE)}
+                    </span>
+                  )}
+                </div>
                 {datasets.length > 0 ? (
-                  <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto border border-gray-150 rounded-lg">
-                    {datasets.map((dataset, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 hover:bg-gray-50 bg-white first:rounded-t-lg last:rounded-b-lg">
-                        <div className="min-w-0 pr-4">
-                          <p className="font-medium text-xs text-academic-900 truncate">
-                            Semester {dataset.semester} · {dataset.examination_type}
-                          </p>
-                          <p className="text-[10px] text-gray-500 mt-0.5">
-                            Academic Year: {dataset.academic_year}
-                          </p>
+                  <div className="border border-gray-150 rounded-lg overflow-hidden flex flex-col">
+                    <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto">
+                      {datasets
+                        .slice((datasetPage - 1) * DATASET_PAGE_SIZE, datasetPage * DATASET_PAGE_SIZE)
+                        .map((dataset, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 hover:bg-gray-50 bg-white transition-colors">
+                            <div className="min-w-0 pr-4">
+                              <p className="font-medium text-xs text-academic-900 truncate">
+                                Semester {dataset.semester} · {dataset.examination_type}
+                              </p>
+                              <p className="text-[10px] text-gray-500 mt-0.5">
+                                Academic Year: {dataset.academic_year}
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 flex-shrink-0"
+                              onClick={() => handleDeleteDataset(dataset.academic_year, dataset.semester, dataset.examination_type)}
+                              disabled={excelPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+
+                    {datasets.length > DATASET_PAGE_SIZE && (
+                      <div className="flex items-center justify-between px-3.5 py-2 bg-gray-50 border-t border-gray-150 text-xs text-gray-600">
+                        <span>
+                          Showing {(datasetPage - 1) * DATASET_PAGE_SIZE + 1}–{Math.min(datasetPage * DATASET_PAGE_SIZE, datasets.length)} of {datasets.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setDatasetPage((p) => Math.max(1, p - 1))}
+                            disabled={datasetPage <= 1}
+                            className="p-1 rounded border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            title="Previous page"
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDatasetPage((p) => Math.min(Math.ceil(datasets.length / DATASET_PAGE_SIZE), p + 1))}
+                            disabled={datasetPage >= Math.ceil(datasets.length / DATASET_PAGE_SIZE)}
+                            className="p-1 rounded border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            title="Next page"
+                          >
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 flex-shrink-0"
-                          onClick={() => handleDeleteDataset(dataset.academic_year, dataset.semester, dataset.examination_type)}
-                          disabled={excelPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <div className="p-6 text-center text-gray-400 text-xs bg-gray-50/50 rounded-lg border border-dashed border-gray-200">

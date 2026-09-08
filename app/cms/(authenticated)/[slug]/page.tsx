@@ -41,6 +41,24 @@ export default async function Page({ params }: PageProps) {
 }
 
 async function ListPage({ config }: { config: TableConfig }) {
+  if (config.slug === 'students' || config.slug === 'results') {
+    const { fetchPaginatedRows, resolveReferenceOptions } = await import('@/lib/cms/fetch')
+    const [paginated, references] = await Promise.all([
+      fetchPaginatedRows(config, { page: 1, pageSize: 25 }),
+      resolveReferenceOptions(config),
+    ])
+    return (
+      <CmsListView
+        config={config}
+        rows={paginated.rows as any[]}
+        initialTotal={paginated.total}
+        initialPage={paginated.page}
+        initialPageSize={paginated.pageSize}
+        initialTotalPages={paginated.totalPages}
+        serverReferences={references}
+      />
+    )
+  }
   const rows = await fetchRows(config)
   return <CmsListView config={config} rows={rows as any[]} />
 }

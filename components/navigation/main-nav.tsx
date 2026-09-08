@@ -79,8 +79,29 @@ export type NavItem = {
   items?: { name: string; href: string }[]
 }
 
+export const DEFAULT_NAV_ITEMS: NavItem[] = [
+  { name: 'About', href: '/about' },
+  {
+    name: 'Academics',
+    href: '/academics',
+    hasDropdown: true,
+    items: [
+      { name: 'Undergraduate Programs', href: '/academics/undergraduate' },
+      { name: 'Graduate Programs', href: '/academics/graduate' },
+    ],
+  },
+  { name: 'Admissions', href: '/admissions' },
+  { name: 'Departments', href: '/departments' },
+  { name: 'Campus Life', href: '/campus-life' },
+  { name: 'Research', href: '/research' },
+  { name: 'NAAC', href: '/naac-page' },
+  { name: 'Contact', href: '/contact' },
+]
+
 export function Header({ navItems = [] }: { navItems?: NavItem[] }) {
-  const dynamicNavigation = useMemo(() => navItems, [navItems])
+  const dynamicNavigation = useMemo(() => {
+    return navItems && navItems.length > 0 ? navItems : DEFAULT_NAV_ITEMS
+  }, [navItems])
 
   const [isScrolled, setIsScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)

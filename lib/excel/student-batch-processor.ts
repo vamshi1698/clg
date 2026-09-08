@@ -446,11 +446,59 @@ export async function processStudentExcelBuffer(
 
       const now = new Date().toISOString()
 
+      const toInsert: any[] = []
+      const toUpdate: any[] = []
+
       for (const record of chunk) {
         const existingId = existingMap.get(record.registerNumber)
-
         if (existingId) {
-          // Update existing student record
+          toUpdate.push({ ...record, id: existingId })
+        } else {
+          const newId = crypto.randomUUID()
+          toInsert.push({ ...record, id: newId })
+          existingMap.set(record.registerNumber, newId)
+        }
+      }
+
+      // Execute bulk multi-row insert if any
+      if (toInsert.length > 0) {
+        const values: any[] = []
+        const valuePlaceholders: string[] = []
+        let pIdx = 1
+
+        for (const item of toInsert) {
+          valuePlaceholders.push(
+            `($${pIdx++}, $${pIdx++}, $${pIdx++}, $${pIdx++}, $${pIdx++}, $${pIdx++}, $${pIdx++}, $${pIdx++}, $${pIdx++}, false, $${pIdx++}, $${pIdx++})`
+          )
+          values.push(
+            item.id,
+            item.registerNumber,
+            item.name,
+            item.dateOfBirth,
+            item.departmentId,
+            item.courseId,
+            item.academicYear,
+            item.semester,
+            item.isActive,
+            now,
+            now
+          )
+        }
+
+        await client.query(
+          `INSERT INTO students (
+             id, register_number, name, date_of_birth,
+             department_id, course_id, academic_year, semester,
+             is_active, is_deleted, created_at, updated_at
+           ) VALUES ${valuePlaceholders.join(', ')}`,
+          values
+        )
+        batchInserted = toInsert.length
+      }
+
+      // Execute updates
+      if (toUpdate.length > 0) {
+        for (const record of toUpdate) {
           await client.query(
             `UPDATE students
              SET name = $1,
@@ -472,36 +520,11 @@ export async function processStudentExcelBuffer(
               record.semester,
               record.isActive,
               now,
-              existingId
+              record.id
             ]
           )
-          batchUpdated++
-        } else {
-          // Insert new student record
-          const newId = crypto.randomUUID()
-          await client.query(
-            `INSERT INTO students (
-               id, register_number, name, date_of_birth,
-               department_id, course_id, academic_year, semester,
-               is_active, is_deleted, created_at, updated_at
-             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, $10, $11)`,
-            [
-              newId,
-              record.registerNumber,
-              record.name,
-              record.dateOfBirth,
-              record.departmentId,
-              record.courseId,
-              record.academicYear,
-              record.semester,
-              record.isActive,
-              now,
-              now
-            ]
-          )
-          batchInserted++
-          existingMap.set(record.registerNumber, newId)
         }
+        batchUpdated = toUpdate.length
       }
 
       return { batchInserted, batchUpdated }

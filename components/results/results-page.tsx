@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { motion } from 'framer-motion'
-import { Search, FileText, Award, TrendingUp, AlertCircle, Download, Printer, X, ShieldAlert } from 'lucide-react'
+import { Search, FileText, Award, TrendingUp, AlertCircle, Download, Printer, X, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -93,6 +93,8 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [pdfAnnouncements, setPdfAnnouncements] = useState<PdfRecord[]>(initialPdfs)
+  const [announcementPage, setAnnouncementPage] = useState(1)
+  const ANNOUNCEMENT_PAGE_SIZE = 5
 
   // Grading Helper
   const getGradeFromMarks = (marksScored: number, maxMarks: number) => {
@@ -605,29 +607,62 @@ export function ResultsPage({ initialPdfs = [] }: ResultsPageProps) {
                 </CardHeader>
                 <CardContent className="p-4">
                   {pdfAnnouncements.length > 0 ? (
-                    <div className="space-y-3">
-                      {pdfAnnouncements.map((pdf) => (
-                        <a
-                          key={pdf.id}
-                          href={`/results/${pdf.id}.pdf`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download={pdf.title.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'}
-                          className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-slate-50 bg-white transition-all group shadow-sm hover:shadow"
-                        >
-                          <FileText className="h-8 w-8 text-academic-700 flex-shrink-0 mt-0.5" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-academic-900 leading-snug group-hover:text-gold-600 transition-colors">
-                              {pdf.title}
-                            </p>
-                            <p className="text-[10px] text-gray-500 mt-1">
-                              Semester {pdf.semester} · {pdf.academic_year}
-                            </p>
+                    <>
+                      <div className="space-y-3">
+                        {pdfAnnouncements
+                          .slice((announcementPage - 1) * ANNOUNCEMENT_PAGE_SIZE, announcementPage * ANNOUNCEMENT_PAGE_SIZE)
+                          .map((pdf) => (
+                            <a
+                              key={pdf.id}
+                              href={`/results/${pdf.id}.pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={pdf.title.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf'}
+                              className="flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-gold-500 hover:bg-slate-50 bg-white transition-all group shadow-sm hover:shadow"
+                            >
+                              <FileText className="h-8 w-8 text-academic-700 flex-shrink-0 mt-0.5" />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-academic-900 leading-snug group-hover:text-gold-600 transition-colors">
+                                  {pdf.title}
+                                </p>
+                                <p className="text-[10px] text-gray-500 mt-1">
+                                  Semester {pdf.semester} · {pdf.academic_year}
+                                </p>
+                              </div>
+                              <Download className="h-4 w-4 text-gray-400 group-hover:text-gold-600 self-center" />
+                            </a>
+                          ))}
+                      </div>
+
+                      {pdfAnnouncements.length > ANNOUNCEMENT_PAGE_SIZE && (
+                        <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-xs text-gray-500">
+                          <span>
+                            {(announcementPage - 1) * ANNOUNCEMENT_PAGE_SIZE + 1}–{Math.min(announcementPage * ANNOUNCEMENT_PAGE_SIZE, pdfAnnouncements.length)} of {pdfAnnouncements.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => setAnnouncementPage((p) => Math.max(1, p - 1))}
+                              disabled={announcementPage <= 1}
+                              className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              title="Previous page"
+                            >
+                              <ChevronLeft className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="font-semibold text-gray-700 px-1.5">
+                              {announcementPage} / {Math.ceil(pdfAnnouncements.length / ANNOUNCEMENT_PAGE_SIZE)}
+                            </span>
+                            <button
+                              onClick={() => setAnnouncementPage((p) => Math.min(Math.ceil(pdfAnnouncements.length / ANNOUNCEMENT_PAGE_SIZE), p + 1))}
+                              disabled={announcementPage >= Math.ceil(pdfAnnouncements.length / ANNOUNCEMENT_PAGE_SIZE)}
+                              className="p-1 rounded border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                              title="Next page"
+                            >
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            </button>
                           </div>
-                          <Download className="h-4 w-4 text-gray-400 group-hover:text-gold-600 self-center" />
-                        </a>
-                      ))}
-                    </div>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="text-center py-8 text-gray-400 space-y-2">
                       <ShieldAlert className="h-8 w-8 mx-auto text-gray-300" />

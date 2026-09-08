@@ -44,17 +44,21 @@ export async function deleteResultsPdf(id: string) {
     }
 
     const filename = (record as any).pdf_filename
-    const uploadDir = process.env.RESULTS_UPLOAD_DIR
-    if (!uploadDir) {
-      throw new Error('RESULTS_UPLOAD_DIR is not configured in environment variables')
-    }
-    const filePath = path.join(uploadDir, filename)
+    const os = await import('os')
+    const candidateDirs = [
+      process.env.RESULTS_UPLOAD_DIR,
+      path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads', 'results'),
+      path.join(os.tmpdir(), 'results'),
+      path.join(/*turbopackIgnore: true*/ process.cwd(), 'uploads', 'results'),
+    ].filter(Boolean) as string[]
 
-    // 2. Delete file from file system
-    try {
-      await unlink(filePath)
-    } catch (fsErr: any) {
-      console.warn('File deletion warning (could be already missing):', fsErr.message)
+    for (const dir of candidateDirs) {
+      try {
+        const filePath = path.join(path.normalize(dir), filename)
+        await unlink(filePath)
+      } catch (fsErr: any) {
+        // Safe ignore if missing
+      }
     }
 
     // 3. Delete from DB

@@ -132,6 +132,60 @@ export async function submitContactMessage(formData: {
     if (error) {
       throw error
     }
+
+    // Send emails via Resend
+    try {
+      const { sendEmail } = await import('@/lib/mail')
+      const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'admissions@nationalcollege.edu'
+      const safeName = sanitizeHtml(payload.name)
+      const safeSubject = payload.subject ? sanitizeHtml(payload.subject) : 'General Inquiry'
+      const safeMsg = sanitizeHtml(payload.message).replace(/\n/g, '<br/>')
+      const safePhone = payload.phone ? sanitizeHtml(payload.phone) : '—'
+
+      // 1. Send Alert to Admin
+      await sendEmail({
+        to: adminEmail,
+        subject: `[Contact Form] ${safeSubject} - from ${safeName}`,
+        replyTo: validated.email,
+        html: `
+          <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; padding: 20px; border-radius: 8px;">
+            <h2 style="color: #0f2d52; margin-top: 0; border-bottom: 2px solid #0f2d52; padding-bottom: 10px;">New Contact Message</h2>
+            <p>A new message was submitted via the college contact form:</p>
+            <table border="0" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr style="background-color: #fcfcfc;"><td style="width: 140px; font-weight: bold; border-bottom: 1px solid #eee;">From:</td><td style="border-bottom: 1px solid #eee;">${safeName}</td></tr>
+              <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Email:</td><td style="border-bottom: 1px solid #eee;"><a href="mailto:${sanitizeHtml(validated.email)}">${sanitizeHtml(validated.email)}</a></td></tr>
+              <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; border-bottom: 1px solid #eee;">Phone:</td><td style="border-bottom: 1px solid #eee;">${safePhone}</td></tr>
+              <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Subject:</td><td style="border-bottom: 1px solid #eee;">${safeSubject}</td></tr>
+              <tr style="background-color: #fcfcfc;"><td style="font-weight: bold; vertical-align: top;">Message:</td><td>${safeMsg}</td></tr>
+            </table>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #888; margin-bottom: 0;">You can reply directly to this email to respond to ${safeName}.</p>
+          </div>
+        `
+      })
+
+      // 2. Send Acknowledgment to Sender
+      await sendEmail({
+        to: validated.email,
+        subject: `We received your message - National College`,
+        html: `
+          <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; padding: 20px; border-radius: 8px;">
+            <h2 style="color: #0f2d52; margin-top: 0;">Hello ${safeName},</h2>
+            <p>Thank you for reaching out to National College. We have received your message regarding "<strong>${safeSubject}</strong>".</p>
+            <p>Our administrative desk is reviewing your message and will get back to you as soon as possible.</p>
+            <div style="background-color: #f9fafb; padding: 12px 16px; border-left: 4px solid #0f2d52; margin: 16px 0; font-size: 13px;">
+              <strong>Your message:</strong><br/>
+              ${safeMsg}
+            </div>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #888; margin-bottom: 0;">Best regards,<br/><strong>Administrative Office</strong><br/>National College</p>
+          </div>
+        `
+      })
+    } catch (emailErr) {
+      console.warn('[Contact Form] Email notification warning:', emailErr)
+    }
+
     return { ok: true }
   } catch (err: any) {
     return { error: err.message || 'Failed to send message.' }
@@ -303,6 +357,32 @@ export async function submitTestimonial(formData: FormData) {
     if (error) {
       console.error('Error inserting testimonial:', error)
       return { error: 'Failed to submit review. Please try again later.' }
+    }
+
+    // Send admin notification via Resend
+    try {
+      const { sendEmail } = await import('@/lib/mail')
+      const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'admissions@nationalcollege.edu'
+      await sendEmail({
+        to: adminEmail,
+        subject: `[New Testimonial] Review submitted by ${payload.name}`,
+        html: `
+          <div style="font-family: sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; padding: 20px; border-radius: 8px;">
+            <h2 style="color: #0f2d52; margin-top: 0;">New Testimonial Awaiting Approval</h2>
+            <p>A new student/alumni review has been submitted on the portal:</p>
+            <table border="0" cellpadding="6" cellspacing="0" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr><td style="width: 130px; font-weight: bold; border-bottom: 1px solid #eee;">Name:</td><td style="border-bottom: 1px solid #eee;">${sanitizeHtml(payload.name)}</td></tr>
+              <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Role/Company:</td><td style="border-bottom: 1px solid #eee;">${payload.designation || '—'} ${payload.company ? `@ ${payload.company}` : ''}</td></tr>
+              <tr><td style="font-weight: bold; border-bottom: 1px solid #eee;">Rating:</td><td style="border-bottom: 1px solid #eee; color: #f59e0b; font-weight: bold;">${'★'.repeat(payload.rating || 5)}${'☆'.repeat(Math.max(0, 5 - (payload.rating || 5)))} (${payload.rating || 5}/5)</td></tr>
+              <tr><td style="font-weight: bold; vertical-align: top;">Review:</td><td>${payload.content}</td></tr>
+            </table>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #888; margin-bottom: 0;">You can review and publish this testimonial from the CMS Testimonials manager.</p>
+          </div>
+        `
+      })
+    } catch (e) {
+      console.warn('[Testimonial] Email alert warning:', e)
     }
 
     return { ok: true, message: 'Thank you! Your review has been submitted and is pending approval.' }

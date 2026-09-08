@@ -461,7 +461,7 @@ export const TABLE_CONFIGS: TableConfig[] = [
     subtitleField: 'subject_code',
     listFields: ['students', 'semester', 'examination_type', 'subjects', 'result_status', 'is_active'],
     orderColumn: 'semester',
-    sortable: true,
+    sortable: false,
     select: '*, students(name, register_number)',
     fields: [
       { name: 'student_id', label: 'Student', type: 'select', required: true, full: true, options: [] },
@@ -507,7 +507,7 @@ export const TABLE_CONFIGS: TableConfig[] = [
     subtitleField: 'academic_year',
     listFields: ['semester', 'academic_year', 'sgpa', 'cgpa', 'result_status', 'is_active'],
     orderColumn: 'semester',
-    sortable: true,
+    sortable: false,
     select: '*, students(name, register_number)',
     fields: [
       { name: 'student_id', label: 'Student', type: 'select', required: true, full: true, options: [] },

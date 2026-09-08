@@ -30,24 +30,36 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = new Uint8Array(bytes)
 
-    const uploadDir = process.env.UPLOAD_DIR || path.join(process.cwd(), 'public', 'uploads')
-    try {
-      await mkdir(uploadDir, { recursive: true })
-    } catch (e) {
-      // Ignore if exists
-    }
-
     // Sanitize filename and create unique name
     const originalName = file.name || 'uploaded_file'
     const ext = path.extname(originalName)
     const baseName = path.basename(originalName, ext).replace(/[^a-z0-9]/gi, '_').toLowerCase()
     const uniqueFilename = `${baseName}_${crypto.randomBytes(4).toString('hex')}${ext}`
-    
-    const filePath = path.join(/*turbopackIgnore: true*/ uploadDir, uniqueFilename)
-    await writeFile(filePath, buffer)
+    const mimeType = file.type || 'application/octet-stream'
+
+    // Upload to Supabase Storage (if configured)
+    const { uploadToStorage } = await import('@/lib/storage/supabase-storage')
+    await uploadToStorage('uploads', uniqueFilename, buffer, mimeType).catch((err) => {
+      console.warn('Supabase storage upload warning (falling back to disk):', err)
+    })
+
+    // Also cache/write locally for local disk access
+    let uploadDir = process.env.UPLOAD_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'uploads')
+    try {
+      await mkdir(uploadDir, { recursive: true })
+      await writeFile(path.join(uploadDir, uniqueFilename), buffer)
+    } catch (e) {
+      try {
+        const os = await import('os')
+        uploadDir = path.join(os.tmpdir(), 'uploads')
+        await mkdir(uploadDir, { recursive: true }).catch(() => {})
+        await writeFile(path.join(uploadDir, uniqueFilename), buffer)
+      } catch (diskErr) {
+        // Disk write failed on serverless (safe to ignore if Supabase storage succeeded)
+      }
+    }
 
     const fileUrl = `/uploads/${uniqueFilename}`
-    const mimeType = file.type || 'application/octet-stream'
     
     let classification = 'document'
     if (mimeType.startsWith('image/')) classification = 'image'
